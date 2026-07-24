@@ -1,0 +1,21 @@
+node_modules/
+.env
+*.log
+orders.json
+sent_logs.txt
+test-credentials.txt
+.DS_Store
+
+# Continue IDE / unrelated local folders (do not deploy)
+.continuerc.json
+.continueignore
+index/
+types/
+ads/
+music/
+dev_data/
+config.ts
+config.yaml
+pipeline/
+uploads/
+tsconfig.json

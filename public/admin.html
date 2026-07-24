@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>GhostBreak Admin — 訂單與投遞預覽</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'DM Sans', system-ui, sans-serif; }
+    .phone-notch {
+      width: 96px; height: 22px; border-radius: 0 0 14px 14px;
+      background: #0a0a0f; margin: 0 auto;
+    }
+    .sms-bubble { border-radius: 18px 18px 4px 18px; }
+    .email-body { font-family: 'Noto Serif TC', Georgia, serif; white-space: pre-wrap; line-height: 1.85; }
+    .row-active { background: rgba(139, 92, 246, 0.12); border-left: 3px solid #8b5cf6; }
+    .preview-panel { min-height: 520px; }
+    @media (max-width: 1024px) {
+      .preview-panel { min-height: auto; }
+    }
+  </style>
+</head>
+<body class="bg-[#06060a] text-zinc-100 min-h-screen">
+
+  <header class="border-b border-zinc-800/80 bg-[#0a0a12]/90 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-violet-400 font-semibold tracking-widest text-sm">GHOSTBREAK</span>
+        <span class="text-[10px] uppercase tracking-wider text-zinc-500 border border-zinc-700 rounded-full px-2 py-0.5">Admin</span>
+      </div>
+      <div class="flex items-center gap-4 text-xs text-zinc-500">
+        <span id="orderCount">載入中…</span>
+        <button type="button" id="refreshBtn" class="text-violet-300 hover:text-white transition">↻ 重新整理</button>
+        <a href="/" class="hover:text-white transition">← 首頁</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1600px] mx-auto p-4 sm:p-6">
+    <div class="grid lg:grid-cols-12 gap-6">
+
+      <!-- 訂單列表 -->
+      <section class="lg:col-span-5 xl:col-span-4">
+        <div class="bg-[#0d0d14] border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+          <div class="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+            <h2 class="text-sm font-medium text-zinc-300">歷史訂單</h2>
+            <span class="text-[10px] text-zinc-600">資料來源 orders.json</span>
+          </div>
+          <div class="overflow-x-auto max-h-[calc(100vh-10rem)] overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="sticky top-0 bg-[#12121c] text-zinc-500 uppercase tracking-wider">
+                <tr>
+                  <th class="px-4 py-2.5">時間</th>
+                  <th class="px-4 py-2.5">對象</th>
+                  <th class="px-4 py-2.5">方案</th>
+                  <th class="px-4 py-2.5">狀態</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTable" class="divide-y divide-zinc-800/60">
+                <tr><td colspan="4" class="px-4 py-8 text-center text-zinc-600">載入中…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 預覽面板 -->
+      <section class="lg:col-span-7 xl:col-span-8">
+        <div id="emptyPreview" class="preview-panel flex items-center justify-center bg-[#0d0d14] border border-zinc-800 border-dashed rounded-2xl text-zinc-600 text-sm">
+          ← 點選左側訂單，親眼確認簡訊與郵件投遞內容
+        </div>
+
+        <div id="detailPreview" class="hidden space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div>
+              <p class="text-[10px] uppercase tracking-widest text-violet-400 mb-1">Order Detail</p>
+              <h3 id="detailTitle" class="text-lg font-medium text-zinc-100"></h3>
+              <p id="detailMeta" class="text-xs text-zinc-500 mt-1"></p>
+            </div>
+            <span id="detailBadge" class="text-[10px] rounded-full px-3 py-1 border"></span>
+          </div>
+
+          <div class="grid xl:grid-cols-2 gap-5">
+
+            <!-- SMS Phone Mockup -->
+            <div class="preview-panel bg-gradient-to-b from-[#0d0d14] to-[#0a0a10] border border-zinc-800 rounded-2xl p-5 shadow-xl">
+              <p class="text-[10px] uppercase tracking-widest text-emerald-400/90 mb-4 text-center">📱 SMS View · 虛擬手機預覽</p>
+
+              <div id="smsPanel" class="mx-auto max-w-[280px]">
+                <div class="rounded-[2rem] border-[3px] border-zinc-700 bg-zinc-900 p-2 shadow-2xl shadow-black/50">
+                  <div class="phone-notch"></div>
+                  <div class="bg-black rounded-[1.4rem] overflow-hidden min-h-[420px] flex flex-col">
+                    <!-- Status bar -->
+                    <div class="flex justify-between items-center px-5 pt-2 pb-1 text-[9px] text-zinc-400">
+                      <span>9:41</span>
+                      <span>5G ▮▮▮</span>
+                    </div>
+                    <!-- Chat header -->
+                    <div class="px-4 py-3 border-b border-zinc-800/80 text-center">
+                      <p class="text-[10px] text-emerald-400/90 font-medium">發送虛擬電話</p>
+                      <p id="smsFromNumber" class="text-sm font-semibold text-white mt-0.5">+1 (855) 914-2394</p>
+                      <p id="smsToNumber" class="text-[10px] text-zinc-500 mt-1">→ 收件人</p>
+                    </div>
+                    <!-- Messages -->
+                    <div class="flex-1 px-3 py-4 space-y-3 overflow-y-auto max-h-[300px]">
+                      <p class="text-[9px] text-center text-zinc-600">Today</p>
+                      <div class="flex justify-end">
+                        <div class="sms-bubble max-w-[88%] bg-emerald-600 text-white text-[11px] leading-relaxed px-3.5 py-2.5 shadow-lg">
+                          <p id="smsBody" class="whitespace-pre-wrap"></p>
+                        </div>
+                      </div>
+                      <p id="smsDelivered" class="text-[9px] text-right text-zinc-600 pr-1">Delivered</p>
+                    </div>
+                    <div class="px-3 py-2 border-t border-zinc-800 text-[10px] text-zinc-600 text-center">iMessage · GhostBreak Relay</div>
+                  </div>
+                </div>
+              </div>
+
+              <p id="smsUnavailable" class="hidden text-center text-zinc-600 text-sm py-16">此方案未包含簡訊投遞</p>
+            </div>
+
+            <!-- Email Inbox Mockup -->
+            <div class="preview-panel bg-gradient-to-b from-[#0d0d14] to-[#0a0a10] border border-zinc-800 rounded-2xl p-5 shadow-xl">
+              <p class="text-[10px] uppercase tracking-widest text-sky-400/90 mb-4 text-center">📧 Email Inbox View · 虛擬收件匣</p>
+
+              <div id="emailPanel" class="rounded-xl border border-zinc-700/80 bg-[#111118] overflow-hidden shadow-inner min-h-[420px] flex flex-col">
+                <!-- Gmail-like toolbar -->
+                <div class="flex items-center gap-2 px-4 py-3 border-b border-zinc-800 bg-[#0f0f16]">
+                  <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold">G</div>
+                  <span class="text-xs text-zinc-400">Inbox</span>
+                  <span class="ml-auto text-[10px] text-zinc-600">GhostBreak Mail</span>
+                </div>
+                <!-- Email row selected -->
+                <div class="px-4 py-3 border-b border-zinc-800/80 bg-violet-500/5">
+                  <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center text-xs shrink-0">👻</div>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span class="text-[10px] text-sky-400">寄件人：</span>
+                        <span id="emailFrom" class="text-xs font-medium text-white truncate">noreply@bafuholdings.com</span>
+                      </div>
+                      <p id="emailSubject" class="text-sm font-semibold text-zinc-100 mt-2 truncate"></p>
+                      <p id="emailTo" class="text-[10px] text-zinc-500 mt-1"></p>
+                    </div>
+                  </div>
+                </div>
+                <!-- Email body -->
+                <div class="flex-1 px-5 py-5 overflow-y-auto max-h-[280px]">
+                  <p id="emailBody" class="email-body text-sm text-zinc-300"></p>
+                </div>
+                <div class="px-4 py-2 border-t border-zinc-800 text-[10px] text-zinc-600 flex justify-between">
+                  <span id="emailTime"></span>
+                  <span>AES-256 · Anonymous</span>
+                </div>
+              </div>
+
+              <p id="emailUnavailable" class="hidden text-center text-zinc-600 text-sm py-16">此方案未包含 Email 投遞</p>
+            </div>
+          </div>
+
+          <!-- 原始信件全文 -->
+          <div class="bg-[#0d0d14] border border-zinc-800 rounded-xl p-4">
+            <p class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">完整信件原文（orders.json）</p>
+            <pre id="fullLetter" class="text-xs text-zinc-400 whitespace-pre-wrap font-[Noto_Serif_TC] leading-relaxed max-h-48 overflow-y-auto"></pre>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const PLAN_LABEL = { email: 'Email', sms: 'SMS', bundle: 'Bundle' };
+    let orders = [];
+    let selectedId = null;
+
+    function fmtTime(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      return d.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    async function fetchOrders() {
+      const res = await fetch('/api/admin/orders');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '載入失敗');
+      return data.orders || [];
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('ordersTable');
+      document.getElementById('orderCount').textContent = `${orders.length} 筆訂單`;
+
+      if (!orders.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-zinc-600">尚無訂單。完成一筆「跳過付款直接測試發送」後會寫入 orders.json</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = orders.map((o) => {
+        const active = o.id === selectedId ? 'row-active' : 'hover:bg-zinc-800/30 cursor-pointer';
+        const status = o.twilioLive ? '<span class="text-emerald-400">LIVE</span>' : '<span class="text-amber-400">Sent</span>';
+        return `<tr class="${active} transition" data-id="${esc(o.id)}">
+          <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">${fmtTime(o.createdAt)}</td>
+          <td class="px-4 py-3 text-zinc-200">${esc(o.exName || '（未填）')}</td>
+          <td class="px-4 py-3 text-violet-300">${PLAN_LABEL[o.planId] || o.planId}</td>
+          <td class="px-4 py-3">${status}</td>
+        </tr>`;
+      }).join('');
+
+      tbody.querySelectorAll('tr[data-id]').forEach((row) => {
+        row.onclick = () => selectOrder(row.dataset.id);
+      });
+    }
+
+    function selectOrder(id) {
+      selectedId = id;
+      const order = orders.find((o) => o.id === id);
+      if (!order) return;
+
+      renderTable();
+
+      document.getElementById('emptyPreview').classList.add('hidden');
+      document.getElementById('detailPreview').classList.remove('hidden');
+
+      document.getElementById('detailTitle').textContent =
+        order.exName ? `寫給 ${order.exName}` : `訂單 ${order.id}`;
+      document.getElementById('detailMeta').textContent =
+        `${order.id} · ${order.planName} · $${order.amount || '—'} · ${order.toneLabel || order.tone}`;
+
+      const badge = document.getElementById('detailBadge');
+      badge.textContent = order.twilioLive ? 'Twilio LIVE' : '已投遞';
+      badge.className = `text-[10px] rounded-full px-3 py-1 border ${
+        order.twilioLive ? 'border-emerald-500/40 text-emerald-300' : 'border-zinc-600 text-zinc-400'
+      }`;
+
+      // SMS panel
+      const hasSms = Boolean(order.sms);
+      document.getElementById('smsPanel').classList.toggle('hidden', !hasSms);
+      document.getElementById('smsUnavailable').classList.toggle('hidden', hasSms);
+      if (hasSms) {
+        document.getElementById('smsFromNumber').textContent = order.sms.from || '+1 (855) 914-2394';
+        document.getElementById('smsToNumber').textContent = `→ ${order.sms.to}`;
+        document.getElementById('smsBody').textContent = order.sms.body || '';
+        const smsDelivery = (order.deliveries || []).find((d) => d.channel === 'sms');
+        document.getElementById('smsDelivered').textContent = smsDelivery?.sid
+          ? `Delivered · ${smsDelivery.sid}`
+          : 'Delivered';
+      }
+
+      // Email panel
+      const hasEmail = Boolean(order.email);
+      document.getElementById('emailPanel').classList.toggle('hidden', !hasEmail);
+      document.getElementById('emailUnavailable').classList.toggle('hidden', hasEmail);
+      if (hasEmail) {
+        document.getElementById('emailFrom').textContent = order.email.from || 'noreply@bafuholdings.com';
+        document.getElementById('emailSubject').textContent = order.email.subject || '';
+        document.getElementById('emailTo').textContent = `收件人：${order.email.to}`;
+        document.getElementById('emailBody').textContent = order.email.body || '';
+        document.getElementById('emailTime').textContent = fmtTime(order.createdAt);
+      }
+
+      document.getElementById('fullLetter').textContent = order.letter || '（無內容）';
+    }
+
+    async function load() {
+      try {
+        orders = await fetchOrders();
+        renderTable();
+        if (selectedId && orders.some((o) => o.id === selectedId)) {
+          selectOrder(selectedId);
+        } else if (orders.length) {
+          selectOrder(orders[0].id);
+        }
+      } catch (err) {
+        document.getElementById('ordersTable').innerHTML =
+          `<tr><td colspan="4" class="px-4 py-8 text-center text-red-400">${esc(err.message)}</td></tr>`;
+      }
+    }
+
+    document.getElementById('refreshBtn').onclick = load;
+    load();
+    setInterval(load, 15000);
+  </script>
+</body>
+</html>

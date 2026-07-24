@@ -1,0 +1,53 @@
+:root {
+  --void: #06060a;
+  --panel: #0d0d14;
+  --line: #1a1a28;
+  --mist: #94a3b8;
+  --violet: #8b5cf6;
+}
+
+body.site-page {
+  background: var(--void);
+  color: #f4f4f5;
+  font-family: "DM Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.site-header {
+  border-bottom: 1px solid rgba(26, 26, 40, 0.6);
+  background: rgba(6, 6, 10, 0.85);
+  backdrop-filter: blur(16px);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #c4b5fd, #818cf8, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.prose-legal h2 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.25rem;
+  margin: 2rem 0 0.75rem;
+  color: #e4e4e7;
+}
+
+.prose-legal p,
+.prose-legal li {
+  color: var(--mist);
+  line-height: 1.75;
+  font-size: 0.95rem;
+}
+
+.prose-legal ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0.75rem 0;
+}
+
+.prose-legal a {
+  color: #a78bfa;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

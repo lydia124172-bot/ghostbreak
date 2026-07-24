@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Successful — GhostBreak</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=DM+Sans&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="site-page min-h-screen flex flex-col">
+  <header class="site-header">
+    <div class="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="font-[Playfair_Display] text-lg tracking-wider">
+        <span class="text-gradient font-semibold">GHOST</span><span class="text-zinc-400">BREAK</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="flex-1 flex items-center justify-center px-6 py-12">
+    <div class="max-w-md w-full text-center">
+      <p class="text-violet-400 text-xs tracking-[0.3em] uppercase mb-4">Payment confirmed</p>
+      <h1 class="font-[Playfair_Display] text-3xl mb-4">Request received</h1>
+      <p id="statusText" class="text-zinc-400 text-sm leading-relaxed mb-6">
+        Payment confirmed. Your message is being delivered through our secure channel.
+      </p>
+
+      <div id="receiptBox" class="hidden mb-6 p-5 rounded-2xl border border-zinc-700 bg-zinc-900/40 text-left">
+        <p class="text-violet-300 text-xs tracking-wider uppercase mb-2">Delivery copies</p>
+        <p id="receiptNote" class="text-zinc-400 text-sm leading-relaxed"></p>
+        <p class="text-[11px] text-zinc-500 mt-2">Tip: Gmail may sort our emails into Promotions — check there if you don't see it in Primary.</p>
+      </div>
+
+      <div id="pdfBox" class="hidden mb-6 p-5 rounded-2xl border border-violet-500/30 bg-violet-500/5 text-left">
+        <p class="text-violet-300 text-xs tracking-wider uppercase mb-2">Premium Bundle · Survival Guide</p>
+        <p class="text-zinc-400 text-sm mb-4 leading-relaxed">
+          Your PDF is <strong class="text-zinc-200">not sent by SMS</strong>. We email a download link to your <strong class="text-zinc-200">Anonymous Email</strong> and you can also download it here:
+        </p>
+        <a id="pdfDownloadBtn" href="/downloads/survival-guide.pdf" download
+          class="inline-flex items-center justify-center w-full py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 transition">
+          📕 Download Emotional Detox Survival Guide (PDF)
+        </a>
+        <p id="pdfEmailNote" class="text-[11px] text-zinc-500 mt-3"></p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="/" class="inline-block border border-zinc-700 hover:border-violet-500 px-6 py-3 rounded-full text-sm transition">
+          ← Back to home
+        </a>
+        <a href="/faq.html" class="inline-block border border-zinc-800 hover:border-zinc-600 px-6 py-3 rounded-full text-sm text-zinc-400 transition">
+          View FAQ
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-zinc-800 py-6 text-center text-xs text-zinc-600">
+    <nav class="flex flex-wrap justify-center gap-4 mb-2 text-zinc-500">
+      <a href="/faq.html" class="hover:text-violet-400 transition">FAQ</a>
+      <a href="/privacy.html" class="hover:text-violet-400 transition">Privacy</a>
+      <a href="/terms.html" class="hover:text-violet-400 transition">Terms</a>
+    </nav>
+    © 2026 GhostBreak
+  </footer>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const statusEl = document.getElementById('statusText');
+    const receiptBox = document.getElementById('receiptBox');
+    const receiptNote = document.getElementById('receiptNote');
+    const pdfBox = document.getElementById('pdfBox');
+    const pdfBtn = document.getElementById('pdfDownloadBtn');
+    const pdfEmailNote = document.getElementById('pdfEmailNote');
+
+    try {
+      const raw = sessionStorage.getItem('lastSendResult');
+      if (raw) {
+        const r = JSON.parse(raw);
+        statusEl.textContent = r.message || 'Your message has been processed.';
+
+        const delegate = (r.deliveries || []).find((d) => d.channel === 'delegate-confirmation');
+        if (delegate?.to || r.delegateEmailSent) {
+          receiptBox.classList.remove('hidden');
+          receiptNote.textContent = delegate?.to
+            ? `Exact copies of what we sent to your ex were emailed to ${delegate.to}. Check your inbox and spam folder.`
+            : 'Delivery copies were emailed to your Anonymous Email — check inbox and spam folder.';
+        }
+
+        if (r.planId === 'bundle' || r.pdfDownloadUrl) {
+          pdfBox.classList.remove('hidden');
+          if (r.pdfDownloadUrl) pdfBtn.href = r.pdfDownloadUrl;
+          if (delegate?.to) {
+            pdfEmailNote.textContent = `PDF download link also included in the email to ${delegate.to}.`;
+          } else if (r.delegateEmailSent) {
+            pdfEmailNote.textContent = 'PDF download link also included in your confirmation email.';
+          }
+        }
+        sessionStorage.removeItem('lastSendResult');
+      } else if (params.get('sent') === 'dry') {
+        statusEl.textContent = 'Payment successful! Message simulated (dev mode). Set EMAIL_* and TWILIO_* in .env for live delivery.';
+      }
+    } catch (_) {}
+  </script>
+</body>
+</html>

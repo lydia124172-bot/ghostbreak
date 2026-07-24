@@ -1,0 +1,28 @@
+{
+  "name": "ghostbreak",
+  "version": "1.0.0",
+  "description": "Anonymous Email & SMS breakup proxy service",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "postinstall": "npm run generate:pdf",
+    "test:sms": "node scripts/test-twilio-sms.js",
+    "test:plans": "node scripts/test-plans.js",
+    "generate:pdf": "node scripts/generate-survival-guide-pdf.js",
+    "render:check": "node scripts/render-deploy-check.js",
+    "twilio:sync": "node scripts/sync-twilio-number.js",
+    "twilio:setup": "node scripts/setup-twilio-and-send.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "nodemailer": "^7.0.5",
+    "pdfkit": "^0.19.1",
+    "resend": "^6.18.0",
+    "twilio": "^5.8.0"
+  }
+}
