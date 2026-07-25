@@ -211,6 +211,7 @@ app.get('/api/config', (_req, res) => {
     recaptchaSiteKey: getRecaptchaSiteKey() || null,
     recaptchaEnabled: recaptchaConfigured(),
     recaptchaDevBypass: isRecaptchaDevBypass(),
+    gaMeasurementId: String(process.env.GA_MEASUREMENT_ID || '').trim() || null,
     setupHint: isPayPalConfigured()
       ? null
       : '請至 developer.paypal.com → Apps & Credentials → Sandbox → 建立 App，將 Client ID / Secret 填入 .env',
