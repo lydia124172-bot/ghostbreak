@@ -588,9 +588,11 @@ function renderIndexHtml() {
   const template = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
   const siteKey = getRecaptchaSiteKey() || '';
   const buildId = String(Date.now());
+  const sandboxBadgeClass = PAYPAL_MODE === 'live' ? 'hidden' : '';
   return template
     .replaceAll('__RECAPTCHA_SITE_KEY__', siteKey)
-    .replace('__BUILD_ID__', buildId);
+    .replace('__BUILD_ID__', buildId)
+    .replace('__SANDBOX_BADGE_CLASS__', sandboxBadgeClass);
 }
 
 app.get(['/', '/index.html'], (_req, res) => {
