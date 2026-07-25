@@ -438,12 +438,23 @@
           ? 'PayPal Sandbox secure checkout · Use the test buyer account below in the popup'
           : 'Secure PayPal checkout · Encrypted anonymous delivery';
       }
-      if (!cfg.recaptchaDevBypass && cfg.recaptchaEnabled) {
+      if (!isRecaptchaDebugHost()) {
         document.getElementById('recaptchaDiag')?.classList.add('hidden');
       }
     }
 
+    /** 僅本機除錯顯示底部狀態列；正式網域不對訪客露出技術訊息 */
+    function isRecaptchaDebugHost() {
+      const host = location.hostname;
+      return host === 'localhost' || host === '127.0.0.1'
+        || new URLSearchParams(location.search).has('recaptchaDebug');
+    }
+
     function updateRecaptchaDiag(msg, isError) {
+      if (!isRecaptchaDebugHost()) {
+        if (isError) console.warn('[reCAPTCHA]', msg);
+        return;
+      }
       const el = document.getElementById('recaptchaDiag');
       if (!el) return;
       el.textContent = msg;
