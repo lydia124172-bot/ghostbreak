@@ -8,7 +8,20 @@ const {
 } = require('./privacy');
 const { getTwilioFromNumber } = require('./twilio');
 
-const ORDERS_PATH = path.join(__dirname, '..', 'orders.json');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..');
+const ORDERS_PATH = path.join(DATA_DIR, 'orders.json');
+const LEGACY_ORDERS_PATH = path.join(__dirname, '..', 'orders.json');
+
+function ensureOrdersStore() {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(ORDERS_PATH) && fs.existsSync(LEGACY_ORDERS_PATH)) {
+    fs.copyFileSync(LEGACY_ORDERS_PATH, ORDERS_PATH);
+  }
+}
+
+ensureOrdersStore();
 
 function loadOrders() {
   try {
@@ -21,6 +34,7 @@ function loadOrders() {
 }
 
 function saveOrders(orders) {
+  ensureOrdersStore();
   fs.writeFileSync(ORDERS_PATH, JSON.stringify({ orders }, null, 2), 'utf8');
 }
 
@@ -99,6 +113,7 @@ function recordOrder({
 }
 
 module.exports = {
+  DATA_DIR,
   ORDERS_PATH,
   getOfficialSmsDisplay,
   getOfficialEmailAddress,

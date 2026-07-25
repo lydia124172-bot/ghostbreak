@@ -46,7 +46,7 @@
         <div class="bg-[#0d0d14] border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
           <div class="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
             <h2 class="text-sm font-medium text-zinc-300">歷史訂單</h2>
-            <span class="text-[10px] text-zinc-600">資料來源 orders.json</span>
+            <span class="text-[10px] text-zinc-600">持久化儲存 · 重新整理每 15 秒</span>
           </div>
           <div class="overflow-x-auto max-h-[calc(100vh-10rem)] overflow-y-auto">
             <table class="w-full text-left text-xs">
@@ -55,11 +55,12 @@
                   <th class="px-4 py-2.5">時間</th>
                   <th class="px-4 py-2.5">對象</th>
                   <th class="px-4 py-2.5">方案</th>
+                  <th class="px-4 py-2.5">金額</th>
                   <th class="px-4 py-2.5">狀態</th>
                 </tr>
               </thead>
               <tbody id="ordersTable" class="divide-y divide-zinc-800/60">
-                <tr><td colspan="4" class="px-4 py-8 text-center text-zinc-600">載入中…</td></tr>
+                <tr><td colspan="5" class="px-4 py-8 text-center text-zinc-600">載入中…</td></tr>
               </tbody>
             </table>
           </div>
@@ -160,6 +161,18 @@
             </div>
           </div>
 
+          <!-- 訂單資訊 -->
+          <div class="grid sm:grid-cols-2 gap-3 px-1">
+            <div class="bg-[#0d0d14] border border-zinc-800 rounded-xl p-4">
+              <p class="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">PayPal 訂單 ID</p>
+              <p id="detailOrderId" class="text-xs text-zinc-300 break-all font-mono"></p>
+            </div>
+            <div class="bg-[#0d0d14] border border-zinc-800 rounded-xl p-4">
+              <p class="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">委託人 Anonymous Email</p>
+              <p id="detailAnonEmail" class="text-xs text-violet-300 break-all"></p>
+            </div>
+          </div>
+
           <!-- 原始信件全文 -->
           <div class="bg-[#0d0d14] border border-zinc-800 rounded-xl p-4">
             <p class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">完整信件原文（orders.json）</p>
@@ -170,10 +183,56 @@
     </div>
   </main>
 
+  <div id="loginOverlay" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <form id="loginForm" class="w-full max-w-sm bg-[#0d0d14] border border-zinc-800 rounded-2xl p-6 shadow-2xl">
+      <p class="text-violet-400 text-xs tracking-[0.3em] uppercase mb-2">GhostBreak Admin</p>
+      <h2 class="text-xl font-semibold text-zinc-100 mb-2">後台登入</h2>
+      <p class="text-xs text-zinc-500 mb-5">輸入 Render 環境變數 <code class="text-zinc-400">ADMIN_PASSWORD</code></p>
+      <label class="block text-xs uppercase tracking-wider text-zinc-500 mb-2" for="adminPassword">密碼</label>
+      <input type="password" id="adminPassword" autocomplete="current-password" required
+        class="w-full bg-black/40 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 mb-4 focus:border-violet-500 outline-none" />
+      <p id="loginError" class="hidden text-xs text-red-400 mb-3"></p>
+      <button type="submit" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-xl py-3 text-sm font-semibold transition">
+        登入
+      </button>
+    </form>
+  </div>
+
   <script>
     const PLAN_LABEL = { email: 'Email', sms: 'SMS', bundle: 'Bundle' };
+    const AUTH_KEY = 'ghostbreakAdminAuth';
     let orders = [];
     let selectedId = null;
+
+    function getAuthHeader() {
+      const token = sessionStorage.getItem(AUTH_KEY);
+      return token ? { Authorization: `Basic ${token}` } : {};
+    }
+
+    function setAuth(password) {
+      sessionStorage.setItem(AUTH_KEY, btoa(`admin:${password}`));
+    }
+
+    function clearAuth() {
+      sessionStorage.removeItem(AUTH_KEY);
+    }
+
+    function showLogin(message) {
+      const overlay = document.getElementById('loginOverlay');
+      overlay.classList.remove('hidden');
+      const err = document.getElementById('loginError');
+      if (message) {
+        err.textContent = message;
+        err.classList.remove('hidden');
+      } else {
+        err.classList.add('hidden');
+      }
+    }
+
+    function hideLogin() {
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('loginError').classList.add('hidden');
+    }
 
     function fmtTime(iso) {
       if (!iso) return '—';
@@ -187,9 +246,27 @@
       return d.innerHTML;
     }
 
+    function deliveryStatus(order) {
+      const emailOk = Boolean(order.email);
+      const smsOk = Boolean(order.sms);
+      const parts = [];
+      if (emailOk) parts.push('Email');
+      if (smsOk) parts.push('SMS');
+      if (!parts.length) return '<span class="text-zinc-500">—</span>';
+      return `<span class="text-emerald-400">${parts.join(' + ')}</span>`;
+    }
+
     async function fetchOrders() {
-      const res = await fetch('/api/admin/orders');
-      const data = await res.json();
+      const res = await fetch('/api/admin/orders', { headers: getAuthHeader() });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        clearAuth();
+        showLogin('請重新登入');
+        throw new Error('Login required');
+      }
+      if (res.status === 503) {
+        throw new Error(data.error || '後台尚未設定 ADMIN_PASSWORD');
+      }
       if (!res.ok) throw new Error(data.error || '載入失敗');
       return data.orders || [];
     }
@@ -199,18 +276,19 @@
       document.getElementById('orderCount').textContent = `${orders.length} 筆訂單`;
 
       if (!orders.length) {
-        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-zinc-600">尚無訂單。完成一筆「跳過付款直接測試發送」後會寫入 orders.json</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-zinc-600">尚無訂單。客戶完成付款並發送後，訂單會出現在這裡。</td></tr>';
         return;
       }
 
       tbody.innerHTML = orders.map((o) => {
         const active = o.id === selectedId ? 'row-active' : 'hover:bg-zinc-800/30 cursor-pointer';
-        const status = o.twilioLive ? '<span class="text-emerald-400">LIVE</span>' : '<span class="text-amber-400">Sent</span>';
+        const amount = o.amount ? `$${o.amount}` : '—';
         return `<tr class="${active} transition" data-id="${esc(o.id)}">
           <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">${fmtTime(o.createdAt)}</td>
           <td class="px-4 py-3 text-zinc-200">${esc(o.exName || '（未填）')}</td>
           <td class="px-4 py-3 text-violet-300">${PLAN_LABEL[o.planId] || o.planId}</td>
-          <td class="px-4 py-3">${status}</td>
+          <td class="px-4 py-3 text-zinc-300">${amount}</td>
+          <td class="px-4 py-3">${deliveryStatus(o)}</td>
         </tr>`;
       }).join('');
 
@@ -232,10 +310,16 @@
       document.getElementById('detailTitle').textContent =
         order.exName ? `寫給 ${order.exName}` : `訂單 ${order.id}`;
       document.getElementById('detailMeta').textContent =
-        `${order.id} · ${order.planName} · $${order.amount || '—'} · ${order.toneLabel || order.tone}`;
+        `${order.planName} · $${order.amount || '—'} · ${order.toneLabel || order.tone}`;
+      document.getElementById('detailOrderId').textContent = order.id || '—';
+      document.getElementById('detailAnonEmail').textContent =
+        order.delegateInternal?.anonEmail || '—';
 
       const badge = document.getElementById('detailBadge');
-      badge.textContent = order.twilioLive ? 'Twilio LIVE' : '已投遞';
+      const channels = [];
+      if (order.email) channels.push('Email');
+      if (order.sms) channels.push('SMS');
+      badge.textContent = channels.length ? channels.join(' + ') : '已記錄';
       badge.className = `text-[10px] rounded-full px-3 py-1 border ${
         order.twilioLive ? 'border-emerald-500/40 text-emerald-300' : 'border-zinc-600 text-zinc-400'
       }`;
@@ -279,14 +363,35 @@
           selectOrder(orders[0].id);
         }
       } catch (err) {
+        if (err.message === 'Login required') return;
         document.getElementById('ordersTable').innerHTML =
-          `<tr><td colspan="4" class="px-4 py-8 text-center text-red-400">${esc(err.message)}</td></tr>`;
+          `<tr><td colspan="5" class="px-4 py-8 text-center text-red-400">${esc(err.message)}</td></tr>`;
       }
     }
 
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('adminPassword').value;
+      setAuth(password);
+      try {
+        await load();
+        hideLogin();
+        document.getElementById('adminPassword').value = '';
+      } catch {
+        clearAuth();
+        showLogin('密碼錯誤，請再試一次');
+      }
+    });
+
     document.getElementById('refreshBtn').onclick = load;
-    load();
-    setInterval(load, 15000);
+    if (!sessionStorage.getItem(AUTH_KEY)) {
+      showLogin();
+    } else {
+      load();
+    }
+    setInterval(() => {
+      if (sessionStorage.getItem(AUTH_KEY)) load();
+    }, 15000);
   </script>
 </body>
 </html>

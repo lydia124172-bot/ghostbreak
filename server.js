@@ -20,6 +20,7 @@ const {
   sanitizeDeliveryForClient,
 } = require('./services/privacy');
 const { loadOrders, findOrder, recordOrder } = require('./services/orders');
+const { requireAdmin } = require('./services/admin-auth');
 const { PLANS, getPlan, resolvePlanDelivery, validatePlanDelivery, SURVIVAL_GUIDE_PATH } = require('./services/plans');
 const { getRecaptchaSiteKey, recaptchaConfigured, isRecaptchaDevBypass, getRecaptchaMinScore, verifyRecaptcha } = require('./services/recaptcha');
 const { isTwilioTrialAccount, getTwilioSmsMaxLength } = require('./services/twilio');
@@ -446,11 +447,11 @@ app.post('/api/send-message', async (req, res) => {
   }
 });
 
-app.get('/api/admin/orders', (_req, res) => {
+app.get('/api/admin/orders', requireAdmin, (_req, res) => {
   res.json({ success: true, orders: loadOrders() });
 });
 
-app.get('/api/admin/orders/:id', (req, res) => {
+app.get('/api/admin/orders/:id', requireAdmin, (req, res) => {
   const order = findOrder(req.params.id);
   if (!order) return res.status(404).json({ success: false, error: 'Order not found.' });
   res.json({ success: true, order });

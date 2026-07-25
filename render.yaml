@@ -12,9 +12,15 @@ services:
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
+    disk:
+      name: ghostbreak-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DATA_DIR
+        value: /var/data
       - key: DOMAIN_NAME
         value: bafuholdings.com
       - key: BASE_URL
@@ -45,4 +51,6 @@ services:
       - key: RECAPTCHA_SITE_KEY
         sync: false
       - key: RECAPTCHA_SECRET_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
         sync: false
