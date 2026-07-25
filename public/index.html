@@ -83,7 +83,7 @@
         <span class="text-gradient font-semibold">GHOST</span><span class="text-zinc-400">BREAK</span>
       </a>
       <div class="flex items-center gap-5 text-xs tracking-widest uppercase text-mist">
-        <span id="sandboxBadge" class="__SANDBOX_BADGE_CLASS__ sm:inline text-emerald-400/90 border border-emerald-500/30 rounded-full px-2 py-0.5">🧪 Sandbox</span>
+        <span id="sandboxBadge" class="__SANDBOX_BADGE_CLASS__ text-emerald-400/90 border border-emerald-500/30 rounded-full px-2 py-0.5">🧪 Sandbox</span>
         <a href="#how-it-works" class="hover:text-white transition hidden sm:inline">How It Works</a>
         <a href="#order-form" class="hover:text-white transition">Start Order</a>
         <a href="#pricing" class="hover:text-white transition">Pricing</a>
@@ -430,7 +430,11 @@
     function applySiteMode(cfg) {
       siteConfig = { ...siteConfig, ...cfg };
       const sandbox = Boolean(cfg.paypalSandbox);
-      document.getElementById('sandboxBadge')?.classList.toggle('hidden', !sandbox);
+      const badge = document.getElementById('sandboxBadge');
+      if (badge) {
+        badge.classList.toggle('hidden', !sandbox);
+        badge.classList.toggle('inline', sandbox);
+      }
       document.getElementById('paypalSandboxLogin')?.classList.toggle('hidden', !sandbox);
       const note = document.getElementById('pricingCheckoutNote');
       if (note) {
