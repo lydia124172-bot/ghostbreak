@@ -866,16 +866,25 @@
     }
 
     function addBypassButton(container, planKey) {
-      if (!siteConfig.devBypass) return;
+      if (!siteConfig.devBypass && !siteConfig.mockPayEnabled) return;
       const slot = document.querySelector(container);
       if (!slot?.parentElement) return;
+      if (slot.parentElement.querySelector('[data-bypass-btn]')) return;
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'block w-full mt-1.5 text-[9px] text-zinc-600/50 hover:text-zinc-400 transition text-center';
+      btn.dataset.bypassBtn = '1';
+      btn.className = 'block w-full mt-2 py-3 rounded-full text-sm font-medium border border-violet-500/40 text-violet-200 hover:bg-violet-500/10 transition text-center';
       btn.textContent = 'Skip payment & test send';
       btn.title = 'Dev only: skip PayPal and trigger backend send directly';
       btn.onclick = () => bypassPayAndSend(planKey);
       slot.parentElement.appendChild(btn);
+    }
+
+    function initBypassButtons() {
+      if (!siteConfig.devBypass && !siteConfig.mockPayEnabled) return;
+      Object.keys(PLANS).forEach((planKey) => {
+        addBypassButton(PLANS[planKey].container, planKey);
+      });
     }
 
     /** Three paid plans: frontend-only PayPal Buttons (locale=en_US, no backend dependency) */
@@ -974,15 +983,22 @@
       } catch { /* ignore */ }
       await initRecaptcha();
       initSandboxCopyButtons();
+      if (cfg.devBypass || cfg.mockPayEnabled) {
+        initBypassButtons();
+      }
       try {
-        await loadPayPalSdk(cfg.paypalClientId);
         if (!cfg.paypalClientId) {
           throw new Error('PayPal Client ID is not configured');
         }
+        await loadPayPalSdk(cfg.paypalClientId);
         initPayPalButtons();
       } catch (err) {
-        console.error('[PayPal] SDK load failed', err);
-        showToast('PayPal failed to load — refresh or check configuration');
+        console.warn('[PayPal] SDK load skipped', err.message);
+        if (cfg.devBypass || cfg.mockPayEnabled) {
+          showToast('Local test mode — use "Skip payment & test send" below each plan');
+        } else {
+          showToast('PayPal failed to load — refresh or check configuration');
+        }
       }
     }
 

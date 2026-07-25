@@ -122,9 +122,11 @@ function twilioLive() {
 }
 
 function isTwilioTrialModeEnv() {
-  const raw = String(process.env.TWILIO_TRIAL_MODE || '').trim().toLowerCase();
+  const raw = String(process.env.TWILIO_TRIAL_MODE || '').trim().replace(/^["']|["']$/g, '').toLowerCase();
   if (raw === 'true') return true;
   if (raw === 'false') return false;
+  // Production defaults to full-length SMS unless explicitly set to trial.
+  if (String(process.env.NODE_ENV || '').toLowerCase() === 'production') return false;
   return null;
 }
 

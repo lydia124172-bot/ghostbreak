@@ -22,7 +22,7 @@ services:
       - key: PAYPAL_MODE
         value: live
       - key: TWILIO_TRIAL_MODE
-        value: "true"
+        value: "false"
       - key: RECAPTCHA_DEV_BYPASS
         value: "false"
       - key: ALLOW_MOCK_PAY

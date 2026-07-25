@@ -22,6 +22,7 @@ const {
 const { loadOrders, findOrder, recordOrder } = require('./services/orders');
 const { PLANS, getPlan, resolvePlanDelivery, validatePlanDelivery, SURVIVAL_GUIDE_PATH } = require('./services/plans');
 const { getRecaptchaSiteKey, recaptchaConfigured, isRecaptchaDevBypass, getRecaptchaMinScore, verifyRecaptcha } = require('./services/recaptcha');
+const { isTwilioTrialAccount, getTwilioSmsMaxLength } = require('./services/twilio');
 const { getDomainName, getOfficialEmailFrom } = require('./services/privacy');
 
 const PORT = process.env.PORT || 3000;
@@ -204,6 +205,8 @@ app.get('/api/config', (_req, res) => {
       email: emailConfigured(),
       sms: twilioLive(),
     },
+    twilioTrialMode: isTwilioTrialAccount(),
+    twilioSmsMaxLength: getTwilioSmsMaxLength(),
     recaptchaSiteKey: getRecaptchaSiteKey() || null,
     recaptchaEnabled: recaptchaConfigured(),
     recaptchaDevBypass: isRecaptchaDevBypass(),
@@ -626,7 +629,7 @@ app.listen(PORT, async () => {
   if (twilioDiag.ok) {
     const account = await verifyTwilioLiveAccount();
     if (account.ok) {
-      const trialNote = account.type === 'Trial' ? '｜單段簡訊（≤70字）' : '';
+      const trialNote = isTwilioTrialAccount() ? '｜單段簡訊（≤70字）' : '｜完整簡訊';
       console.log(`[SMS] Twilio LIVE 就緒 → From ${twilioDiag.fromNumber} (${account.type}${trialNote})`);
     } else {
       console.warn('[SMS] Twilio 憑證格式正確但 LIVE 驗證失敗:', account.issues?.[0]);
@@ -644,6 +647,10 @@ app.listen(PORT, async () => {
   console.log(`📧 Email From: ${getOfficialEmailFrom()}`);
   console.log(`📧 Email: ${resendConfigured() ? 'LIVE（Resend 營運級）' : emailConfigured() ? 'LIVE（Ethereal / Maildrop MX）' : '初始化中…'}`);
   console.log(`📱 Twilio: ${twilioDiag.ok ? 'LIVE（真實發送）' : `未就緒 — ${twilioDiag.issues[0]}`}`);
+  if (twilioDiag.ok) {
+    const trialEnv = String(process.env.TWILIO_TRIAL_MODE || '(unset)').trim();
+    console.log(`📱 Twilio SMS 模式: ${isTwilioTrialAccount() ? 'Trial 短簡訊（≤70字）' : '完整簡訊（≤1500字）'} | TWILIO_TRIAL_MODE=${trialEnv}`);
+  }
   console.log(`🛡️  reCAPTCHA v3: ${isRecaptchaDevBypass() ? '本機略過（RECAPTCHA_DEV_BYPASS=true）' : recaptchaConfigured() ? `LIVE（min score ${getRecaptchaMinScore()}）` : '未設定（開發模式略過）'}`);
   if (!twilioDiag.ok) {
     console.log('   ↳ 填入 LIVE Auth Token、FROM (+1 虛擬號)、TO (Verified Caller ID) 後執行 npm run test:sms');
