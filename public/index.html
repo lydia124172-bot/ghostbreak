@@ -84,7 +84,10 @@
   <link rel="preconnect" href="https://www.google.com" />
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Playfair+Display:wght@400;600&display=swap" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet" /></noscript>
   <style>
     .gradient-orb {
       background: radial-gradient(ellipse at 30% 20%, rgba(99,102,241,0.18), transparent 50%),
@@ -422,6 +425,7 @@
     <div class="max-w-4xl mx-auto text-center">
       <nav class="flex flex-wrap justify-center gap-5 mb-4 text-xs tracking-wider uppercase text-zinc-500">
         <a href="/faq.html" class="hover:text-violet-400 transition">FAQ</a>
+        <a href="/blog/how-to-break-up-over-text-anonymously.html" class="hover:text-violet-400 transition">Breakup Guide</a>
         <a href="/privacy.html" class="hover:text-violet-400 transition">Privacy</a>
         <a href="/terms.html" class="hover:text-violet-400 transition">Terms</a>
         <a href="mailto:support@bafuholdings.com" class="hover:text-violet-400 transition">Support</a>
@@ -452,6 +456,8 @@
     let recaptchaSiteKey = RECAPTCHA_SITE_KEY_OFFICIAL;
     let recaptchaReady = false;
     let recaptchaDevBypass = false;
+    let recaptchaLoadPromise = null;
+    let paypalInitStarted = false;
     let siteConfig = { devBypass: false, paypalSandbox: true };
 
     function requireAgree() {
@@ -471,6 +477,8 @@
         }
         const script = document.createElement('script');
         script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId || 'test')}&currency=USD&intent=capture&locale=en_US&disable-funding=card,credit,paylater`;
+        script.async = true;
+        script.defer = true;
         script.onload = () => resolve();
         script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
         document.head.appendChild(script);
@@ -534,7 +542,8 @@
         const script = document.createElement('script');
         script.src = `${hosts[index]}?render=${encodeURIComponent(siteKey)}`;
         script.dataset.recaptchaLoader = '1';
-        script.async = false;
+        script.async = true;
+        script.defer = true;
         script.onload = () => {
           if (typeof grecaptcha === 'undefined') {
             tryHost(index + 1).then(resolve).catch(reject);
@@ -602,59 +611,71 @@
       return true;
     }
 
-    async function initRecaptcha() {
-      const host = location.hostname;
-      const c6 = recaptchaSiteKey.charCodeAt(6);
-      const c6Label = c6 === 73 ? 'I(uppercase 73)✓' : c6 === 108 ? 'l(lowercase 108)✗' : `?(${c6})`;
+    async function ensureRecaptcha(cfg = siteConfig) {
+      if (recaptchaReady || recaptchaDevBypass) return;
+      if (recaptchaLoadPromise) return recaptchaLoadPromise;
 
+      recaptchaLoadPromise = (async () => {
+        const host = location.hostname;
+        const c6 = recaptchaSiteKey.charCodeAt(6);
+        const c6Label = c6 === 73 ? 'I(uppercase 73)✓' : c6 === 108 ? 'l(lowercase 108)✗' : `?(${c6})`;
+
+        if (cfg.recaptchaDevBypass) {
+          recaptchaDevBypass = true;
+          recaptchaReady = true;
+          updateRecaptchaDiag(
+            'Local test mode | reCAPTCHA temporarily bypassed (sending works) | Set RECAPTCHA_DEV_BYPASS=false before production',
+            false,
+          );
+          return;
+        }
+
+        updateRecaptchaDiag(
+          `reCAPTCHA | host=${host} | key char 7=${c6Label} | Loading…`,
+          c6 !== 73,
+        );
+
+        if (host === '127.0.0.1') {
+          updateRecaptchaDiag('Use http://localhost:3000 instead (127.0.0.1 and localhost are different domains)', true);
+          return;
+        }
+        if (host !== 'localhost' && host !== 'bafuholdings.com') {
+          updateRecaptchaDiag(`Domain "${host}" may not be whitelisted in Google console`, true);
+        }
+
+        try {
+          await loadRecaptchaScript(recaptchaSiteKey);
+          await grecaptcha.execute(recaptchaSiteKey, { action: RECAPTCHA_ACTION });
+          recaptchaReady = true;
+          const badge = document.querySelector('.grecaptcha-badge');
+          updateRecaptchaDiag(
+            `reCAPTCHA ready | host=${host} | key char 7=${c6Label} | badge=${badge ? 'visible' : 'not found'}`,
+            false,
+          );
+        } catch (err) {
+          updateRecaptchaDiag(
+            `reCAPTCHA failed | ${err.message} | Disable ad blockers, or set RECAPTCHA_DEV_BYPASS=true in .env for local bypass`,
+            true,
+          );
+          console.warn('[reCAPTCHA] init failed', err);
+        }
+      })();
+
+      return recaptchaLoadPromise;
+    }
+
+    /** @deprecated use ensureRecaptcha */
+    async function initRecaptcha() {
       let cfg = {};
       try {
         cfg = await fetch('/api/config').then((r) => r.json());
         applySiteMode(cfg);
       } catch { /* ignore */ }
-
-      if (cfg.recaptchaDevBypass) {
-        recaptchaDevBypass = true;
-        recaptchaReady = true;
-        updateRecaptchaDiag(
-          `Local test mode | reCAPTCHA temporarily bypassed (sending works) | Set RECAPTCHA_DEV_BYPASS=false before production`,
-          false,
-        );
-        return;
-      }
-
-      updateRecaptchaDiag(
-        `reCAPTCHA | host=${host} | key char 7=${c6Label} | Loading… (Google error "Cwlt" is often a font illusion; actual is CwIt)`,
-        c6 !== 73,
-      );
-
-      if (host === '127.0.0.1') {
-        updateRecaptchaDiag('Use http://localhost:3000 instead (127.0.0.1 and localhost are different domains)', true);
-        return;
-      }
-      if (host !== 'localhost' && host !== 'bafuholdings.com') {
-        updateRecaptchaDiag(`Domain "${host}" may not be whitelisted in Google console`, true);
-      }
-
-      try {
-        await loadRecaptchaScript(recaptchaSiteKey);
-        await grecaptcha.execute(recaptchaSiteKey, { action: RECAPTCHA_ACTION });
-        recaptchaReady = true;
-        const badge = document.querySelector('.grecaptcha-badge');
-        updateRecaptchaDiag(
-          `reCAPTCHA ready | host=${host} | key char 7=${c6Label} | badge=${badge ? 'visible' : 'not found'}`,
-          false,
-        );
-      } catch (err) {
-        updateRecaptchaDiag(
-          `reCAPTCHA failed | ${err.message} | Disable ad blockers, or set RECAPTCHA_DEV_BYPASS=true in .env for local bypass`,
-          true,
-        );
-        console.warn('[reCAPTCHA] init failed', err);
-      }
+      await ensureRecaptcha(cfg);
     }
 
     async function getRecaptchaToken(action = RECAPTCHA_ACTION) {
+      await ensureRecaptcha();
       if (!recaptchaSiteKey || typeof grecaptcha === 'undefined') {
         return null;
       }
@@ -1029,17 +1050,9 @@
       });
     }
 
-    async function init() {
-      let cfg = {};
-      try {
-        cfg = await fetch('/api/config').then((r) => r.json());
-        applySiteMode(cfg);
-      } catch { /* ignore */ }
-      await initRecaptcha();
-      initSandboxCopyButtons();
-      if (cfg.devBypass || cfg.mockPayEnabled) {
-        initBypassButtons();
-      }
+    async function loadPayPalWhenReady(cfg) {
+      if (paypalInitStarted) return;
+      paypalInitStarted = true;
       try {
         if (!cfg.paypalClientId) {
           throw new Error('PayPal Client ID is not configured');
@@ -1050,10 +1063,38 @@
         console.warn('[PayPal] SDK load skipped', err.message);
         if (cfg.devBypass || cfg.mockPayEnabled) {
           showToast('Local test mode — use "Skip payment & test send" below each plan');
-        } else {
-          showToast('PayPal failed to load — refresh or check configuration');
         }
       }
+    }
+
+    function setupLazyThirdParty(cfg) {
+      const pricing = document.getElementById('pricing');
+      if (!pricing || !('IntersectionObserver' in window)) {
+        loadPayPalWhenReady(cfg);
+        ensureRecaptcha(cfg).catch(() => {});
+        return;
+      }
+      const observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        loadPayPalWhenReady(cfg);
+        ensureRecaptcha(cfg).catch(() => {});
+      }, { rootMargin: '320px 0px' });
+      observer.observe(pricing);
+    }
+
+    async function init() {
+      let cfg = {};
+      try {
+        cfg = await fetch('/api/config').then((r) => r.json());
+        applySiteMode(cfg);
+        siteConfig = { ...siteConfig, ...cfg };
+      } catch { /* ignore */ }
+      initSandboxCopyButtons();
+      if (cfg.devBypass || cfg.mockPayEnabled) {
+        initBypassButtons();
+      }
+      setupLazyThirdParty(cfg);
     }
 
     init();

@@ -15,8 +15,16 @@
     gtag('config', measurementId, { anonymize_ip: true });
   }
 
-  fetch('/api/config')
-    .then((res) => res.json())
-    .then((cfg) => loadGa(cfg.gaMeasurementId))
-    .catch(() => {});
+  function boot() {
+    fetch('/api/config')
+      .then((res) => res.json())
+      .then((cfg) => loadGa(cfg.gaMeasurementId))
+      .catch(() => {});
+  }
+
+  if (document.readyState === 'complete') {
+    setTimeout(boot, 1500);
+  } else {
+    window.addEventListener('load', () => setTimeout(boot, 1500), { once: true });
+  }
 })();
