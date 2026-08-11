@@ -1,0 +1,36 @@
+八斧牛排上線網址：steak.bafuholdings.com
+
+=== 第一步：Render 部署 ===
+1. 登入 render.com
+2. New → Web Service（或 Blueprint 若已加 render.yaml 到 GitHub）
+3. 連接你的 GitHub  repo
+4. Root Directory 填：buff-steak
+5. Build Command：npm install
+6. Start Command：npm start
+7. 在 Environment 設定（可從本機 .env 複製）：
+   - BASE_URL=https://steak.bafuholdings.com
+   - DATA_DIR=/var/data
+   - SMS_TEST_MODE=false
+   - RESTAURANT_EMAIL、RESEND_API_KEY、TWILIO_*、店長手機等
+8. 加 Persistent Disk：1GB，掛載 /var/data（存訂位紀錄）
+9. Deploy 完成後，Render 會給一個網址如 xxx.onrender.com
+
+=== 第二步：綁定 steak.bafuholdings.com ===
+1. Render → 該服務 → Settings → Custom Domains
+2. 新增：steak.bafuholdings.com
+3. Render 會顯示要設的 DNS（通常是 CNAME）
+
+=== 第三步：Cloudflare DNS ===
+1. 登入 Cloudflare → bafuholdings.com
+2. DNS → 新增記錄：
+   - 類型：CNAME
+   - 名稱：steak
+   - 目標：Render 給的 onrender.com 網址
+   - Proxy：可開橘色雲（Proxied）
+3. 等幾分鐘～幾小時生效
+
+=== 完成後 ===
+客人打開：https://steak.bafuholdings.com
+GhostBreak 仍是：https://bafuholdings.com（不受影響）
+
+本機測試仍用：一鍵啟動.bat → http://127.0.0.1:3001

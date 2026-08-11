@@ -1,0 +1,40 @@
+八斧牛排官網 — 如何更新照片、影片與起源故事
+========================================
+
+■ 照片
+1. 把照片檔（jpg / png）放到：
+   buff-steak\public\images\gallery\
+
+2. 打開並編輯：
+   buff-steak\public\data\gallery.json
+
+   在 "photos" 裡新增一行，例如：
+   {
+     "src": "/images/gallery/店內環境.jpg",
+     "caption": "用餐環境"
+   }
+
+3. 重新整理網頁（Ctrl+F5）即可看到。
+
+■ 影片（貼連結）
+1. 編輯 buff-steak\public\data\gallery.json
+
+2. 在 "videos" 裡新增或修改，例如：
+   {
+     "url": "https://www.youtube.com/watch?v=你的影片ID",
+     "title": "店內炭烤實錄"
+   }
+
+   支援：
+   - YouTube 一般影片
+   - YouTube Shorts（短影音連結）
+   - Vimeo
+
+3. 儲存後重新整理「影像」頁面。
+
+■ 八斧起源故事
+編輯 buff-steak\public\data\story.json
+可修改標題、段落、重點標籤。儲存後重新整理「故事」頁面。
+
+■ 本機預覽
+雙擊 start.bat，瀏覽器開 http://localhost:3001

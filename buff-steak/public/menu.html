@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>菜單 — 八斧牛排 BUFF STEAK</title>
+  <meta name="description" content="八斧牛排完整菜單：原肉牛排、海鮮、沙拉吧價格。帶骨牛小排、肋眼、菲力、雪花等。" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/images/logo-circle-dark.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="buff-page min-h-screen">
+  <header class="buff-header sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="/" class="buff-logo-mark" aria-label="八斧牛排首頁">
+        <span class="buff-logo-emblem"><img src="/images/logo-circle-dark.png" alt="" width="40" height="40" /></span>
+        <span class="buff-logo-text">
+          <span class="buff-logo-cn">八斧牛排</span>
+          <span class="buff-logo-en">BUFF BEEF BUFFET</span>
+        </span>
+      </a>
+      <nav class="flex items-center gap-5">
+        <a href="/menu" class="nav-link active">菜單</a>
+        <a href="/locations" class="nav-link">分店</a>
+        <a href="/gallery" class="nav-link">影像</a>
+        <a href="/story" class="nav-link">故事</a>
+        <a href="/franchise" class="nav-link">加盟</a>
+        <a href="/reserve" class="btn-gold px-5 py-2 text-xs">訂位</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-5 py-12">
+    <p class="text-gold text-xs tracking-[0.3em] mb-2">BUFF MENU</p>
+    <h1 class="font-['Playfair_Display'] text-3xl mb-2">菜單</h1>
+    <p class="text-mist text-sm mb-8">價格單位：新台幣 · 排餐皆含沙拉吧</p>
+
+    <div class="grid sm:grid-cols-2 gap-4 mb-10 gallery-grid max-w-3xl mx-auto">
+      <img src="/images/menu-1.png" alt="八斧牛排菜單 牛排" loading="lazy" />
+      <img src="/images/menu-3.png" alt="八斧牛排菜單 海鮮與沙拉吧" loading="lazy" />
+    </div>
+
+    <h2 class="text-gold text-sm tracking-widest uppercase mb-4">牛排排餐</h2>
+    <div class="grid sm:grid-cols-2 gap-4 mb-12">
+      <div class="menu-card"><div class="flex justify-between gap-2"><div><p class="font-semibold">1. 帶骨牛小排</p><p class="text-xs text-mist">Bone-in Beef Short Ribs · 美國 8.5oz · 熟度 7–10</p><p class="text-xs text-mist mt-1">取自肩胛骨前端，油花分布均勻</p></div><p class="menu-price">580</p></div></div>
+      <div class="menu-card"><div class="flex justify-between gap-2"><div><p class="font-semibold">2. 翼板</p><p class="text-xs text-mist">Chuck Flap · 美國 7.7oz · 熟度 5–7</p><p class="text-xs text-mist mt-1">油花分佈均勻，軟度適中</p></div><p class="menu-price">570</p></div></div>
+      <div class="menu-card"><div class="flex justify-between gap-2"><div><p class="font-semibold">3. 雪花</p><p class="text-xs text-mist">Marbled Steak · 紐西蘭 10oz · 熟度 5–7</p><p class="text-xs text-mist mt-1">油花均勻，肉質鮮嫩</p></div><p class="menu-price">540</p></div></div>
+      <div class="menu-card"><div class="flex justify-between gap-2"><div><p class="font-semibold">4. 菲力牛</p><p class="text-xs text-mist">Filet Mignon · 紐西蘭 6.3oz · 熟度 5–7</p><p class="text-xs text-mist mt-1">肉質鮮嫩，油脂少</p></div><p class="menu-price">530</p></div></div>
+      <div class="menu-card"><div class="flex justify-between gap-2"><div><p class="font-semibold">5. 美國肋眼</p><p class="text-xs text-mist">Rib-eye · 美國 10.5oz · 熟度 5–7</p><p class="text-xs text-mist mt-1">肉質鮮嫩，油花較多</p></div><p class="menu-price">600</p></div></div>
+      <div class="menu-card"><div class="flex justify-between gap-2"><div><p class="font-semibold">6. PS 沙朗</p><p class="text-xs text-mist">PS Sirloin · 紐西蘭 6oz · 熟度 5–7</p><p class="text-xs text-mist mt-1">肉質有咬勁，筋較多</p></div><p class="menu-price">500</p></div></div>
+    </div>
+
+    <h2 class="text-gold text-sm tracking-widest uppercase mb-4">其他排餐</h2>
+    <div class="grid sm:grid-cols-2 gap-4 mb-12">
+      <div class="menu-card"><div class="flex justify-between"><div><p class="font-semibold">7. 梅花豬排</p><p class="text-xs text-mist">丹麥 200g · 油脂均勻</p></div><p class="menu-price">470</p></div></div>
+      <div class="menu-card"><div class="flex justify-between"><div><p class="font-semibold">8. 鮭魚</p><p class="text-xs text-mist">智利 210g · 鮮甜油脂滑順</p></div><p class="menu-price">500</p></div></div>
+      <div class="menu-card"><div class="flex justify-between"><div><p class="font-semibold">9. 扁鱈（大比目魚）</p><p class="text-xs text-mist">格陵蘭 180g · 口感鬆軟</p></div><p class="menu-price">510</p></div></div>
+      <div class="menu-card"><div class="flex justify-between"><div><p class="font-semibold">10. 深海魷魚</p><p class="text-xs text-mist">東南亞 190g · 鮮甜有脆度</p></div><p class="menu-price">490</p></div></div>
+      <div class="menu-card"><div class="flex justify-between"><div><p class="font-semibold">11. 甘貝大蝦</p><p class="text-xs text-mist">蝦 4 隻、甘貝 6 顆 · 東南亞</p></div><p class="menu-price">540</p></div></div>
+      <div class="menu-card"><div class="flex justify-between"><div><p class="font-semibold">12. 特製雞腿</p><p class="text-xs text-mist">台灣 250g</p></div><p class="menu-price">470</p></div></div>
+    </div>
+
+    <h2 class="text-gold text-sm tracking-widest uppercase mb-4">沙拉吧</h2>
+    <div class="menu-card mb-8 max-w-md">
+      <p class="flex justify-between text-sm mb-2"><span>成人</span><span class="text-gold">410</span></p>
+      <p class="flex justify-between text-sm mb-2"><span>兒童 90–119 cm</span><span class="text-gold">190</span></p>
+      <p class="flex justify-between text-sm mb-2"><span>兒童 120–139 cm</span><span class="text-gold">280</span></p>
+      <p class="flex justify-between text-sm"><span>兒童 140 cm 以上</span><span class="text-gold">410</span></p>
+    </div>
+
+    <div class="bg-panel border border-line rounded-xl p-6 text-sm text-mist space-y-2">
+      <p>※ 排餐皆可組合成雙份獨享餐，總價再減 NT$180</p>
+      <p>※ 加蝦 2 隻 NT$120 · 加甘貝 4 顆 NT$160</p>
+      <p>※ 排餐皆含沙拉吧 · 排餐不可外帶 · 用餐皆收一成服務費</p>
+      <p>※ 所有主餐皆為原肉，不使用組合肉或注脂肉</p>
+    </div>
+
+    <div class="text-center mt-10">
+      <a href="/reserve" class="btn-gold px-8 py-3 text-sm">線上訂位</a>
+    </div>
+  </main>
+
+  <footer class="border-t border-line py-8 text-center text-xs text-mist">© 八斧牛排 BUFF STEAK</footer>
+  <script src="/js/site.js"></script>
+</body>
+</html>

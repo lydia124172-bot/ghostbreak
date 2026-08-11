@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>加盟詢問 — 八斧牛排 BUFF STEAK</title>
+  <meta name="description" content="八斧牛排加盟合作詢問。歡迎洽詢品牌加盟與展店資訊。" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/images/logo-circle-dark.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="buff-page min-h-screen">
+  <header class="buff-header sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="/" class="buff-logo-mark" aria-label="八斧牛排首頁">
+        <span class="buff-logo-emblem"><img src="/images/logo-circle-dark.png" alt="" width="40" height="40" /></span>
+        <span class="buff-logo-text">
+          <span class="buff-logo-cn">八斧牛排</span>
+          <span class="buff-logo-en">BUFF BEEF BUFFET</span>
+        </span>
+      </a>
+      <nav class="flex items-center gap-5">
+        <a href="/menu" class="nav-link">菜單</a>
+        <a href="/franchise" class="nav-link active">加盟</a>
+        <a href="/reserve" class="btn-gold px-5 py-2 text-xs">訂位</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-lg mx-auto px-5 py-12">
+    <h1 class="font-['Playfair_Display'] text-3xl mb-2 text-center">加盟合作</h1>
+    <p class="text-mist text-sm text-center mb-8 leading-relaxed">
+      八斧牛排堅持原肉品質與沙拉吧體驗。若您有意在台灣展店，歡迎留下資料，我們將與您聯繫。
+    </p>
+
+    <form id="franchiseForm" class="bg-panel border border-line rounded-2xl p-6 space-y-5">
+      <div>
+        <label class="block text-xs text-mist mb-2">姓名 *</label>
+        <input type="text" id="name" class="form-input" required />
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">手機 *</label>
+        <input type="tel" id="phone" class="form-input" required />
+        <p class="text-[11px] text-mist mt-1">成功後將發送確認簡訊到此手機</p>
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">Email *</label>
+        <input type="email" id="email" class="form-input" required />
+        <p class="text-[11px] text-mist mt-1">成功後將發送確認信到此 Email</p>
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">意向開店區域 *</label>
+        <input type="text" id="city" class="form-input" required placeholder="例如：台北市大安區" />
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">預算範圍</label>
+        <select id="budget" class="form-input">
+          <option value="">請選擇</option>
+          <option>300 萬以下</option>
+          <option>300–500 萬</option>
+          <option>500–800 萬</option>
+          <option>800 萬以上</option>
+          <option>尚未確定</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">餐飲經驗</label>
+        <select id="experience" class="form-input">
+          <option value="">請選擇</option>
+          <option>無餐飲經驗</option>
+          <option>1–3 年</option>
+          <option>3 年以上</option>
+          <option>曾經營自有品牌</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">留言</label>
+        <textarea id="message" class="form-input min-h-[100px]" placeholder="店面狀況、預計時程、其他問題…"></textarea>
+      </div>
+      <button type="submit" id="submitBtn" class="btn-gold w-full py-3 text-sm">送出詢問</button>
+    </form>
+
+    <div id="successBox" class="hidden mt-8 menu-card text-center">
+      <p class="text-gold font-semibold mb-2">已收到您的詢問</p>
+      <p id="successMsg" class="text-sm text-mist"></p>
+      <p id="confirmHint" class="text-xs text-mist mt-3"></p>
+    </div>
+  </main>
+
+  <footer class="border-t border-line py-8 text-center text-xs text-mist">© 八斧牛排 BUFF STEAK</footer>
+  <div id="toast"></div>
+  <script src="/js/site.js"></script>
+  <script>
+    document.getElementById('franchiseForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      try {
+        const data = await postJson('/api/franchise', {
+          name: document.getElementById('name').value,
+          phone: document.getElementById('phone').value,
+          email: document.getElementById('email').value,
+          city: document.getElementById('city').value,
+          budget: document.getElementById('budget').value,
+          experience: document.getElementById('experience').value,
+          message: document.getElementById('message').value,
+        });
+        document.getElementById('franchiseForm').classList.add('hidden');
+        document.getElementById('successBox').classList.remove('hidden');
+        document.getElementById('successMsg').textContent = data.message + (data.id ? `（單號 ${data.id}）` : '');
+
+        const hints = [];
+        if (data.guestConfirmation?.sms) hints.push('確認簡訊已發送至您的手機');
+        if (data.guestConfirmation?.email) hints.push('確認信已發送至您的 Email');
+        document.getElementById('confirmHint').textContent = hints.length
+          ? hints.join('，') + '。'
+          : '我們將盡快與您聯繫。';
+      } catch (err) {
+        showToast(err.message, false);
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

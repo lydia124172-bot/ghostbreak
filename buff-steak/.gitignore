@@ -1,0 +1,5 @@
+# 八斧牛排官網
+node_modules/
+.env
+data/reservations.json
+services/data/reservations.json

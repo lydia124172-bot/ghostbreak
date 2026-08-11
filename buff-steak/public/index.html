@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>八斧牛排 BUFF STEAK — 原肉牛排、沙拉吧無限享用</title>
+  <meta name="description" content="八斧牛排 BUFF STEAK 深坑店、士林店。原肉牛排排餐含沙拉吧，線上訂位。所有主餐皆為原肉，不使用組合肉或注脂肉。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/images/logo-circle-dark.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/images/logo-circle-dark.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="buff-page min-h-screen">
+  <header class="buff-header sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="/" class="buff-logo-mark" aria-label="八斧牛排首頁">
+        <span class="buff-logo-emblem"><img src="/images/logo-circle-dark.png" alt="" width="40" height="40" /></span>
+        <span class="buff-logo-text">
+          <span class="buff-logo-cn">八斧牛排</span>
+          <span class="buff-logo-en">BUFF BEEF BUFFET</span>
+        </span>
+      </a>
+      <button type="button" id="navToggle" class="sm:hidden text-mist text-sm" aria-label="選單">☰</button>
+      <nav id="buffNav" class="buff-nav hidden sm:flex items-center gap-6">
+        <a href="/menu" class="nav-link">菜單</a>
+        <a href="/locations" class="nav-link">分店</a>
+        <a href="/gallery" class="nav-link">影像</a>
+        <a href="/story" class="nav-link">故事</a>
+        <a href="/franchise" class="nav-link">加盟</a>
+        <a href="/reserve" class="btn-gold px-5 py-2 text-xs tracking-wider">線上訂位</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero-bg min-h-[70vh] flex items-center justify-center text-center px-6">
+    <div class="max-w-2xl">
+      <div class="hero-emblem" aria-hidden="true">
+        <img src="/images/logo-circle-dark.png" alt="" width="104" height="104" />
+      </div>
+      <h1 class="font-['Playfair_Display'] text-4xl md:text-5xl mb-4 leading-tight">八斧牛排</h1>
+      <p class="text-[#c9c0b5] text-base md:text-lg mb-8 leading-relaxed">
+        原肉現切 · 排餐含沙拉吧 · 深坑 & 士林兩間分店
+      </p>
+      <div class="flex flex-wrap justify-center gap-3">
+        <a href="/reserve" class="btn-gold px-8 py-3 text-sm">線上訂位</a>
+        <a href="/menu" class="btn-outline px-8 py-3 text-sm">查看菜單</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-16 px-6 border-t border-line">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="font-['Playfair_Display'] text-2xl text-center mb-2">兩間分店</h2>
+      <p class="text-center text-mist text-sm mb-10">歡迎預約訂位，建議提前線上登記</p>
+      <div class="grid md:grid-cols-2 gap-6">
+        <article class="menu-card">
+          <h3 class="text-gold font-semibold text-lg mb-2">八斧深坑店</h3>
+          <p class="text-sm text-mist mb-1">新北市深坑區北深路三段172號</p>
+          <a href="tel:+886226640921" class="text-gold-light text-sm">02-2664-0921</a>
+          <div class="mt-4 flex gap-3">
+            <a href="/reserve?location=shenkeng" class="btn-gold px-5 py-2 text-xs">訂位</a>
+            <a href="/locations#shenkeng" class="btn-outline px-5 py-2 text-xs">地圖</a>
+          </div>
+        </article>
+        <article class="menu-card">
+          <h3 class="text-gold font-semibold text-lg mb-2">八斧士林店</h3>
+          <p class="text-sm text-mist mb-1">台北市士林區大東路124號</p>
+          <a href="tel:+886228836666" class="text-gold-light text-sm">02-2883-6666</a>
+          <div class="mt-4 flex gap-3">
+            <a href="/reserve?location=shilin" class="btn-gold px-5 py-2 text-xs">訂位</a>
+            <a href="/locations#shilin" class="btn-outline px-5 py-2 text-xs">地圖</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-16 px-6 bg-panel border-t border-line">
+    <div class="max-w-5xl mx-auto text-center">
+      <h2 class="font-['Playfair_Display'] text-2xl mb-6">品牌承諾</h2>
+      <ul class="grid sm:grid-cols-2 gap-3 text-sm text-mist max-w-2xl mx-auto">
+        <li>✦ 所有主餐皆為原肉，不使用組合肉或注脂肉</li>
+        <li>✦ 排餐皆含沙拉吧</li>
+        <li>✦ 排餐不可外帶</li>
+        <li>✦ 用餐皆收一成服務費</li>
+      </ul>
+      <a href="/menu" class="inline-block mt-8 text-gold text-sm tracking-wider hover:text-white transition">完整菜單 →</a>
+    </div>
+  </section>
+
+  <section class="py-16 px-6 border-t border-line">
+    <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
+      <a href="/story" class="menu-card block hover:border-gold/40 transition group">
+        <h2 class="font-['Playfair_Display'] text-xl mb-2 group-hover:text-gold">八斧的起源</h2>
+        <p class="text-mist text-sm">原肉堅持、沙拉吧體驗，從深坑到士林的故事。</p>
+        <span class="text-gold text-xs mt-4 inline-block">閱讀故事 →</span>
+      </a>
+      <a href="/gallery" class="menu-card block hover:border-gold/40 transition group">
+        <h2 class="font-['Playfair_Display'] text-xl mb-2 group-hover:text-gold">照片與影片</h2>
+        <p class="text-mist text-sm">店內環境、料理實拍，YouTube 影片嵌入。</p>
+        <span class="text-gold text-xs mt-4 inline-block">瀏覽影像 →</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="py-16 px-6 border-t border-line">
+    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 bg-panel border border-line rounded-2xl p-8">
+      <div>
+        <h2 class="font-['Playfair_Display'] text-xl mb-2">加盟合作</h2>
+        <p class="text-mist text-sm">歡迎洽詢八斧牛排加盟，與我們一起推廣原肉牛排文化。</p>
+      </div>
+      <a href="/franchise" class="btn-outline px-8 py-3 text-sm shrink-0">加盟詢問</a>
+    </div>
+  </section>
+
+  <footer class="border-t border-line py-10 text-center text-xs text-mist">
+    <div class="buff-footer-brand">
+      <div class="buff-logo-emblem buff-logo-emblem--footer mx-auto">
+        <img src="/images/logo-circle-dark.png" alt="" width="36" height="36" />
+      </div>
+      <p class="buff-footer-wordmark mt-3">八斧牛排</p>
+      <p class="buff-footer-sub">BUFF BEEF BUFFET</p>
+    </div>
+    <p class="mt-4">深坑店 02-2664-0921 · 士林店 02-2883-6666</p>
+    <p class="mt-2 opacity-60">© 八斧牛排 BUFF STEAK</p>
+  </footer>
+
+  <div id="toast"></div>
+  <script src="/js/site.js"></script>
+</body>
+</html>

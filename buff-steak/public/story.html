@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>八斧的起源 — BUFF STEAK</title>
+  <meta name="description" content="八斧牛排品牌故事：原肉堅持、沙拉吧體驗，深坑店與士林店。" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/images/logo-circle-dark.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="buff-page min-h-screen">
+  <header class="buff-header sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="/" class="buff-logo-mark" aria-label="八斧牛排首頁">
+        <span class="buff-logo-emblem"><img src="/images/logo-circle-dark.png" alt="" width="40" height="40" /></span>
+        <span class="buff-logo-text">
+          <span class="buff-logo-cn">八斧牛排</span>
+          <span class="buff-logo-en">BUFF BEEF BUFFET</span>
+        </span>
+      </a>
+      <nav class="flex flex-wrap items-center gap-4 sm:gap-5">
+        <a href="/menu" class="nav-link">菜單</a>
+        <a href="/locations" class="nav-link">分店</a>
+        <a href="/gallery" class="nav-link">影像</a>
+        <a href="/story" class="nav-link active">故事</a>
+        <a href="/franchise" class="nav-link">加盟</a>
+        <a href="/reserve" class="btn-gold px-5 py-2 text-xs">訂位</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-5 py-12">
+    <p id="storySubtitle" class="text-gold text-xs tracking-[0.35em] text-center mb-3"></p>
+    <h1 id="storyTitle" class="font-['Playfair_Display'] text-3xl md:text-4xl text-center mb-6">八斧的起源</h1>
+    <p id="storyLead" class="text-mist text-base text-center leading-relaxed mb-12 border-b border-line pb-10"></p>
+
+    <article id="storyContent" class="prose-story"></article>
+
+    <div class="mt-12 flex flex-wrap justify-center gap-3">
+      <a href="/gallery" class="btn-outline px-6 py-2 text-sm">看照片與影片</a>
+      <a href="/menu" class="btn-outline px-6 py-2 text-sm">查看菜單</a>
+      <a href="/reserve" class="btn-gold px-6 py-2 text-sm">線上訂位</a>
+    </div>
+
+    <p class="text-[11px] text-mist text-center mt-10">
+      品牌故事可在 <code class="bg-black/30 px-1 rounded">public/data/story.json</code> 修改文字。
+    </p>
+  </main>
+
+  <footer class="border-t border-line py-8 text-center text-xs text-mist">© 八斧牛排 BUFF STEAK</footer>
+  <script src="/js/site.js"></script>
+  <script src="/js/story-page.js"></script>
+</body>
+</html>

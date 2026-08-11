@@ -1,0 +1,49 @@
+# 八斧牛排 — Render 部署（steak.bafuholdings.com）
+# 在 Render Dashboard → New → Blueprint，或手動建立 Web Service
+
+services:
+  - type: web
+    name: buff-steak
+    runtime: node
+    rootDir: buff-steak
+    plan: starter
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: buff-steak-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BASE_URL
+        value: https://steak.bafuholdings.com
+      - key: DATA_DIR
+        value: /var/data
+      - key: SMS_TEST_MODE
+        value: "false"
+      - key: TWILIO_TRIAL_MODE
+        value: "false"
+      - key: RESEND_FROM
+        value: "八斧牛排 <noreply@bafuholdings.com>"
+      - key: RESTAURANT_EMAIL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
+      - key: SHENKENG_MANAGER_PHONE
+        sync: false
+      - key: SHILIN_MANAGER_PHONE
+        sync: false
+      - key: RESERVE_NOTIFY_PHONES
+        sync: false
+      - key: FRANCHISE_NOTIFY_PHONE
+        sync: false

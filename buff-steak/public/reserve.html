@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>線上訂位 — 八斧牛排</title>
+  <meta name="description" content="八斧牛排深坑店、士林店線上訂位。選擇分店、日期、時間與人數。" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/images/logo-circle-dark.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="buff-page min-h-screen">
+  <header class="buff-header sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="/" class="buff-logo-mark" aria-label="八斧牛排首頁">
+        <span class="buff-logo-emblem"><img src="/images/logo-circle-dark.png" alt="" width="40" height="40" /></span>
+        <span class="buff-logo-text">
+          <span class="buff-logo-cn">八斧牛排</span>
+          <span class="buff-logo-en">BUFF BEEF BUFFET</span>
+        </span>
+      </a>
+      <nav class="flex items-center gap-5">
+        <a href="/menu" class="nav-link">菜單</a>
+        <a href="/locations" class="nav-link">分店</a>
+        <a href="/reserve" class="nav-link active">訂位</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-lg mx-auto px-5 py-12">
+    <h1 class="font-['Playfair_Display'] text-3xl mb-2 text-center">線上訂位</h1>
+    <p class="text-mist text-sm text-center mb-2">送出後我們將電話與您確認座位</p>
+    <p class="text-mist text-xs text-center mb-8" id="slotIntro">中午 11:00／12:30 · 晚上 17:00／18:30 · 平日 2 小時 · 假日 1.5 小時</p>
+
+    <form id="reserveForm" class="bg-panel border border-line rounded-2xl p-6 space-y-5">
+      <div>
+        <label class="block text-xs text-mist mb-2 uppercase tracking-wider">分店 *</label>
+        <select id="locationId" class="form-input" required>
+          <option value="">請選擇</option>
+          <option value="shenkeng">八斧深坑店</option>
+          <option value="shilin">八斧士林店</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-mist mb-2">日期 *</label>
+          <input type="date" id="date" class="form-input" required />
+        </div>
+        <div>
+          <label class="block text-xs text-mist mb-2">訂位時段 *</label>
+          <select id="time" class="form-input" required>
+            <option value="">請先選分店與日期</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">人數 *</label>
+        <input type="number" id="guests" class="form-input" min="1" max="20" value="2" required />
+        <p id="capacityHint" class="text-[11px] text-mist mt-2 hidden"></p>
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">姓名 *</label>
+        <input type="text" id="name" class="form-input" required placeholder="王大明" />
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">手機 *</label>
+        <input type="tel" id="phone" class="form-input" required placeholder="09xx xxx xxx" />
+        <p class="text-[11px] text-mist mt-1">成功後將發送確認簡訊到此手機</p>
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">Email（選填）</label>
+        <input type="email" id="email" class="form-input" placeholder="you@email.com" />
+        <p class="text-[11px] text-mist mt-1">填寫 Email 可額外收到確認信</p>
+      </div>
+      <div>
+        <label class="block text-xs text-mist mb-2">備註</label>
+        <textarea id="notes" class="form-input min-h-[80px]" placeholder="兒童椅、慶生、特殊需求…"></textarea>
+      </div>
+      <button type="submit" id="submitBtn" class="btn-gold w-full py-3 text-sm tracking-wider">送出訂位</button>
+      <p class="text-[11px] text-mist text-center">亦可直接致電分店訂位</p>
+    </form>
+
+    <div id="successBox" class="hidden mt-8 menu-card text-center">
+      <p class="text-gold font-semibold mb-2">訂位已送出</p>
+      <p id="successMsg" class="text-sm text-mist"></p>
+      <p id="confirmHint" class="text-xs text-mist mt-3"></p>
+    </div>
+  </main>
+
+  <footer class="border-t border-line py-8 text-center text-xs text-mist">© 八斧牛排</footer>
+  <div id="toast"></div>
+  <script src="/js/site.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const loc = params.get('location');
+    if (loc) document.getElementById('locationId').value = loc;
+
+    const dateInput = document.getElementById('date');
+    const today = new Date().toISOString().slice(0, 10);
+    dateInput.min = today;
+
+    const locationSelect = document.getElementById('locationId');
+    const timeSelect = document.getElementById('time');
+    const guestsInput = document.getElementById('guests');
+    const capacityHint = document.getElementById('capacityHint');
+    const submitBtn = document.getElementById('submitBtn');
+
+    let siteConfig = null;
+    let daySlots = [];
+
+    function buildTimeOptions() {
+      if (!siteConfig) return;
+      const locationId = locationSelect.value;
+      const date = dateInput.value;
+
+      if (!locationId || !date) {
+        timeSelect.innerHTML = '<option value="">請先選分店與日期</option>';
+        capacityHint.classList.add('hidden');
+        submitBtn.disabled = false;
+        return;
+      }
+
+      let html = '<option value="">請選擇時段</option>';
+      siteConfig.timeSlotGroups.forEach((group) => {
+        html += `<optgroup label="${group.label}">`;
+        group.slots.forEach((slot) => {
+          const info = daySlots.find((s) => s.time === slot);
+          const label = info && info.remaining <= 0
+            ? `${slot}（已滿）`
+            : info
+              ? `${slot}（尚可 ${info.remaining} 人）`
+              : slot;
+          const disabled = info && info.remaining <= 0 ? ' disabled class="slot-full"' : '';
+          html += `<option value="${slot}"${disabled}>${label}</option>`;
+        });
+        html += '</optgroup>';
+      });
+      timeSelect.innerHTML = html;
+      updateCapacityHint();
+    }
+
+    async function loadDaySlots() {
+      const locationId = locationSelect.value;
+      const date = dateInput.value;
+      if (!locationId || !date) {
+        daySlots = [];
+        buildTimeOptions();
+        return;
+      }
+      try {
+        const res = await fetch(`/api/reserve/day-availability?locationId=${encodeURIComponent(locationId)}&date=${encodeURIComponent(date)}`);
+        const data = await res.json();
+        daySlots = data.slots || [];
+      } catch {
+        daySlots = [];
+      }
+      buildTimeOptions();
+    }
+
+    async function updateCapacityHint() {
+      const locationId = locationSelect.value;
+      const date = dateInput.value;
+      const time = timeSelect.value;
+
+      capacityHint.classList.remove('capacity-hint-full');
+
+      if (!locationId || !date || !time) {
+        capacityHint.classList.add('hidden');
+        guestsInput.max = 20;
+        submitBtn.disabled = false;
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/reserve/availability?locationId=${encodeURIComponent(locationId)}&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '無法查詢剩餘座位');
+
+        if (data.remaining <= 0) {
+          capacityHint.textContent = '此訂位時段已滿，請選擇其他時段，或直接致電分店訂位。';
+          capacityHint.classList.remove('hidden');
+          capacityHint.classList.add('capacity-hint-full');
+          guestsInput.max = 1;
+          submitBtn.disabled = true;
+          return;
+        }
+
+        const maxGuests = Math.min(20, data.remaining);
+        guestsInput.max = maxGuests;
+        if (Number(guestsInput.value) > maxGuests) guestsInput.value = maxGuests;
+        capacityHint.textContent = `尚可接受 ${data.remaining} 人（共 ${data.capacity} 位 · ${data.diningLabel}）`;
+        capacityHint.classList.remove('hidden');
+        submitBtn.disabled = false;
+      } catch (err) {
+        capacityHint.textContent = err.message;
+        capacityHint.classList.remove('hidden');
+        submitBtn.disabled = false;
+      }
+    }
+
+    fetch('/api/config').then((r) => r.json()).then((config) => {
+      siteConfig = config;
+      loadDaySlots();
+    }).catch(() => {});
+
+    locationSelect.addEventListener('change', loadDaySlots);
+    dateInput.addEventListener('change', loadDaySlots);
+    timeSelect.addEventListener('change', updateCapacityHint);
+    guestsInput.addEventListener('change', updateCapacityHint);
+
+    document.getElementById('reserveForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = '送出中…';
+      try {
+        const data = await postJson('/api/reserve', {
+          locationId: locationSelect.value,
+          date: dateInput.value,
+          time: timeSelect.value,
+          guests: guestsInput.value,
+          name: document.getElementById('name').value,
+          phone: document.getElementById('phone').value,
+          email: document.getElementById('email').value,
+          notes: document.getElementById('notes').value,
+        });
+        document.getElementById('reserveForm').classList.add('hidden');
+        document.getElementById('successBox').classList.remove('hidden');
+        document.getElementById('successMsg').textContent = data.message + (data.id ? `（單號 ${data.id}）` : '');
+
+        const hints = [];
+        if (data.guestConfirmation?.sms) hints.push('確認簡訊已發送至您的手機');
+        if (data.guestConfirmation?.email) hints.push('確認信已發送至您的 Email');
+        document.getElementById('confirmHint').textContent = hints.length
+          ? hints.join('，') + '。'
+          : '請留意手機來電，我們將與您確認座位。';
+      } catch (err) {
+        showToast(err.message, false);
+        if (err.message.includes('已滿') || err.message.includes('僅剩')) {
+          loadDaySlots();
+        }
+        btn.disabled = false;
+        btn.textContent = '送出訂位';
+      }
+    });
+  </script>
+</body>
+</html>

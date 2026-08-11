@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>照片與影片 — 八斧牛排</title>
+  <meta name="description" content="八斧牛排店內照片與影片。原肉牛排、沙拉吧、用餐環境。" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/images/logo-circle-dark.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="buff-page min-h-screen">
+  <header class="buff-header sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="/" class="buff-logo-mark" aria-label="八斧牛排首頁">
+        <span class="buff-logo-emblem"><img src="/images/logo-circle-dark.png" alt="" width="40" height="40" /></span>
+        <span class="buff-logo-text">
+          <span class="buff-logo-cn">八斧牛排</span>
+          <span class="buff-logo-en">BUFF BEEF BUFFET</span>
+        </span>
+      </a>
+      <nav class="flex flex-wrap items-center gap-4 sm:gap-5">
+        <a href="/menu" class="nav-link">菜單</a>
+        <a href="/locations" class="nav-link">分店</a>
+        <a href="/gallery" class="nav-link active">影像</a>
+        <a href="/story" class="nav-link">故事</a>
+        <a href="/franchise" class="nav-link">加盟</a>
+        <a href="/reserve" class="btn-gold px-5 py-2 text-xs">訂位</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-5 py-12">
+    <p class="text-gold text-xs tracking-[0.3em] text-center mb-2">GALLERY</p>
+    <h1 class="font-['Playfair_Display'] text-3xl mb-2 text-center">照片與影片</h1>
+    <p class="text-mist text-sm text-center mb-12 max-w-xl mx-auto">
+      店內環境、料理與氛圍。影片支援 YouTube / Shorts / Vimeo 連結嵌入。
+    </p>
+
+    <section class="mb-14">
+      <h2 class="text-sm tracking-widest uppercase text-gold mb-6">照片</h2>
+      <div id="photoGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 gallery-grid"></div>
+    </section>
+
+    <section class="mb-14">
+      <h2 class="text-sm tracking-widest uppercase text-gold mb-6">影片</h2>
+      <div id="videoGrid" class="grid md:grid-cols-2 gap-6"></div>
+    </section>
+
+    <aside class="menu-card text-sm text-mist leading-relaxed">
+      <p class="text-gold font-medium mb-3">如何新增內容？</p>
+      <p class="mb-2"><strong class="text-zinc-300">照片：</strong>把圖片放到 <code class="text-xs bg-black/40 px-1 rounded">public/images/gallery/</code>，再編輯 <code class="text-xs bg-black/40 px-1 rounded">public/data/gallery.json</code> 的 photos 清單。</p>
+      <p><strong class="text-zinc-300">影片：</strong>在 <code class="text-xs bg-black/40 px-1 rounded">gallery.json</code> 的 videos 陣列貼上 YouTube 連結即可自動嵌入。</p>
+    </aside>
+
+    <div class="text-center mt-10">
+      <a href="/story" class="btn-outline px-6 py-2 text-sm mr-3">閱讀八斧起源</a>
+      <a href="/reserve" class="btn-gold px-6 py-2 text-sm">線上訂位</a>
+    </div>
+  </main>
+
+  <footer class="border-t border-line py-8 text-center text-xs text-mist">© 八斧牛排 BUFF STEAK</footer>
+  <script src="/js/site.js"></script>
+  <script src="/js/media-embed.js"></script>
+  <script src="/js/gallery-page.js"></script>
+</body>
+</html>

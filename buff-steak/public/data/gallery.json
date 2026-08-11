@@ -1,0 +1,17 @@
+{
+  "photos": [
+    {
+      "src": "/images/menu-1.png",
+      "caption": "原肉牛排排餐"
+    },
+    {
+      "src": "/images/menu-3.png",
+      "caption": "海鮮排餐與沙拉吧"
+    }
+  ],
+  "videos": [],
+  "_help": {
+    "photos": "把照片檔放到 public/images/gallery/，在此新增 { \"src\": \"/images/gallery/檔名.jpg\", \"caption\": \"說明\" }",
+    "videos": "支援 YouTube / YouTube Shorts / Vimeo 連結，貼在 url 欄位即可"
+  }
+}
