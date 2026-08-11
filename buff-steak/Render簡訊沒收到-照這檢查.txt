@@ -1,0 +1,43 @@
+Render 簡訊沒收到 — 請檢查 Environment
+
+官網 Email 有收到、簡訊沒收到，通常是 Render 少填 Twilio 或店長手機。
+
+打開 Render → buff-steak → Environment，確認「每一項都有」：
+
+TWILIO_ACCOUNT_SID=（從本機 buff-steak\.env 複製，re_ 開頭的是 Resend 不是這個）
+TWILIO_AUTH_TOKEN=（從本機 .env 複製）
+TWILIO_FROM_NUMBER=（從本機 .env 複製，例如 +12315997788）
+TWILIO_TRIAL_MODE=false
+SMS_TEST_MODE=false
+
+SHENKENG_MANAGER_PHONE=0903593595,0916893857
+SHILIN_MANAGER_PHONE=0911969178
+RESERVE_NOTIFY_PHONES=0970205800
+FRANCHISE_NOTIFY_PHONE=0970205800
+
+RESTAURANT_EMAIL=lydia3530@gmail.com
+RESEND_API_KEY=（已有）
+RESEND_FROM=BUFF STEAK <noreply@bafuholdings.com>
+
+填完點 Save Changes，等重新部署 Live。
+
+=== 檢查是否設定正確 ===
+瀏覽器打開：
+https://steak.bafuholdings.com/api/health
+
+應看到類似：
+  "sms": true
+  "smsTestMode": false
+  "twilioFromSuffix": "7788"（你的號碼末四碼）
+  "locations": 每店 notifyCount 應是 3 或 2（不是 0）
+
+若 sms 是 false → Twilio 三項沒填完整
+若 notifyCount 是 0 → 店長手機沒填
+
+=== 看錯誤日誌 ===
+Render → buff-steak → Logs
+送一筆訂位後搜尋：[SMS] 發送失敗
+
+=== 本機測試 ===
+雙擊：檢查簡訊設定.bat
+雙擊：測試通知.bat（會發簡訊到 0970205800）

@@ -245,4 +245,5 @@ module.exports = {
   getMaxLength,
   isTrialMode,
   isSmsTestMode,
+  getFromNumber,
 };

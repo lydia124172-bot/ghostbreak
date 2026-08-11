@@ -20,6 +20,7 @@ const {
   getReservationNotifyPhones,
   getFranchiseNotifyPhone,
   isSmsTestMode,
+  getFromNumber,
 } = require('./services/sms');
 const {
   getAvailability,
@@ -60,11 +61,21 @@ async function safeSendMail(opts) {
 }
 
 app.get('/api/health', (_req, res) => {
+  const locs = site.locations.map((loc) => ({
+    id: loc.id,
+    name: loc.name,
+    notifyCount: getReservationNotifyPhones(loc).length,
+  }));
+  const from = getFromNumber();
   res.json({
     ok: true,
     service: 'buff-steak',
     mail: mailConfigured(),
     sms: smsConfigured(),
+    smsTestMode: isSmsTestMode(),
+    twilioFromSuffix: from ? from.slice(-4) : null,
+    franchiseNotify: getFranchiseNotifyPhone() || null,
+    locations: locs,
   });
 });
 
