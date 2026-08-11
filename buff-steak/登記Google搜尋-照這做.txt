@@ -1,0 +1,28 @@
+八斧牛排 — 讓 Google 搜尋到官網
+
+=== 第一步：Google Search Console ===
+1. 打開 https://search.google.com/search-console
+2. 登入 Google 帳號
+3. 左上角「新增資源」→ 選「網址前置字元」
+4. 填：https://steak.bafuholdings.com
+5. 驗證網站（建議用 DNS 驗證）：
+   - Cloudflare → bafuholdings.com → DNS
+   - 新增 TXT 記錄（Search Console 會給你內容）
+   - 回到 Search Console 點「驗證」
+
+=== 第二步：提交 Sitemap ===
+1. Search Console 左邊點「Sitemap」
+2. 新增 Sitemap，填：sitemap.xml
+3. 送出
+
+完整網址是：
+https://steak.bafuholdings.com/sitemap.xml
+
+=== 第三步：Google 商家（地圖）===
+1. 打開 https://business.google.com
+2. 找到八斧深坑店、八斧士林店
+3. 官網欄位填：https://steak.bafuholdings.com
+
+=== 要等多久？===
+提交後通常 3～14 天才會在 Google 搜尋看到官網。
+搜「八斧牛排」時，官網會慢慢出現。

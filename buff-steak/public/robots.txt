@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://steak.bafuholdings.com/sitemap.xml
