@@ -8,9 +8,29 @@ function env(key, fallback = '') {
 }
 
 const RESTAURANT_EMAIL = env('RESTAURANT_EMAIL');
-const RESEND_API_KEY = env('RESEND_API_KEY');
+const RESEND_API_KEY = getResendApiKey();
 let resendClient = null;
 let smtpTransport = null;
+
+/** Resend API key 只能是 ASCII（re_ 開頭）；含中文會讓 Node fetch 崩潰 */
+function getResendApiKey() {
+  const raw = env('RESEND_API_KEY');
+  if (!raw) return '';
+  if (/^re_[A-Za-z0-9_]+$/.test(raw)) return raw;
+  console.error(
+    '[Mail] RESEND_API_KEY 格式錯誤：應只有 re_ 開頭的英文 key，勿貼 RESEND_FROM 或中文'
+  );
+  return '';
+}
+
+function getMailFrom() {
+  const raw = env('RESEND_FROM') || env('EMAIL_FROM');
+  if (raw && /^[\x00-\x7F]+$/.test(raw)) return raw;
+  if (raw) {
+    console.warn('[Mail] RESEND_FROM 含非 ASCII，改用英文寄件名');
+  }
+  return 'BUFF STEAK <noreply@bafuholdings.com>';
+}
 
 function resendReady() {
   return Boolean(RESEND_API_KEY);
@@ -22,7 +42,12 @@ function smtpReady() {
 
 async function initMail() {
   if (resendReady()) {
-    resendClient = new Resend(RESEND_API_KEY);
+    try {
+      resendClient = new Resend(RESEND_API_KEY);
+    } catch (err) {
+      console.error('[Mail] Resend 初始化失敗', err.message);
+      resendClient = null;
+    }
     return;
   }
   if (smtpReady()) {
@@ -36,7 +61,7 @@ async function initMail() {
 }
 
 async function sendMail({ to, subject, text, html }) {
-  const from = env('RESEND_FROM') || env('EMAIL_FROM') || '八斧牛排 <onboarding@resend.dev>';
+  const from = getMailFrom();
   if (!to) throw new Error('Missing recipient email.');
 
   if (resendClient) {
