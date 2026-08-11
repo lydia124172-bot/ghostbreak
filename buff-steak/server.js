@@ -335,8 +335,23 @@ function sendPublicText(res, file, contentType) {
   res.type(contentType).send(fs.readFileSync(filePath, 'utf8'));
 }
 
-app.get('/robots.txt', (_req, res) => sendPublicText(res, 'robots.txt', 'text/plain'));
-app.get('/sitemap.xml', (_req, res) => sendPublicText(res, 'sitemap.xml', 'application/xml'));
+function buildSitemapXml() {
+  const lastmod = '2026-08-11';
+  const paths = ['/', '/menu', '/reserve', '/locations', '/gallery', '/story', '/franchise'];
+  const priorities = { '/': '1.0', '/menu': '0.9', '/reserve': '0.95', '/locations': '0.9', '/gallery': '0.7', '/story': '0.7', '/franchise': '0.6' };
+  const urls = paths.map((p) => {
+    const loc = p === '/' ? `${BASE_URL}/` : `${BASE_URL}${p}`;
+    return `<url><loc>${loc}</loc><lastmod>${lastmod}</lastmod><priority>${priorities[p] || '0.5'}</priority></url>`;
+  }).join('');
+  return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`;
+}
+
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain').send(`User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`);
+});
+app.get('/sitemap.xml', (_req, res) => {
+  res.type('application/xml').send(buildSitemapXml());
+});
 
 app.get('/', (_req, res) => sendPage(res, 'index.html'));
 HTML_PAGES.forEach((page) => {
