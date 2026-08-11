@@ -329,8 +329,14 @@ function sendPage(res, file) {
   res.sendFile(file, { root: PUBLIC });
 }
 
-app.get('/robots.txt', (_req, res) => res.sendFile('robots.txt', { root: PUBLIC }));
-app.get('/sitemap.xml', (_req, res) => res.sendFile('sitemap.xml', { root: PUBLIC }));
+function sendPublicText(res, file, contentType) {
+  const filePath = path.join(PUBLIC, file);
+  if (!fs.existsSync(filePath)) return res.status(404).send('Not found');
+  res.type(contentType).send(fs.readFileSync(filePath, 'utf8'));
+}
+
+app.get('/robots.txt', (_req, res) => sendPublicText(res, 'robots.txt', 'text/plain'));
+app.get('/sitemap.xml', (_req, res) => sendPublicText(res, 'sitemap.xml', 'application/xml'));
 
 app.get('/', (_req, res) => sendPage(res, 'index.html'));
 HTML_PAGES.forEach((page) => {
