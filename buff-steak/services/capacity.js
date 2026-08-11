@@ -1,6 +1,7 @@
 const { loadReservations } = require('./mail');
 const site = require('../data/site');
 const { isHolidayDate, getHolidayReason } = require('./holidays');
+const { isLocationClosed, getClosedMessage } = require('./store-hours');
 
 const WEEKDAY_MINUTES = 120;
 const HOLIDAY_MINUTES = 90;
@@ -114,6 +115,26 @@ function maxAddableGuests(loc, date, time) {
 }
 
 function getAvailability(loc, date, time) {
+  if (isLocationClosed(loc, date)) {
+    const capacity = getLocationCapacity(loc);
+    return {
+      locationId: loc.id,
+      locationName: loc.name,
+      date,
+      time,
+      capacity,
+      booked: 0,
+      remaining: 0,
+      available: false,
+      closed: true,
+      closedMessage: getClosedMessage(loc, date),
+      diningMinutes: getDiningDurationMinutes(date),
+      diningLabel: getDiningLabel(date),
+      holidayReason: getHolidayReason(date),
+      isHoliday: isHolidayDateForDining(date),
+    };
+  }
+
   const capacity = getLocationCapacity(loc);
   const existing = buildWindows(loadReservations(), loc.id, date);
   const start = parseTime(time);
@@ -139,6 +160,14 @@ function getAvailability(loc, date, time) {
 }
 
 function checkReservationCapacity(loc, date, time, guests) {
+  if (isLocationClosed(loc, date)) {
+    return {
+      ok: false,
+      message: getClosedMessage(loc, date),
+      code: 'STORE_CLOSED',
+    };
+  }
+
   const capacity = getLocationCapacity(loc);
   if (!capacity) return { ok: true };
 
@@ -172,6 +201,19 @@ function checkReservationCapacity(loc, date, time, guests) {
 
 function getDayAvailability(loc, date) {
   const site = require('../data/site');
+  if (isLocationClosed(loc, date)) {
+    const msg = getClosedMessage(loc, date);
+    return site.timeSlots.map((time) => ({
+      time,
+      capacity: getLocationCapacity(loc),
+      booked: 0,
+      remaining: 0,
+      available: false,
+      closed: true,
+      closedMessage: msg,
+      diningLabel: getDiningLabel(date),
+    }));
+  }
   return site.timeSlots.map((time) => {
     const info = getAvailability(loc, date, time);
     return {

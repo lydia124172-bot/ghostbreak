@@ -153,6 +153,17 @@
         const res = await fetch(`/api/reserve/day-availability?locationId=${encodeURIComponent(locationId)}&date=${encodeURIComponent(date)}`);
         const data = await res.json();
         daySlots = data.slots || [];
+        if (data.closed) {
+          capacityHint.textContent = data.closedMessage || '此日公休，請選擇其他日期。';
+          capacityHint.classList.remove('hidden');
+          capacityHint.classList.add('capacity-hint-full');
+          submitBtn.disabled = true;
+          timeSelect.innerHTML = '<option value="">此日公休</option>';
+          return;
+        }
+        capacityHint.classList.add('hidden');
+        capacityHint.classList.remove('capacity-hint-full');
+        submitBtn.disabled = false;
       } catch {
         daySlots = [];
       }
@@ -178,8 +189,8 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || '無法查詢剩餘座位');
 
-        if (data.remaining <= 0) {
-          capacityHint.textContent = '此訂位時段已滿，請選擇其他時段，或直接致電分店訂位。';
+        if (data.closed || data.remaining <= 0) {
+          capacityHint.textContent = data.closedMessage || '此訂位時段已滿，請選擇其他時段，或直接致電分店訂位。';
           capacityHint.classList.remove('hidden');
           capacityHint.classList.add('capacity-hint-full');
           guestsInput.max = 1;

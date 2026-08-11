@@ -27,6 +27,7 @@ const {
   getDayAvailability,
   checkReservationCapacity,
 } = require('./services/capacity');
+const { getLocationClosedInfo } = require('./services/store-hours');
 
 const PORT = process.env.PORT || 3001;
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
@@ -121,10 +122,15 @@ app.get('/api/reserve/day-availability', (req, res) => {
   if (!loc) return res.status(400).json({ error: '請選擇分店' });
   if (!date) return res.status(400).json({ error: '請選擇日期' });
 
+  const closedInfo = getLocationClosedInfo(loc, date);
+  const slots = getDayAvailability(loc, date);
+
   res.json({
     locationId: loc.id,
     date,
-    slots: getDayAvailability(loc, date),
+    closed: closedInfo.closed,
+    closedMessage: closedInfo.message,
+    slots,
   });
 });
 
