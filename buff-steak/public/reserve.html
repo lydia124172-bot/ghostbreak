@@ -39,9 +39,10 @@
         <label class="block text-xs text-mist mb-2 uppercase tracking-wider">分店 *</label>
         <select id="locationId" class="form-input" required>
           <option value="">請選擇</option>
-          <option value="shenkeng">八斧深坑店</option>
-          <option value="shilin">八斧士林店</option>
+          <option value="shenkeng">八斧深坑店（每週三公休）</option>
+          <option value="shilin">八斧士林店（每週一、二公休）</option>
         </select>
+        <p id="restHint" class="text-[11px] text-mist mt-2 hidden"></p>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
@@ -105,10 +106,35 @@
     const timeSelect = document.getElementById('time');
     const guestsInput = document.getElementById('guests');
     const capacityHint = document.getElementById('capacityHint');
+    const restHint = document.getElementById('restHint');
     const submitBtn = document.getElementById('submitBtn');
 
     let siteConfig = null;
     let daySlots = [];
+    let dayClosed = false;
+
+    function getLocationConfig(locationId) {
+      return siteConfig?.locations?.find((l) => l.id === locationId);
+    }
+
+    function isDateClosedForLocation(locationId, dateStr) {
+      const loc = getLocationConfig(locationId);
+      if (!loc?.closedWeekdays?.length || !dateStr) return false;
+      const weekday = new Date(`${dateStr}T12:00:00`).getDay();
+      return loc.closedWeekdays.includes(weekday);
+    }
+
+    function updateRestHint() {
+      const loc = getLocationConfig(locationSelect.value);
+      if (!loc) {
+        restHint.classList.add('hidden');
+        restHint.textContent = '';
+        return;
+      }
+      const note = loc.hours?.find((h) => h.includes('公休')) || '';
+      restHint.textContent = note ? `※ ${note}，公休日無法線上訂位` : '';
+      restHint.classList.toggle('hidden', !note);
+    }
 
     function buildTimeOptions() {
       if (!siteConfig) return;
@@ -153,6 +179,7 @@
         const res = await fetch(`/api/reserve/day-availability?locationId=${encodeURIComponent(locationId)}&date=${encodeURIComponent(date)}`);
         const data = await res.json();
         daySlots = data.slots || [];
+        dayClosed = Boolean(data.closed);
         if (data.closed) {
           capacityHint.textContent = data.closedMessage || '此日公休，請選擇其他日期。';
           capacityHint.classList.remove('hidden');
@@ -164,6 +191,7 @@
         capacityHint.classList.add('hidden');
         capacityHint.classList.remove('capacity-hint-full');
         submitBtn.disabled = false;
+        dayClosed = false;
       } catch {
         daySlots = [];
       }
@@ -213,16 +241,26 @@
 
     fetch('/api/config').then((r) => r.json()).then((config) => {
       siteConfig = config;
+      updateRestHint();
       loadDaySlots();
     }).catch(() => {});
 
-    locationSelect.addEventListener('change', loadDaySlots);
+    locationSelect.addEventListener('change', () => {
+      updateRestHint();
+      loadDaySlots();
+    });
     dateInput.addEventListener('change', loadDaySlots);
     timeSelect.addEventListener('change', updateCapacityHint);
     guestsInput.addEventListener('change', updateCapacityHint);
 
     document.getElementById('reserveForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const locationId = locationSelect.value;
+      const date = dateInput.value;
+      if (isDateClosedForLocation(locationId, date) || dayClosed) {
+        showToast('此日為公休，無法訂位，請選擇其他日期。', false);
+        return;
+      }
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = '送出中…';
@@ -249,7 +287,7 @@
           : '請留意手機來電，我們將與您確認座位。';
       } catch (err) {
         showToast(err.message, false);
-        if (err.message.includes('已滿') || err.message.includes('僅剩')) {
+        if (err.message.includes('已滿') || err.message.includes('僅剩') || err.message.includes('公休')) {
           loadDaySlots();
         }
         btn.disabled = false;

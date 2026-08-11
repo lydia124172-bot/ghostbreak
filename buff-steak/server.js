@@ -90,6 +90,7 @@ app.get('/api/config', (_req, res) => {
       phoneTel: loc.phoneTel,
       address: loc.address,
       hours: loc.hours,
+      closedWeekdays: loc.closedWeekdays || [],
       mapQuery: loc.mapQuery,
       capacity: loc.capacity,
     })),
