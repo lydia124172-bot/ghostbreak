@@ -329,6 +329,9 @@ function sendPage(res, file) {
   res.sendFile(file, { root: PUBLIC });
 }
 
+app.get('/robots.txt', (_req, res) => res.sendFile('robots.txt', { root: PUBLIC }));
+app.get('/sitemap.xml', (_req, res) => res.sendFile('sitemap.xml', { root: PUBLIC }));
+
 app.get('/', (_req, res) => sendPage(res, 'index.html'));
 HTML_PAGES.forEach((page) => {
   app.get(`/${page}`, (_req, res) => sendPage(res, `${page}.html`));
