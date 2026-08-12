@@ -1,0 +1,33 @@
+八斧牛排 — Google Analytics 設定
+
+=== 第一步：建立 GA4（建議獨立，不要跟 GhostBreak 共用）===
+1. 打開 https://analytics.google.com
+2. 管理（左下齒輪）→ 建立資源
+3. 資源名稱：八斧牛排 或 BUFF STEAK
+4. 時區：台灣
+5. 資料串流 → 網頁 → 網址填：steak.bafuholdings.com
+6. 複製「評估 ID」，格式像：G-XXXXXXXXXX
+
+=== 第二步：填到 Render ===
+1. Render → buff-steak → Environment
+2. 新增：
+   Key:   GA_MEASUREMENT_ID
+   Value: G-XXXXXXXXXX（你複製的）
+3. Save Changes，等重新部署 Live
+
+=== 第三步：本機可選 ===
+在 buff-steak\.env 加一行：
+GA_MEASUREMENT_ID=G-XXXXXXXXXX
+
+=== 第四步：確認有在跑 ===
+1. 打開 https://steak.bafuholdings.com
+2. 右鍵 → 檢視網頁原始碼
+3. 搜尋 gtag 或 G- ，應看得到你的評估 ID
+4. 到 GA → 報表 → 即時，重整官網，應出現 1 位使用者
+
+=== 會追蹤什麼 ===
+- 各頁瀏覽（首頁、菜單、訂位…）
+- 訂位成功事件：reserve_submit
+- 加盟成功事件：franchise_submit
+
+不要把 G- 貼到聊天裡也可以，自己填 Render 即可。

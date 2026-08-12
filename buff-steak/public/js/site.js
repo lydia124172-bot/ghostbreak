@@ -7,6 +7,12 @@ function showToast(msg, ok = true) {
   setTimeout(() => el.classList.remove('show'), 4000);
 }
 
+function trackEvent(name, params = {}) {
+  try {
+    if (typeof gtag === 'function') gtag('event', name, params);
+  } catch (_) { /* ignore */ }
+}
+
 async function postJson(url, body) {
   const res = await fetch(url, {
     method: 'POST',

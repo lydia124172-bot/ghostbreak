@@ -117,6 +117,9 @@
         document.getElementById('confirmHint').textContent = hints.length
           ? hints.join('，') + '。'
           : '我們將盡快與您聯繫。';
+        trackEvent('franchise_submit', {
+          franchise_id: data.id || '',
+        });
       } catch (err) {
         showToast(err.message, false);
         btn.disabled = false;

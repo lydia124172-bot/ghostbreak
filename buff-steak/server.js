@@ -31,6 +31,7 @@ const { getLocationClosedInfo } = require('./services/store-hours');
 
 const PORT = process.env.PORT || 3001;
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
+const GA_MEASUREMENT_ID = String(process.env.GA_MEASUREMENT_ID || '').trim();
 const app = express();
 
 app.use(express.json());
@@ -342,9 +343,34 @@ app.post('/api/franchise', async (req, res) => {
 
 const PUBLIC = path.join(__dirname, 'public');
 const HTML_PAGES = ['menu', 'locations', 'reserve', 'franchise', 'gallery', 'story'];
+const HTML_SKIP_GA = new Set(['404.html']);
+
+function injectGaSnippet(html) {
+  if (!GA_MEASUREMENT_ID || html.includes('googletagmanager.com/gtag/js')) return html;
+  const id = GA_MEASUREMENT_ID.replace(/[^A-Za-z0-9_-]/g, '');
+  if (!id) return html;
+  const snippet = `
+  <script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '${id}', { anonymize_ip: true });
+  </script>`;
+  return html.replace('</head>', `${snippet}\n</head>`);
+}
 
 function sendPage(res, file) {
-  res.sendFile(file, { root: PUBLIC });
+  const filePath = path.join(PUBLIC, file);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).sendFile('404.html', { root: PUBLIC });
+  }
+  if (HTML_SKIP_GA.has(file) || !file.endsWith('.html')) {
+    return res.sendFile(file, { root: PUBLIC });
+  }
+  let html = fs.readFileSync(filePath, 'utf8');
+  html = injectGaSnippet(html);
+  res.type('html').send(html);
 }
 
 function sendPublicText(res, file, contentType) {
@@ -386,8 +412,9 @@ app.use((req, res) => {
     if (fs.existsSync(htmlPath)) rel = `${rel}.html`;
   }
   const file = path.join(PUBLIC, rel);
+  if (fs.existsSync(file) && rel.endsWith('.html')) return sendPage(res, rel);
   if (fs.existsSync(file)) return res.sendFile(rel, { root: PUBLIC });
-  res.status(404).sendFile('404.html', { root: PUBLIC });
+  return sendPage(res, '404.html');
 });
 
 app.listen(PORT, async () => {
@@ -413,5 +440,6 @@ app.listen(PORT, async () => {
   } else {
     console.log('SMS:  未設定（請在 .env 設 TWILIO_* 與店長手機）');
   }
+  console.log(`GA4:  ${GA_MEASUREMENT_ID || '未設定（請設 GA_MEASUREMENT_ID）'}`);
   console.log('');
 });

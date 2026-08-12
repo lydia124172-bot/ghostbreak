@@ -285,6 +285,10 @@
         document.getElementById('confirmHint').textContent = hints.length
           ? hints.join('，') + '。'
           : '請留意手機來電，我們將與您確認座位。';
+        trackEvent('reserve_submit', {
+          location_id: locationSelect.value,
+          reservation_id: data.id || '',
+        });
       } catch (err) {
         showToast(err.message, false);
         if (err.message.includes('已滿') || err.message.includes('僅剩') || err.message.includes('公休')) {
