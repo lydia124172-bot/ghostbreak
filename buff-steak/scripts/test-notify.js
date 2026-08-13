@@ -2,8 +2,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const { initMail, sendMail, mailConfigured } = require('../services/mail');
-const { smsConfigured, sendSms, sendGuestReserveSms } = require('../services/sms');
-const site = require('../data/site');
+const { smsConfigured, sendSms } = require('../services/sms');
 
 const TEST_PHONE = process.env.TEST_NOTIFY_PHONE || '0970205800';
 const TEST_EMAIL = process.env.RESTAURANT_EMAIL || 'lydia3530@gmail.com';
@@ -41,24 +40,9 @@ async function main() {
     console.error('SMS 失敗:', err.message);
   }
 
-  const loc = site.locations[0];
-  const fakeEntry = {
-    id: 'R-TEST',
-    name: '測試客人',
-    phone: TEST_PHONE,
-    date: '2026-09-15',
-    time: '19:00',
-    guests: 2,
-  };
-  try {
-    const guestSms = await sendGuestReserveSms(fakeEntry, loc);
-    console.log('客人確認簡訊結果:', guestSms);
-  } catch (err) {
-    console.error('客人確認簡訊失敗:', err.message);
-  }
-
   console.log('');
   console.log('測試完成。請檢查手機與信箱（含垃圾郵件）。');
+  console.log('（省錢模式：不會發客人確認簡訊）');
 }
 
 main();

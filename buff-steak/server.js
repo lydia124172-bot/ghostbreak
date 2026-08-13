@@ -15,8 +15,6 @@ const {
   smsConfigured,
   sendReservationSms,
   sendFranchiseSms,
-  sendGuestReserveSms,
-  sendGuestFranchiseSms,
   getReservationNotifyPhones,
   getFranchiseNotifyPhone,
   isSmsTestMode,
@@ -231,9 +229,6 @@ app.post('/api/reserve', async (req, res) => {
       guestEmailSent = guestMail?.via === 'resend' || guestMail?.via === 'smtp' || guestMail?.via === 'dry-run';
     }
 
-    const guestSmsResult = await sendGuestReserveSms(entry, loc);
-    const guestSmsSent = guestSmsResult?.via === 'twilio' || guestSmsResult?.via === 'dry-run';
-
     const notifyPhones = getReservationNotifyPhones(loc);
     let smsSent = false;
     if (notifyPhones.length) {
@@ -249,7 +244,7 @@ app.post('/api/reserve', async (req, res) => {
       message: '訂位已送出，我們將電話與您確認。',
       smsSent,
       guestConfirmation: {
-        sms: guestSmsSent,
+        sms: false,
         email: guestEmailSent,
       },
     });
@@ -323,16 +318,13 @@ app.post('/api/franchise', async (req, res) => {
     const franchiseSms = await sendFranchiseSms(entry);
     const smsSent = franchiseSms?.via === 'twilio' || franchiseSms?.via === 'dry-run';
 
-    const guestSmsResult = await sendGuestFranchiseSms(entry);
-    const guestSmsSent = guestSmsResult?.via === 'twilio' || guestSmsResult?.via === 'dry-run';
-
     res.json({
       success: true,
       id: entry.id,
       message: '已收到您的加盟詢問，我們將盡快與您聯繫。',
       smsSent,
       guestConfirmation: {
-        sms: guestSmsSent,
+        sms: false,
         email: guestEmailSent,
       },
     });
