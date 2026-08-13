@@ -2,6 +2,7 @@ const { loadReservations } = require('./mail');
 const site = require('../data/site');
 const { isHolidayDate, getHolidayReason } = require('./holidays');
 const { isLocationClosed, getClosedMessage } = require('./store-hours');
+const { isTooSoon, getLeadTimeMessage } = require('./lead-time');
 
 const WEEKDAY_MINUTES = 120;
 const HOLIDAY_MINUTES = 90;
@@ -141,7 +142,9 @@ function getAvailability(loc, date, time) {
   const duration = getDiningDurationMinutes(date);
   const end = start + duration;
   const booked = peakDuringWindow(existing, start, end);
-  const remaining = maxAddableGuests(loc, date, time);
+  const remainingSeats = maxAddableGuests(loc, date, time);
+  const tooSoon = isTooSoon(date, time);
+  const remaining = tooSoon ? 0 : remainingSeats;
 
   return {
     locationId: loc.id,
@@ -152,6 +155,8 @@ function getAvailability(loc, date, time) {
     booked,
     remaining,
     available: remaining > 0,
+    tooSoon,
+    tooSoonMessage: tooSoon ? getLeadTimeMessage(loc) : null,
     diningMinutes: duration,
     diningLabel: getDiningLabel(date),
     holidayReason: getHolidayReason(date),
@@ -165,6 +170,14 @@ function checkReservationCapacity(loc, date, time, guests) {
       ok: false,
       message: getClosedMessage(loc, date),
       code: 'STORE_CLOSED',
+    };
+  }
+
+  if (isTooSoon(date, time)) {
+    return {
+      ok: false,
+      message: getLeadTimeMessage(loc),
+      code: 'TOO_SOON',
     };
   }
 
@@ -222,6 +235,8 @@ function getDayAvailability(loc, date) {
       booked: info.booked,
       remaining: info.remaining,
       available: info.available,
+      tooSoon: info.tooSoon,
+      tooSoonMessage: info.tooSoonMessage,
       diningLabel: info.diningLabel,
     };
   });
@@ -235,4 +250,6 @@ module.exports = {
   getDiningDurationMinutes,
   getDiningLabel,
   isHolidayDate: isHolidayDateForDining,
+  isTooSoon,
+  getLeadTimeMessage,
 };

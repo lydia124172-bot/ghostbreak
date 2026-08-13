@@ -98,6 +98,7 @@ app.get('/api/config', (_req, res) => {
     timeSlots: site.timeSlots,
     timeSlotGroups: site.timeSlotGroups,
     diningDuration: site.diningDuration,
+    minAdvanceHours: site.minAdvanceHours || 6,
     mailConfigured: mailConfigured(),
     smsConfigured: smsConfigured(),
   });

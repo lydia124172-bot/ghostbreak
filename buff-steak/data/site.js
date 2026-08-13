@@ -63,6 +63,7 @@ module.exports = {
     weekdayMinutes: 120,
     holidayMinutes: 90,
   },
+  minAdvanceHours: 6,
   timeSlotGroups: [
     { label: '中午時段', slots: ['11:00', '12:30'] },
     { label: '晚上時段', slots: ['17:00', '18:30'] },
