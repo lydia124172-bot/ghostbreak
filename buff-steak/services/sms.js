@@ -45,13 +45,20 @@ function getClient() {
   return client;
 }
 
+function splitPhones(raw) {
+  return String(raw || '').split(/[,;|\s]+/).map((s) => s.trim()).filter(Boolean);
+}
+
 function getManagerPhones(locationId) {
+  const site = require('../data/site');
+  const loc = site.locations.find((l) => String(l.id) === String(locationId || '').trim());
+  if (loc?.managerPhone) return splitPhones(loc.managerPhone);
+
   const id = String(locationId || '').trim();
   if (!id) return [];
   const upper = id.toUpperCase();
   const raw = env(`${upper}_MANAGER_PHONE`) || env(`MANAGER_PHONE_${upper}`);
-  if (!raw) return [];
-  return raw.split(/[,;|\s]+/).map((s) => s.trim()).filter(Boolean);
+  return splitPhones(raw);
 }
 
 function getManagerPhone(locationId) {
@@ -82,13 +89,7 @@ function getReservationNotifyPhones(loc) {
   // 總部改收 Email，簡訊只發給店長
   if (isSmsTestMode()) return [];
 
-  const phones = [];
-  phones.push(...getManagerPhones(loc.id));
-  if (!phones.length && loc.managerPhone) {
-    phones.push(String(loc.managerPhone).trim());
-  }
-
-  return dedupePhones(phones);
+  return dedupePhones(getManagerPhones(loc.id));
 }
 
 function shortLocationName(name) {

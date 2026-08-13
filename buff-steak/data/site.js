@@ -21,7 +21,7 @@ module.exports = {
       hours: ['11:00–14:30 · 17:00–21:30', '每週三公休'],
       closedWeekdays: [3],
       mapQuery: '新北市深坑區北深路三段172號',
-      managerPhone: '',
+      managerPhone: '0916893857',
       capacity: 80,
     },
     {
@@ -33,7 +33,7 @@ module.exports = {
       hours: ['11:00–14:30 · 17:00–21:30', '每週一、二公休'],
       closedWeekdays: [1, 2],
       mapQuery: '台北市士林區大東路124號',
-      managerPhone: '',
+      managerPhone: '0911969178',
       capacity: 64,
     },
   ],
