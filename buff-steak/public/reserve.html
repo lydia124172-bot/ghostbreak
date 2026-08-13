@@ -69,12 +69,12 @@
       <div>
         <label class="block text-xs text-mist mb-2">手機 *</label>
         <input type="tel" id="phone" class="form-input" required placeholder="09xx xxx xxx" />
-        <p class="text-[11px] text-mist mt-1">餐廳將致電與此手機確認座位</p>
+        <p class="text-[11px] text-mist mt-1">僅供餐廳致電確認，只填電話不會收到確認簡訊或確認信</p>
       </div>
       <div>
         <label class="block text-xs text-mist mb-2">Email（選填）</label>
         <input type="email" id="email" class="form-input" placeholder="you@email.com" />
-        <p class="text-[11px] text-mist mt-1">填寫 Email 可收到確認信（不另發簡訊）</p>
+        <p class="text-[11px] text-mist mt-1">填寫 Email 才會收到訂位確認信</p>
       </div>
       <div>
         <label class="block text-xs text-mist mb-2">備註</label>
@@ -305,11 +305,10 @@
         document.getElementById('successMsg').textContent = data.message + (data.id ? `（單號 ${data.id}）` : '');
 
         const hints = [];
-        if (data.guestConfirmation?.sms) hints.push('確認簡訊已發送至您的手機');
         if (data.guestConfirmation?.email) hints.push('確認信已發送至您的 Email');
         document.getElementById('confirmHint').textContent = hints.length
-          ? hints.join('，') + '。'
-          : '請留意手機來電，我們將與您確認座位。';
+          ? hints.join('，') + '。請留意手機來電，我們將與您確認座位。'
+          : '未填 Email，不會寄出確認信。請留意手機來電，我們將與您確認座位。';
         trackEvent('reserve_submit', {
           location_id: locationSelect.value,
           reservation_id: data.id || '',
