@@ -79,16 +79,14 @@ function dedupePhones(phones) {
 }
 
 function getReservationNotifyPhones(loc) {
-  if (isSmsTestMode()) {
-    return dedupePhones(getGlobalNotifyPhones());
-  }
+  // 總部改收 Email，簡訊只發給店長
+  if (isSmsTestMode()) return [];
 
   const phones = [];
   phones.push(...getManagerPhones(loc.id));
   if (!phones.length && loc.managerPhone) {
     phones.push(String(loc.managerPhone).trim());
   }
-  phones.push(...getGlobalNotifyPhones());
 
   return dedupePhones(phones);
 }
@@ -137,7 +135,8 @@ async function sendSms({ to, body, referenceId }) {
 }
 
 function getFranchiseNotifyPhone() {
-  return env('FRANCHISE_NOTIFY_PHONE') || env('FRANCHISE_SMS_PHONE') || '0970205800';
+  // 加盟詢問改由總部 Email 接收，不再發簡訊
+  return '';
 }
 
 function buildFranchiseSms(entry) {
@@ -196,7 +195,6 @@ async function sendGuestFranchiseSms(entry) {
 async function sendFranchiseSms(entry) {
   const phone = getFranchiseNotifyPhone();
   if (!phone) {
-    console.warn('[Franchise] 未設定 FRANCHISE_NOTIFY_PHONE');
     return null;
   }
 

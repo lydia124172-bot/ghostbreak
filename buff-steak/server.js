@@ -16,7 +16,6 @@ const {
   sendReservationSms,
   sendFranchiseSms,
   getReservationNotifyPhones,
-  getFranchiseNotifyPhone,
   isSmsTestMode,
   getFromNumber,
 } = require('./services/sms');
@@ -74,7 +73,8 @@ app.get('/api/health', (_req, res) => {
     sms: smsConfigured(),
     smsTestMode: isSmsTestMode(),
     twilioFromSuffix: from ? from.slice(-4) : null,
-    franchiseNotify: getFranchiseNotifyPhone() || null,
+    franchiseNotify: null,
+    hqNotify: 'email',
     locations: locs,
   });
 });
@@ -420,16 +420,17 @@ app.listen(PORT, async () => {
   console.log(`Mail: ${mailConfigured() ? '已設定' : '未設定（表單仍可測試，請設 RESTAURANT_EMAIL）'}`);
   if (smsConfigured()) {
     if (isSmsTestMode()) {
-      console.log('SMS:  已設定（⚠️ 測試模式：簡訊只發給總部，不通知店長）');
+      console.log('SMS:  已設定（⚠️ 測試模式：不發店長簡訊；總部改收 Email）');
     } else {
-      console.log('SMS:  已設定（正式模式：店長 + 總部都會收到）');
+      console.log('SMS:  已設定（店長收簡訊；總部收 Email）');
     }
-    console.log('  訂位簡訊：');
+    console.log('  訂位簡訊（店長）：');
     site.locations.forEach((loc) => {
       const phones = getReservationNotifyPhones(loc);
       console.log(`    ${loc.name} → ${phones.length ? phones.join('、') : '未設定'}`);
     });
-    console.log(`  加盟簡訊 → ${getFranchiseNotifyPhone() || '未設定'}`);
+    console.log(`  總部 Email → ${RESTAURANT_EMAIL || '未設定'}`);
+    console.log('  加盟通知 → 總部 Email（不發簡訊）');
   } else {
     console.log('SMS:  未設定（請在 .env 設 TWILIO_* 與店長手機）');
   }

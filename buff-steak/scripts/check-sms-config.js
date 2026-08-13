@@ -3,7 +3,6 @@ const site = require('../data/site');
 const {
   smsConfigured,
   getReservationNotifyPhones,
-  getFranchiseNotifyPhone,
   normalizePhone,
   isSmsTestMode,
 } = require('../services/sms');
@@ -16,7 +15,7 @@ console.log('========================================');
 if (isSmsTestMode()) {
   console.log('');
   console.log('⚠️  目前為測試模式（SMS_TEST_MODE=true）');
-  console.log('   訂位簡訊不會發給店長，只發總部。');
+  console.log('   不會發店長簡訊；總部改收 Email。');
 }
 
 if (!smsConfigured()) {
@@ -40,9 +39,10 @@ site.locations.forEach((loc) => {
 });
 
 console.log('');
-console.log('【加盟簡訊】有人加盟詢問時通知：');
-const franchisePhone = getFranchiseNotifyPhone();
-console.log(`  → ${franchisePhone} (${normalizePhone(franchisePhone)})`);
+console.log('【總部】改收 Email（不發簡訊）');
+console.log(`  → ${process.env.RESTAURANT_EMAIL || '未設定 RESTAURANT_EMAIL'}`);
 console.log('');
-console.log('若號碼正確，重開 start.bat 後送一筆測試即可。');
+console.log('【加盟】只寄總部 Email，不發簡訊');
+console.log('');
+console.log('若店長號碼正確，重開 start.bat 後送一筆測試即可。');
 console.log('');
