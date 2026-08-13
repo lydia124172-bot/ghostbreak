@@ -33,7 +33,7 @@
     <h1 class="font-['Playfair_Display'] text-3xl mb-2 text-center">線上訂位</h1>
     <p class="text-mist text-sm text-center mb-2">送出後我們將電話與您確認座位</p>
     <p class="text-mist text-xs text-center mb-2" id="slotIntro">中午 11:00／12:30 · 晚上 17:00／18:30 · 平日 2 小時 · 假日 1.5 小時</p>
-    <p class="text-mist text-xs text-center mb-8">線上訂位需至少提前 6 小時；臨時訂位請直接致電分店</p>
+    <p class="text-mist text-xs text-center mb-8">線上訂位需至少提前 6 小時，因即時訂位時間不及，無法為您排位；臨時請直接致電分店</p>
 
     <form id="reserveForm" class="bg-panel border border-line rounded-2xl p-6 space-y-5">
       <div>
@@ -192,7 +192,7 @@
         const allTooSoon = daySlots.length > 0 && daySlots.every((s) => s.tooSoon);
         if (allTooSoon) {
           const phone = loc?.phone ? ` ${loc.phone}` : '';
-          capacityHint.textContent = `今日剩餘時段已過線上訂位截止（需提前 6 小時），請直接致電分店${phone}。`;
+          capacityHint.textContent = `今日剩餘時段已過線上訂位截止（需提前 6 小時）。因即時訂位時間不及，無法為您排位，請直接致電分店${phone}。`;
           capacityHint.classList.remove('hidden');
           capacityHint.classList.add('capacity-hint-full');
           submitBtn.disabled = true;
@@ -228,7 +228,7 @@
         if (!res.ok) throw new Error(data.error || '無法查詢剩餘座位');
 
         if (data.tooSoon) {
-          capacityHint.textContent = data.tooSoonMessage || '線上訂位需至少提前 6 小時，請直接致電分店。';
+          capacityHint.textContent = data.tooSoonMessage || '線上訂位需至少提前 6 小時，因即時訂位時間不及，無法為您排位，請直接致電分店。';
           capacityHint.classList.remove('hidden');
           capacityHint.classList.add('capacity-hint-full');
           guestsInput.max = 1;
@@ -283,7 +283,7 @@
       const selectedSlot = daySlots.find((s) => s.time === timeSelect.value);
       if (selectedSlot?.tooSoon) {
         const loc = getLocationConfig(locationId);
-        showToast(selectedSlot.tooSoonMessage || `線上訂位需至少提前 6 小時，請直接致電分店${loc?.phone ? ` ${loc.phone}` : ''}。`, false);
+        showToast(selectedSlot.tooSoonMessage || `線上訂位需至少提前 6 小時，因即時訂位時間不及，無法為您排位。請直接致電分店${loc?.phone ? ` ${loc.phone}` : ''}。`, false);
         return;
       }
       const btn = document.getElementById('submitBtn');

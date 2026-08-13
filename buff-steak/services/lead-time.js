@@ -29,7 +29,7 @@ function isTooSoon(dateStr, timeStr, now = new Date()) {
 function getLeadTimeMessage(loc) {
   const hours = getMinAdvanceHours();
   const phone = loc?.phone ? ` ${loc.phone}` : '';
-  return `線上訂位需至少提前 ${hours} 小時。此時段請直接致電分店${phone}訂位。`;
+  return `線上訂位需至少提前 ${hours} 小時，因即時訂位時間不及，無法為您排位。請直接致電分店${phone}訂位。`;
 }
 
 module.exports = {
