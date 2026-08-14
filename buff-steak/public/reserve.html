@@ -218,7 +218,6 @@
           let label = slot;
           if (info?.tooSoon) label = `${slot}（請致電分店）`;
           else if (info && info.remaining <= 0) label = `${slot}（已滿）`;
-          else if (info) label = `${slot}（尚可 ${info.remaining} 人）`;
           const disabled = info && (info.tooSoon || info.remaining <= 0) ? ' disabled class="slot-full"' : '';
           html += `<option value="${slot}"${disabled}>${label}</option>`;
         });
@@ -332,11 +331,12 @@
           return;
         }
 
-        const maxGuests = Math.min(9, data.remaining);
+        const maxOnline = 9;
+        const maxGuests = Math.min(maxOnline, data.remaining);
         guestsInput.max = maxGuests;
         if (Number(guestsInput.value) > maxGuests) guestsInput.value = maxGuests;
-        capacityHint.textContent = `尚可接受 ${data.remaining} 人（共 ${data.capacity} 位 · ${data.diningLabel}）`;
-        capacityHint.classList.remove('hidden');
+        capacityHint.textContent = data.diningLabel || '';
+        capacityHint.classList.toggle('hidden', !data.diningLabel);
         submitBtn.disabled = false;
       } catch (err) {
         capacityHint.textContent = err.message;

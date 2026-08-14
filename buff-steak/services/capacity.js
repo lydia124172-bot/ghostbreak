@@ -8,11 +8,6 @@ const { getTimeSlots } = require('./time-slots');
 const WEEKDAY_MINUTES = 120;
 const HOLIDAY_MINUTES = 90;
 
-function parseTime(timeStr) {
-  const [h, m] = String(timeStr).split(':').map(Number);
-  return h * 60 + m;
-}
-
 function isHolidayDateForDining(dateStr) {
   return isHolidayDate(dateStr);
 }
@@ -41,83 +36,22 @@ function isActiveReservation(r) {
   return r && r.status !== 'cancelled';
 }
 
-function buildWindows(reservations, locationId, date, excludeId) {
-  return reservations
-    .filter((r) => isActiveReservation(r) && r.locationId === locationId && r.date === date && r.id !== excludeId)
-    .map((r) => {
-      const duration = getDiningDurationMinutes(r.date);
-      return {
-        start: parseTime(r.time),
-        end: parseTime(r.time) + duration,
-        guests: Number(r.guests) || 0,
-      };
-    });
-}
-
-function getPeakOccupancy(windows) {
-  if (!windows.length) return 0;
-
-  const points = new Set();
-  windows.forEach((w) => {
-    points.add(w.start);
-    points.add(w.end);
-  });
-
-  const sorted = [...points].sort((a, b) => a - b);
-  let max = 0;
-
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const t = sorted[i];
-    const tNext = sorted[i + 1];
-    if (tNext <= t) continue;
-
-    let occupancy = 0;
-    for (const w of windows) {
-      if (w.start <= t && w.end > t) occupancy += w.guests;
-    }
-    max = Math.max(max, occupancy);
-  }
-
-  return max;
-}
-
-function peakDuringWindow(existingWindows, start, end) {
-  const points = new Set([start, end]);
-  existingWindows.forEach((w) => {
-    if (w.start >= start && w.start <= end) points.add(w.start);
-    if (w.end >= start && w.end <= end) points.add(w.end);
-  });
-
-  const sorted = [...points].sort((a, b) => a - b);
-  let peak = 0;
-
-  for (const t of sorted) {
-    let occupancy = 0;
-    for (const w of existingWindows) {
-      if (w.start <= t && w.end > t) occupancy += w.guests;
-    }
-    peak = Math.max(peak, occupancy);
-  }
-
-  return peak;
+function slotBookedGuests(locationId, date, time, excludeId) {
+  return loadReservations()
+    .filter((r) => (
+      isActiveReservation(r)
+      && r.locationId === locationId
+      && r.date === date
+      && r.time === time
+      && r.id !== excludeId
+    ))
+    .reduce((sum, r) => sum + (Number(r.guests) || 0), 0);
 }
 
 function maxAddableGuests(loc, date, time, excludeId) {
   const capacity = getLocationCapacity(loc);
-  if (!capacity) return 20;
-
-  const existing = buildWindows(loadReservations(), loc.id, date, excludeId);
-  const start = parseTime(time);
-  const duration = getDiningDurationMinutes(date);
-  let max = 0;
-
-  for (let guests = 1; guests <= 20; guests++) {
-    const windows = [...existing, { start, end: start + duration, guests }];
-    if (getPeakOccupancy(windows) <= capacity) max = guests;
-    else break;
-  }
-
-  return max;
+  if (!capacity) return 0;
+  return Math.max(0, capacity - slotBookedGuests(loc.id, date, time, excludeId));
 }
 
 function getAvailability(loc, date, time, opts = {}) {
@@ -145,14 +79,11 @@ function getAvailability(loc, date, time, opts = {}) {
   }
 
   const capacity = getLocationCapacity(loc);
-  const existing = buildWindows(loadReservations(), loc.id, date, excludeId);
-  const start = parseTime(time);
-  const duration = getDiningDurationMinutes(date);
-  const end = start + duration;
-  const booked = peakDuringWindow(existing, start, end);
-  const remainingSeats = maxAddableGuests(loc, date, time, excludeId);
+  const booked = slotBookedGuests(loc.id, date, time, excludeId);
+  const remainingSeats = Math.max(0, capacity - booked);
   const tooSoon = skipLeadTime ? false : isTooSoon(date, time);
   const remaining = tooSoon ? 0 : remainingSeats;
+  const duration = getDiningDurationMinutes(date);
 
   return {
     locationId: loc.id,
