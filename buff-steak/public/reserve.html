@@ -370,6 +370,11 @@
       e.preventDefault();
       const locationId = locationSelect.value;
       const date = dateInput.value;
+      if (Number(guestsInput.value) >= 10) {
+        const loc = getLocationConfig(locationId);
+        showToast(`10 人以上不接受線上訂位，請致電${loc ? loc.name + ' ' + loc.phone : '分店'}。`, false);
+        return;
+      }
       if (onlineFull) {
         const loc = getLocationConfig(locationId);
         showToast(loc?.onlineFullMessage || '線上訂位已滿，請致電各店詢問現場保留位', false);
