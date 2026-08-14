@@ -108,6 +108,7 @@ app.get('/api/config', (_req, res) => {
     timeSlotsByLocation: site.timeSlotsByLocation,
     diningDuration: site.diningDuration,
     minAdvanceHours: site.minAdvanceHours || 6,
+    maxOnlineGuests: site.maxOnlineGuests || 9,
     reservationNotices: site.reservationNotices || [],
     mailConfigured: mailConfigured(),
     smsConfigured: smsConfigured(),
@@ -175,6 +176,15 @@ app.post('/api/reserve', async (req, res) => {
     const guestsNum = Number(guests);
     if (!guestsNum || guestsNum < 1 || guestsNum > 20) {
       return res.status(400).json({ success: false, error: '人數請填 1–20 人' });
+    }
+
+    const maxOnline = Number(site.maxOnlineGuests) || 9;
+    if (guestsNum > maxOnline) {
+      return res.status(400).json({
+        success: false,
+        error: `10 人以上不接受線上訂位，請致電${loc.name} ${loc.phone} 提前訂位，並於用餐前 1 天至分店預付訂金。`,
+        code: 'PARTY_TOO_LARGE',
+      });
     }
 
     if (!isValidTimeSlot(loc, date, time)) {

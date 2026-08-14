@@ -64,9 +64,11 @@ module.exports = {
     holidayMinutes: 90,
   },
   minAdvanceHours: 6,
+  maxOnlineGuests: 9,
   reservationNotices: [
-    '訂位取消請提早 2 小時前來店告知',
-    '10 人以上訂位請至分店預付訂金 NT$1,000；15 人以上 NT$1,500；之後每增加 5 人加收 NT$500',
+    '取消訂位請提早 2 小時前來店告知。',
+    '線上訂位限 9 人（含）以下；10 人以上請致電各分店，不接受線上訂位。',
+    '10 人以上提前訂位，請於用餐前 1 天至分店預付訂金：10 人 NT$1,000、15 人 NT$1,500，之後每增加 5 人加收 NT$500。',
   ],
   timeSlotGroups: [
     { label: '中午時段', slots: ['11:00', '12:30'] },

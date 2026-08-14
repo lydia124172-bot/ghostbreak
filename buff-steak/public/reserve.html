@@ -35,8 +35,9 @@
     <p class="text-mist text-xs text-center mb-2" id="slotIntro">請先選分店與日期後顯示可訂時段 · 平日 2 小時 · 假日 1.5 小時</p>
     <p class="text-gold text-base sm:text-lg font-semibold text-center leading-relaxed mb-4 px-2">線上訂位需至少提前 6 小時，因即時訂位時間不及，無法為您排位；臨時訂位請致電分店</p>
     <div class="bg-panel border border-line rounded-2xl p-4 mb-8 text-sm leading-relaxed space-y-2">
-      <p>訂位取消請提早 2 小時前來店告知。</p>
-      <p>10 人以上訂位請至分店預付訂金 NT$1,000；15 人以上 NT$1,500；之後每增加 5 人加收 NT$500。</p>
+      <p>取消訂位請提早 2 小時前來店告知。</p>
+      <p>線上訂位限 9 人（含）以下；10 人以上請致電各分店，不接受線上訂位。</p>
+      <p>10 人以上提前訂位，請於用餐前 1 天至分店預付訂金：10 人 NT$1,000、15 人 NT$1,500，之後每增加 5 人加收 NT$500。</p>
     </div>
 
     <form id="reserveForm" class="bg-panel border border-line rounded-2xl p-6 space-y-5">
@@ -64,7 +65,7 @@
       </div>
       <div>
         <label class="block text-xs text-mist mb-2">人數 *</label>
-        <input type="number" id="guests" class="form-input" min="1" max="20" value="2" required />
+        <input type="number" id="guests" class="form-input" min="1" max="9" value="2" required />
         <p id="capacityHint" class="text-[11px] text-mist mt-2 hidden"></p>
         <p id="depositHint" class="text-[11px] text-gold mt-2 hidden"></p>
       </div>
@@ -128,21 +129,18 @@
       return siteConfig?.locations?.find((l) => l.id === locationId);
     }
 
-    function depositAmount(guests) {
-      const n = Number(guests);
-      if (!n || n < 10) return 0;
-      return 1000 + Math.floor((n - 10) / 5) * 500;
-    }
-
     function updateDepositHint() {
-      const amount = depositAmount(guestsInput.value);
-      if (!amount) {
-        depositHint.classList.add('hidden');
-        depositHint.textContent = '';
+      const n = Number(guestsInput.value);
+      const loc = getLocationConfig(locationSelect.value);
+      if (n >= 10) {
+        const phone = loc ? `（${loc.name} ${loc.phone}）` : '';
+        depositHint.textContent = `10 人以上不接受線上訂位，請致電分店${phone}，並於用餐前 1 天至分店預付訂金。`;
+        depositHint.classList.remove('hidden');
+        submitBtn.disabled = true;
         return;
       }
-      depositHint.textContent = `此筆 ${guestsInput.value} 人，請至分店預付訂金 NT$${amount.toLocaleString('zh-TW')}`;
-      depositHint.classList.remove('hidden');
+      depositHint.classList.add('hidden');
+      depositHint.textContent = '';
     }
 
     function applyOnlineFullState(full, loc) {
@@ -296,7 +294,7 @@
 
       if (!locationId || !date || !time) {
         capacityHint.classList.add('hidden');
-        guestsInput.max = 20;
+        guestsInput.max = 9;
         if (!onlineFull) submitBtn.disabled = false;
         return;
       }
@@ -334,7 +332,7 @@
           return;
         }
 
-        const maxGuests = Math.min(20, data.remaining);
+        const maxGuests = Math.min(9, data.remaining);
         guestsInput.max = maxGuests;
         if (Number(guestsInput.value) > maxGuests) guestsInput.value = maxGuests;
         capacityHint.textContent = `尚可接受 ${data.remaining} 人（共 ${data.capacity} 位 · ${data.diningLabel}）`;
