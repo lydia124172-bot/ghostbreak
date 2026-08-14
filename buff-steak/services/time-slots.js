@@ -1,7 +1,7 @@
 const site = require('../data/site');
 const { isHolidayDate } = require('./holidays');
 
-const DEFAULT_SLOTS = ['11:00', '12:30', '17:00', '18:30'];
+const DEFAULT_SLOTS = ['11:00', '11:30', '12:00', '12:30', '13:00', '17:00', '17:30', '18:00', '18:30', '19:00'];
 
 function uniqueSorted(slots) {
   return [...new Set(slots.filter(Boolean))].sort();
