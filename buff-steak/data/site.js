@@ -65,7 +65,7 @@ module.exports = {
   },
   minAdvanceHours: 6,
   reservationNotices: [
-    '訂位取消請提早來店告知',
+    '訂位取消請提早 2 小時前來店告知',
     '10 人以上訂位請至分店預付訂金 NT$1,000；15 人以上 NT$1,500；之後每增加 5 人加收 NT$500',
   ],
   timeSlotGroups: [
