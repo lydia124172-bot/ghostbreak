@@ -171,7 +171,7 @@
         return;
       }
       const note = loc.hours?.find((h) => h.includes('公休')) || '';
-      restHint.textContent = note ? `※ ${note}，公休日無法線上訂位` : '';
+      restHint.textContent = note ? `※ ${note}` : '';
       restHint.classList.toggle('hidden', !note);
       applyOnlineFullState(loc.onlineFull, loc);
     }
