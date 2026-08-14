@@ -215,7 +215,7 @@
           </div>
           <div class="flex gap-2 flex-wrap">
             <button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-edit="${r.id}">更改</button>
-            ${st === 'cancelled' ? '' : `<button type="button" class="border border-line px-3 py-2 rounded-lg text-sm" data-cancel="${r.id}">取消</button>`}
+            ${st === 'cancelled' ? '' : `<button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-cancel="${r.id}">取消訂位</button>`}
           </div>
         </article>`;
       }).join('');
@@ -311,13 +311,15 @@
       }
     });
     $('list').addEventListener('click', async (e) => {
-      const editId = e.target.getAttribute('data-edit');
-      const cancelId = e.target.getAttribute('data-cancel');
-      if (editId) {
-        const row = (window.__rows || []).find((r) => r.id === editId);
+      const editBtn = e.target.closest('[data-edit]');
+      const cancelBtn = e.target.closest('[data-cancel]');
+      if (editBtn) {
+        const row = (window.__rows || []).find((r) => r.id === editBtn.getAttribute('data-edit'));
         if (row) openEdit(row);
       }
-      if (cancelId && confirm('確定取消這筆訂位？')) {
+      if (cancelBtn) {
+        const cancelId = cancelBtn.getAttribute('data-cancel');
+        if (!window.confirm('確定取消這筆訂位？取消後列表會標成「已取消」。')) return;
         try {
           await api('/api/admin/reservations/' + encodeURIComponent(cancelId) + '/cancel', {
             method: 'POST',
