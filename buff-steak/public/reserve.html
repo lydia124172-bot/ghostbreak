@@ -56,7 +56,7 @@
           <input type="date" id="date" class="form-input" required />
         </div>
         <div>
-          <label class="block text-xs text-mist mb-2">訂位時段 *</label>
+          <label class="block text-xs text-mist mb-2">用餐時間 *</label>
           <select id="time" class="form-input" required>
             <option value="">請先選分店與日期</option>
           </select>
@@ -209,7 +209,7 @@
         return;
       }
 
-      let html = '<option value="">請選擇時段</option>';
+      let html = '<option value="">請選擇用餐時間</option>';
       const times = daySlots.map((s) => s.time);
       groupSlots(times).forEach((group) => {
         html += `<optgroup label="${group.label}">`;
