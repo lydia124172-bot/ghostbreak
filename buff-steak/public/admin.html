@@ -112,6 +112,14 @@
       return '待確認';
     }
 
+    function formatAdminDate(dateStr) {
+      const days = ['日', '一', '二', '三', '四', '五', '六'];
+      const [y, m, d] = String(dateStr || '').split('-').map(Number);
+      if (!y || !m || !d) return dateStr || '';
+      const dt = new Date(y, m - 1, d);
+      return `${dateStr}（星期${days[dt.getDay()]}）`;
+    }
+
     async function fillTimes(selectEl, locationId, date, value) {
       let slots = timeSlots;
       if (locationId && date) {
@@ -201,7 +209,7 @@
         const color = st === 'confirmed' ? 'text-green-400' : st === 'cancelled' ? 'text-mist line-through' : 'text-gold';
         return `<article class="bg-panel border border-line rounded-2xl p-4 flex flex-col md:flex-row md:items-center gap-3 justify-between">
           <div>
-            <p class="font-medium">${r.date} ${r.time} · ${r.locationName || r.locationId} · ${r.guests} 人</p>
+            <p class="font-medium">${formatAdminDate(r.date)} ${r.time} · ${r.locationName || r.locationId} · ${r.guests} 人</p>
             <p class="text-sm text-mist mt-1">${r.name} · ${r.phone}${r.email ? ' · ' + r.email : ''}</p>
             <p class="text-xs text-mist mt-1">${r.id} · <span class="${color}">${statusLabel(st)}</span>${r.notes ? ' · ' + r.notes : ''}</p>
           </div>

@@ -31,6 +31,7 @@ const {
 const { getLocationClosedInfo } = require('./services/store-hours');
 const { isValidTimeSlot, getAllPossibleTimeSlots } = require('./services/time-slots');
 const { loadSettings, setOnlineFull, isOnlineFull, getOnlineFullMessage } = require('./services/store-settings');
+const { formatDateWithWeekday } = require('./services/dates');
 
 const PORT = process.env.PORT || 3001;
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
@@ -228,12 +229,13 @@ app.post('/api/reserve', async (req, res) => {
 
     saveReservation(entry);
 
-    const subject = `[八斧牛排] 線上訂位 — ${loc.name} ${date} ${time}`;
+    const dateLabel = formatDateWithWeekday(date);
+    const subject = `[八斧牛排] 線上訂位 — ${loc.name} ${dateLabel} ${time}`;
     const text = [
       '新的線上訂位',
       '──────────────',
       `分店：${loc.name}`,
-      `日期：${date}`,
+      `日期：${dateLabel}`,
       `時間：${time}`,
       `人數：${guestsNum}`,
       `姓名：${entry.name}`,
@@ -259,7 +261,7 @@ app.post('/api/reserve', async (req, res) => {
           '我們已收到您的線上訂位，此為「待確認」狀態，尚未保留座位。',
           '',
           `分店：${loc.name}`,
-          `日期：${date}`,
+          `日期：${dateLabel}`,
           `時間：${time}`,
           `人數：${guestsNum} 人`,
           `單號：${entry.id}`,
@@ -286,6 +288,14 @@ app.post('/api/reserve', async (req, res) => {
       success: true,
       id: entry.id,
       message: '訂位已送出，我們將電話與您確認。',
+      reservation: {
+        id: entry.id,
+        locationName: loc.name,
+        date,
+        dateLabel,
+        time,
+        guests: guestsNum,
+      },
       smsSent,
       guestConfirmation: {
         sms: false,
@@ -438,7 +448,7 @@ async function notifyGuestReservationChange(entry, loc, kind) {
       kind === 'cancelled' ? '您的訂位已取消。' : '您的訂位資料如下：',
       '',
       `分店：${loc?.name || entry.locationName}`,
-      `日期：${entry.date}`,
+      `日期：${formatDateWithWeekday(entry.date)}`,
       `時間：${entry.time}`,
       `人數：${entry.guests} 人`,
       `狀態：${entry.status === 'confirmed' ? '已確認' : entry.status === 'cancelled' ? '已取消' : '待確認'}`,

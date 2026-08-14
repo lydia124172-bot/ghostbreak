@@ -1,4 +1,5 @@
 const twilio = require('twilio');
+const { formatDateShortWithWeekday } = require('./dates');
 
 function env(key, fallback = '') {
   return String(process.env[key] || fallback).trim();
@@ -99,9 +100,7 @@ function shortLocationName(name) {
 }
 
 function formatDateShort(date) {
-  const parts = String(date).split('-');
-  if (parts.length !== 3) return date;
-  return `${parts[1]}/${parts[2]}`;
+  return formatDateShortWithWeekday(date);
 }
 
 function buildReservationSms(entry, loc) {

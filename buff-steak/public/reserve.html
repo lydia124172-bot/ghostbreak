@@ -94,6 +94,7 @@
     <div id="successBox" class="hidden mt-8 menu-card text-center">
       <p class="text-gold font-semibold mb-2">訂位已送出</p>
       <p id="successMsg" class="text-sm text-mist"></p>
+      <div id="successDetails" class="text-sm text-left mt-4 space-y-1 hidden"></div>
       <p id="confirmHint" class="text-xs text-mist mt-3"></p>
     </div>
   </main>
@@ -407,6 +408,18 @@
         document.getElementById('reserveForm').classList.add('hidden');
         document.getElementById('successBox').classList.remove('hidden');
         document.getElementById('successMsg').textContent = data.message + (data.id ? `（單號 ${data.id}）` : '');
+        const r = data.reservation;
+        const details = document.getElementById('successDetails');
+        if (r) {
+          details.innerHTML = [
+            `分店：${r.locationName || ''}`,
+            `日期：${r.dateLabel || r.date || ''}`,
+            `時間：${r.time || ''}`,
+            `人數：${r.guests || ''} 人`,
+            r.id ? `單號：${r.id}` : '',
+          ].filter(Boolean).map((line) => `<p>${line}</p>`).join('');
+          details.classList.remove('hidden');
+        }
 
         const hints = [];
         if (data.guestConfirmation?.email) hints.push('確認信已發送至您的 Email');
