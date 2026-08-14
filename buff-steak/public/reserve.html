@@ -33,7 +33,11 @@
     <h1 class="font-['Playfair_Display'] text-3xl mb-2 text-center">線上訂位</h1>
     <p class="text-mist text-sm text-center mb-2">送出後我們將電話與您確認座位</p>
     <p class="text-mist text-xs text-center mb-2" id="slotIntro">請先選分店與日期後顯示可訂時段 · 平日 2 小時 · 假日 1.5 小時</p>
-    <p class="text-gold text-base sm:text-lg font-semibold text-center leading-relaxed mb-8 px-2">線上訂位需至少提前 6 小時，因即時訂位時間不及，無法為您排位；臨時訂位請致電分店</p>
+    <p class="text-gold text-base sm:text-lg font-semibold text-center leading-relaxed mb-4 px-2">線上訂位需至少提前 6 小時，因即時訂位時間不及，無法為您排位；臨時訂位請致電分店</p>
+    <div class="bg-panel border border-line rounded-2xl p-4 mb-8 text-sm leading-relaxed space-y-2">
+      <p>訂位取消請提早來店告知。</p>
+      <p>10 人以上訂位請至分店預付訂金 NT$1,000；15 人以上 NT$1,500；之後每增加 5 人加收 NT$500。</p>
+    </div>
 
     <form id="reserveForm" class="bg-panel border border-line rounded-2xl p-6 space-y-5">
       <div>
@@ -44,6 +48,7 @@
           <option value="shilin">八斧士林店（每週一、二公休）</option>
         </select>
         <p id="restHint" class="text-[11px] text-mist mt-2 hidden"></p>
+        <p id="onlineFullHint" class="text-gold text-sm font-semibold mt-3 hidden"></p>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
@@ -61,6 +66,7 @@
         <label class="block text-xs text-mist mb-2">人數 *</label>
         <input type="number" id="guests" class="form-input" min="1" max="20" value="2" required />
         <p id="capacityHint" class="text-[11px] text-mist mt-2 hidden"></p>
+        <p id="depositHint" class="text-[11px] text-gold mt-2 hidden"></p>
       </div>
       <div>
         <label class="block text-xs text-mist mb-2">姓名 *</label>
@@ -110,12 +116,46 @@
     const restHint = document.getElementById('restHint');
     const submitBtn = document.getElementById('submitBtn');
 
+    const onlineFullHint = document.getElementById('onlineFullHint');
+    const depositHint = document.getElementById('depositHint');
+
     let siteConfig = null;
     let daySlots = [];
     let dayClosed = false;
+    let onlineFull = false;
 
     function getLocationConfig(locationId) {
       return siteConfig?.locations?.find((l) => l.id === locationId);
+    }
+
+    function depositAmount(guests) {
+      const n = Number(guests);
+      if (!n || n < 10) return 0;
+      return 1000 + Math.floor((n - 10) / 5) * 500;
+    }
+
+    function updateDepositHint() {
+      const amount = depositAmount(guestsInput.value);
+      if (!amount) {
+        depositHint.classList.add('hidden');
+        depositHint.textContent = '';
+        return;
+      }
+      depositHint.textContent = `此筆 ${guestsInput.value} 人，請至分店預付訂金 NT$${amount.toLocaleString('zh-TW')}`;
+      depositHint.classList.remove('hidden');
+    }
+
+    function applyOnlineFullState(full, loc) {
+      onlineFull = Boolean(full);
+      if (!onlineFull || !loc) {
+        onlineFullHint.classList.add('hidden');
+        onlineFullHint.textContent = '';
+        return;
+      }
+      onlineFullHint.textContent = loc.onlineFullMessage || `線上訂位已滿，請致電各店詢問現場保留位（${loc.name} ${loc.phone}）`;
+      onlineFullHint.classList.remove('hidden');
+      submitBtn.disabled = true;
+      timeSelect.innerHTML = '<option value="">線上訂位已滿</option>';
     }
 
     function isDateClosedForLocation(locationId, dateStr) {
@@ -130,11 +170,13 @@
       if (!loc) {
         restHint.classList.add('hidden');
         restHint.textContent = '';
+        applyOnlineFullState(false, null);
         return;
       }
       const note = loc.hours?.find((h) => h.includes('公休')) || '';
       restHint.textContent = note ? `※ ${note}，公休日無法線上訂位` : '';
       restHint.classList.toggle('hidden', !note);
+      applyOnlineFullState(loc.onlineFull, loc);
     }
 
     function groupSlots(slots) {
@@ -192,6 +234,7 @@
     async function loadDaySlots() {
       const locationId = locationSelect.value;
       const date = dateInput.value;
+      updateDepositHint();
       if (!locationId || !date) {
         daySlots = [];
         buildTimeOptions();
@@ -202,6 +245,16 @@
         const data = await res.json();
         daySlots = data.slots || [];
         dayClosed = Boolean(data.closed);
+        const loc = getLocationConfig(locationId);
+        if (data.onlineFull) {
+          applyOnlineFullState(true, loc);
+          capacityHint.textContent = data.onlineFullMessage || '線上訂位已滿，請致電各店詢問現場保留位';
+          capacityHint.classList.remove('hidden');
+          capacityHint.classList.add('capacity-hint-full');
+          submitBtn.disabled = true;
+          return;
+        }
+        applyOnlineFullState(false, loc);
         if (data.closed) {
           capacityHint.textContent = data.closedMessage || '此日公休，請選擇其他日期。';
           capacityHint.classList.remove('hidden');
@@ -210,7 +263,6 @@
           timeSelect.innerHTML = '<option value="">此日公休</option>';
           return;
         }
-        const loc = getLocationConfig(locationId);
         const allTooSoon = daySlots.length > 0 && daySlots.every((s) => s.tooSoon);
         if (allTooSoon) {
           const phone = loc?.phone ? ` ${loc.phone}` : '';
@@ -237,10 +289,15 @@
 
       capacityHint.classList.remove('capacity-hint-full');
 
+      if (onlineFull) {
+        submitBtn.disabled = true;
+        if (!locationId || !date || !time) return;
+      }
+
       if (!locationId || !date || !time) {
         capacityHint.classList.add('hidden');
         guestsInput.max = 20;
-        submitBtn.disabled = false;
+        if (!onlineFull) submitBtn.disabled = false;
         return;
       }
 
@@ -248,6 +305,16 @@
         const res = await fetch(`/api/reserve/availability?locationId=${encodeURIComponent(locationId)}&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || '無法查詢剩餘座位');
+
+        if (data.onlineFull) {
+          const loc = getLocationConfig(locationId);
+          applyOnlineFullState(true, loc);
+          capacityHint.textContent = data.onlineFullMessage || '線上訂位已滿，請致電各店詢問現場保留位';
+          capacityHint.classList.remove('hidden');
+          capacityHint.classList.add('capacity-hint-full');
+          submitBtn.disabled = true;
+          return;
+        }
 
         if (data.tooSoon) {
           capacityHint.textContent = data.tooSoonMessage || '線上訂位需至少提前 6 小時，因即時訂位時間不及，無法為您排位，請直接致電分店。';
@@ -286,18 +353,30 @@
       loadDaySlots();
     }).catch(() => {});
 
-    locationSelect.addEventListener('change', () => {
+    locationSelect.addEventListener('change', async () => {
+      try {
+        siteConfig = await fetch('/api/config').then((r) => r.json());
+      } catch {}
       updateRestHint();
       loadDaySlots();
     });
     dateInput.addEventListener('change', loadDaySlots);
     timeSelect.addEventListener('change', updateCapacityHint);
-    guestsInput.addEventListener('change', updateCapacityHint);
+    guestsInput.addEventListener('change', () => {
+      updateDepositHint();
+      updateCapacityHint();
+    });
+    guestsInput.addEventListener('input', updateDepositHint);
 
     document.getElementById('reserveForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const locationId = locationSelect.value;
       const date = dateInput.value;
+      if (onlineFull) {
+        const loc = getLocationConfig(locationId);
+        showToast(loc?.onlineFullMessage || '線上訂位已滿，請致電各店詢問現場保留位', false);
+        return;
+      }
       if (isDateClosedForLocation(locationId, date) || dayClosed) {
         showToast('此日為公休，無法訂位，請選擇其他日期。', false);
         return;

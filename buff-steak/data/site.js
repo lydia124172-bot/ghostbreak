@@ -64,6 +64,10 @@ module.exports = {
     holidayMinutes: 90,
   },
   minAdvanceHours: 6,
+  reservationNotices: [
+    '訂位取消請提早來店告知',
+    '10 人以上訂位請至分店預付訂金 NT$1,000；15 人以上 NT$1,500；之後每增加 5 人加收 NT$500',
+  ],
   timeSlotGroups: [
     { label: '中午時段', slots: ['11:00', '12:30'] },
     { label: '晚上時段', slots: ['17:00', '18:30'] },
@@ -72,7 +76,7 @@ module.exports = {
   timeSlotsByLocation: {
     shenkeng: {
       weekday: ['11:00', '12:30', '17:00', '18:30'],
-      holiday: ['11:00', '13:00', '17:00', '17:30', '19:00'],
+      holiday: ['11:00', '11:30', '13:00', '17:00', '17:30', '19:00'],
     },
     shilin: {
       weekday: ['11:00', '12:30', '17:00', '18:30'],

@@ -52,9 +52,11 @@
         <button id="reloadBtn" type="button" class="bg-gold text-black font-medium rounded-xl">重新整理</button>
       </div>
 
-      <div class="flex justify-end">
+      <div class="flex justify-between items-center gap-3 flex-wrap">
+        <p class="text-sm text-mist">勾選後，該店官網無法再送出線上訂位，會請客人致電詢問現場保留位。</p>
         <button id="newBtn" type="button" class="border border-gold text-gold px-4 py-2 rounded-xl text-sm">＋ 現場新增訂位</button>
       </div>
+      <div id="storeToggles" class="bg-panel border border-line rounded-2xl p-4 space-y-3"></div>
 
       <div id="list" class="space-y-3"></div>
     </section>
@@ -149,6 +151,7 @@
       $('appBox').classList.remove('hidden');
       $('logoutBtn').classList.remove('hidden');
       loadList();
+      loadStoreToggles();
     }
 
     async function login() {
@@ -165,6 +168,20 @@
         $('loginError').textContent = e.message;
         $('loginError').classList.remove('hidden');
       }
+    }
+
+    async function loadStoreToggles() {
+      const data = await api('/api/admin/settings', { headers: authHeaders() });
+      const locs = data.locations || [];
+      $('storeToggles').innerHTML = locs.map((loc) => `
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" class="mt-1" data-online-full="${loc.id}" ${loc.onlineFull ? 'checked' : ''} />
+          <span>
+            <span class="font-medium">${loc.name}</span>
+            <span class="block text-sm text-mist mt-1">線上訂位已滿，請致電各店詢問現場保留位（${loc.phone}）</span>
+          </span>
+        </label>
+      `).join('');
     }
 
     async function loadList() {
@@ -270,6 +287,20 @@
       $(id).addEventListener('change', () => {
         fillTimes($('editTime'), $('editLocation').value, $('editDate').value, $('editTime').value);
       });
+    });
+    $('storeToggles').addEventListener('change', async (e) => {
+      const id = e.target.getAttribute('data-online-full');
+      if (!id) return;
+      try {
+        await api('/api/admin/settings', {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ locationId: id, onlineFull: e.target.checked }),
+        });
+      } catch (err) {
+        alert(err.message);
+        e.target.checked = !e.target.checked;
+      }
     });
     $('list').addEventListener('click', async (e) => {
       const editId = e.target.getAttribute('data-edit');

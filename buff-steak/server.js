@@ -30,6 +30,7 @@ const {
 } = require('./services/capacity');
 const { getLocationClosedInfo } = require('./services/store-hours');
 const { isValidTimeSlot, getAllPossibleTimeSlots } = require('./services/time-slots');
+const { loadSettings, setOnlineFull, isOnlineFull, getOnlineFullMessage } = require('./services/store-settings');
 
 const PORT = process.env.PORT || 3001;
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
@@ -86,6 +87,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.get('/api/config', (_req, res) => {
+  const settings = loadSettings();
   res.json({
     brand: site.brand,
     locations: site.locations.map((loc) => ({
@@ -98,12 +100,15 @@ app.get('/api/config', (_req, res) => {
       closedWeekdays: loc.closedWeekdays || [],
       mapQuery: loc.mapQuery,
       capacity: loc.capacity,
+      onlineFull: Boolean(settings.onlineFull[loc.id]),
+      onlineFullMessage: getOnlineFullMessage(loc),
     })),
     timeSlots: getAllPossibleTimeSlots(),
     timeSlotGroups: site.timeSlotGroups,
     timeSlotsByLocation: site.timeSlotsByLocation,
     diningDuration: site.diningDuration,
     minAdvanceHours: site.minAdvanceHours || 6,
+    reservationNotices: site.reservationNotices || [],
     mailConfigured: mailConfigured(),
     smsConfigured: smsConfigured(),
   });
@@ -119,6 +124,16 @@ app.get('/api/reserve/availability', (req, res) => {
   if (!date || !time) return res.status(400).json({ error: '請選擇日期與時間' });
   if (!isValidTimeSlot(loc, date, time)) return res.status(400).json({ error: '請選擇有效時段' });
 
+  if (isOnlineFull(loc.id)) {
+    return res.json({
+      ...getAvailability(loc, date, time),
+      remaining: 0,
+      available: false,
+      onlineFull: true,
+      onlineFullMessage: getOnlineFullMessage(loc),
+    });
+  }
+
   res.json(getAvailability(loc, date, time));
 });
 
@@ -132,12 +147,15 @@ app.get('/api/reserve/day-availability', (req, res) => {
 
   const closedInfo = getLocationClosedInfo(loc, date);
   const slots = getDayAvailability(loc, date);
+  const onlineFull = isOnlineFull(loc.id);
 
   res.json({
     locationId: loc.id,
     date,
     closed: closedInfo.closed,
     closedMessage: closedInfo.message,
+    onlineFull,
+    onlineFullMessage: onlineFull ? getOnlineFullMessage(loc) : null,
     slots,
   });
 });
@@ -161,6 +179,14 @@ app.post('/api/reserve', async (req, res) => {
 
     if (!isValidTimeSlot(loc, date, time)) {
       return res.status(400).json({ success: false, error: '請選擇有效時段' });
+    }
+
+    if (isOnlineFull(loc.id)) {
+      return res.status(400).json({
+        success: false,
+        error: getOnlineFullMessage(loc),
+        code: 'ONLINE_FULL',
+      });
     }
 
     const capacityCheck = checkReservationCapacity(loc, date, time, guestsNum);
@@ -546,6 +572,25 @@ app.post('/api/admin/reservations/:id/cancel', requireAdmin, async (req, res) =>
     console.error('[Admin cancel]', e.message);
     res.status(500).json({ error: '取消失敗' });
   }
+});
+
+app.get('/api/admin/settings', requireAdmin, (_req, res) => {
+  const settings = loadSettings();
+  res.json({
+    locations: site.locations.map((loc) => ({
+      id: loc.id,
+      name: loc.name,
+      phone: loc.phone,
+      onlineFull: Boolean(settings.onlineFull[loc.id]),
+    })),
+  });
+});
+
+app.patch('/api/admin/settings', requireAdmin, (req, res) => {
+  const locationId = String(req.body?.locationId || '').trim();
+  if (!locationById(locationId)) return res.status(400).json({ error: '請選擇分店' });
+  const settings = setOnlineFull(locationId, Boolean(req.body?.onlineFull));
+  res.json({ success: true, settings });
 });
 
 const PUBLIC = path.join(__dirname, 'public');
