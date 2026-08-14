@@ -31,7 +31,6 @@
 
   <main class="max-w-lg mx-auto px-5 py-12">
     <h1 class="font-['Playfair_Display'] text-3xl mb-2 text-center">線上訂位</h1>
-    <p class="text-mist text-xs text-center mb-2" id="slotIntro">請先選分店與日期後顯示可訂時段 · 平日 2 小時 · 假日 1.5 小時</p>
     <p class="text-gold text-base sm:text-lg font-semibold text-center leading-relaxed mb-4 px-2">線上訂位需至少提前 6 小時，因即時訂位時間不及，無法為您排位；臨時訂位請致電分店</p>
     <div class="bg-panel border border-line rounded-2xl p-4 mb-8 text-sm leading-relaxed space-y-2">
       <p>取消訂位請提早 2 小時致電分店告知。</p>
@@ -186,16 +185,6 @@
       return groups;
     }
 
-    function updateSlotIntro() {
-      const intro = document.getElementById('slotIntro');
-      const times = daySlots.map((s) => s.time);
-      if (!times.length) {
-        intro.textContent = '請先選分店與日期後顯示可訂時段 · 平日 2 小時 · 假日 1.5 小時';
-        return;
-      }
-      intro.textContent = `可訂時段 ${times.join('／')} · 平日 2 小時 · 假日 1.5 小時`;
-    }
-
     function buildTimeOptions() {
       if (!siteConfig) return;
       const locationId = locationSelect.value;
@@ -205,7 +194,6 @@
         timeSelect.innerHTML = '<option value="">請先選分店與日期</option>';
         capacityHint.classList.add('hidden');
         submitBtn.disabled = false;
-        updateSlotIntro();
         return;
       }
 
@@ -224,7 +212,6 @@
         html += '</optgroup>';
       });
       timeSelect.innerHTML = html;
-      updateSlotIntro();
       updateCapacityHint();
     }
 
