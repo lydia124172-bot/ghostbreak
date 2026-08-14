@@ -110,8 +110,19 @@
       return '待確認';
     }
 
-    function fillTimes(selectEl, value) {
-      selectEl.innerHTML = timeSlots.map((t) => `<option value="${t}">${t}</option>`).join('');
+    async function fillTimes(selectEl, locationId, date, value) {
+      let slots = timeSlots;
+      if (locationId && date) {
+        try {
+          const res = await fetch(`/api/reserve/day-availability?locationId=${encodeURIComponent(locationId)}&date=${encodeURIComponent(date)}`);
+          const data = await res.json();
+          if (Array.isArray(data.slots) && data.slots.length) {
+            slots = data.slots.map((s) => s.time);
+          }
+        } catch {}
+      }
+      if (value && !slots.includes(value)) slots = [value, ...slots];
+      selectEl.innerHTML = slots.map((t) => `<option value="${t}">${t}</option>`).join('');
       if (value) selectEl.value = value;
     }
 
@@ -186,13 +197,13 @@
       window.__rows = rows;
     }
 
-    function openEdit(row) {
+    async function openEdit(row) {
       editingId = row ? row.id : null;
       $('editTitle').textContent = row ? '更改訂位 ' + row.id : '現場新增訂位';
       $('editId').value = row ? row.id : '';
       $('editLocation').value = row ? row.locationId : 'shenkeng';
       $('editDate').value = row ? row.date : '';
-      fillTimes($('editTime'), row ? row.time : timeSlots[0]);
+      await fillTimes($('editTime'), $('editLocation').value, $('editDate').value, row ? row.time : '');
       $('editGuests').value = row ? row.guests : 2;
       $('editName').value = row ? row.name : '';
       $('editPhone').value = row ? row.phone : '';
@@ -255,6 +266,11 @@
     $('newBtn').addEventListener('click', () => openEdit(null));
     $('closeEdit').addEventListener('click', () => $('editModal').classList.add('hidden'));
     $('editForm').addEventListener('submit', saveEdit);
+    ['editLocation', 'editDate'].forEach((id) => {
+      $(id).addEventListener('change', () => {
+        fillTimes($('editTime'), $('editLocation').value, $('editDate').value, $('editTime').value);
+      });
+    });
     $('list').addEventListener('click', async (e) => {
       const editId = e.target.getAttribute('data-edit');
       const cancelId = e.target.getAttribute('data-cancel');

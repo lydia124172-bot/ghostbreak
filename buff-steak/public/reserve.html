@@ -32,7 +32,7 @@
   <main class="max-w-lg mx-auto px-5 py-12">
     <h1 class="font-['Playfair_Display'] text-3xl mb-2 text-center">線上訂位</h1>
     <p class="text-mist text-sm text-center mb-2">送出後我們將電話與您確認座位</p>
-    <p class="text-mist text-xs text-center mb-2" id="slotIntro">中午 11:00／12:30 · 晚上 17:00／18:30 · 平日 2 小時 · 假日 1.5 小時</p>
+    <p class="text-mist text-xs text-center mb-2" id="slotIntro">請先選分店與日期後顯示可訂時段 · 平日 2 小時 · 假日 1.5 小時</p>
     <p class="text-gold text-base sm:text-lg font-semibold text-center leading-relaxed mb-8 px-2">線上訂位需至少提前 6 小時，因即時訂位時間不及，無法為您排位；臨時訂位請致電分店</p>
 
     <form id="reserveForm" class="bg-panel border border-line rounded-2xl p-6 space-y-5">
@@ -137,6 +137,25 @@
       restHint.classList.toggle('hidden', !note);
     }
 
+    function groupSlots(slots) {
+      const lunch = slots.filter((t) => Number(String(t).split(':')[0]) < 15);
+      const dinner = slots.filter((t) => Number(String(t).split(':')[0]) >= 15);
+      const groups = [];
+      if (lunch.length) groups.push({ label: '中午時段', slots: lunch });
+      if (dinner.length) groups.push({ label: '晚上時段', slots: dinner });
+      return groups;
+    }
+
+    function updateSlotIntro() {
+      const intro = document.getElementById('slotIntro');
+      const times = daySlots.map((s) => s.time);
+      if (!times.length) {
+        intro.textContent = '請先選分店與日期後顯示可訂時段 · 平日 2 小時 · 假日 1.5 小時';
+        return;
+      }
+      intro.textContent = `可訂時段 ${times.join('／')} · 平日 2 小時 · 假日 1.5 小時`;
+    }
+
     function buildTimeOptions() {
       if (!siteConfig) return;
       const locationId = locationSelect.value;
@@ -146,11 +165,13 @@
         timeSelect.innerHTML = '<option value="">請先選分店與日期</option>';
         capacityHint.classList.add('hidden');
         submitBtn.disabled = false;
+        updateSlotIntro();
         return;
       }
 
       let html = '<option value="">請選擇時段</option>';
-      siteConfig.timeSlotGroups.forEach((group) => {
+      const times = daySlots.map((s) => s.time);
+      groupSlots(times).forEach((group) => {
         html += `<optgroup label="${group.label}">`;
         group.slots.forEach((slot) => {
           const info = daySlots.find((s) => s.time === slot);
@@ -164,6 +185,7 @@
         html += '</optgroup>';
       });
       timeSelect.innerHTML = html;
+      updateSlotIntro();
       updateCapacityHint();
     }
 

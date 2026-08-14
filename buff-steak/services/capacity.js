@@ -3,6 +3,7 @@ const site = require('../data/site');
 const { isHolidayDate, getHolidayReason } = require('./holidays');
 const { isLocationClosed, getClosedMessage } = require('./store-hours');
 const { isTooSoon, getLeadTimeMessage } = require('./lead-time');
+const { getTimeSlots } = require('./time-slots');
 
 const WEEKDAY_MINUTES = 120;
 const HOLIDAY_MINUTES = 90;
@@ -220,10 +221,10 @@ function checkReservationCapacity(loc, date, time, guests, opts = {}) {
 }
 
 function getDayAvailability(loc, date, opts = {}) {
-  const site = require('../data/site');
+  const slots = getTimeSlots(loc, date);
   if (isLocationClosed(loc, date)) {
     const msg = getClosedMessage(loc, date);
-    return site.timeSlots.map((time) => ({
+    return slots.map((time) => ({
       time,
       capacity: getLocationCapacity(loc),
       booked: 0,
@@ -234,7 +235,7 @@ function getDayAvailability(loc, date, opts = {}) {
       diningLabel: getDiningLabel(date),
     }));
   }
-  return site.timeSlots.map((time) => {
+  return slots.map((time) => {
     const info = getAvailability(loc, date, time, opts);
     return {
       time,

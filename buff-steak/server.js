@@ -29,6 +29,7 @@ const {
   checkReservationCapacity,
 } = require('./services/capacity');
 const { getLocationClosedInfo } = require('./services/store-hours');
+const { isValidTimeSlot, getAllPossibleTimeSlots } = require('./services/time-slots');
 
 const PORT = process.env.PORT || 3001;
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
@@ -98,8 +99,9 @@ app.get('/api/config', (_req, res) => {
       mapQuery: loc.mapQuery,
       capacity: loc.capacity,
     })),
-    timeSlots: site.timeSlots,
+    timeSlots: getAllPossibleTimeSlots(),
     timeSlotGroups: site.timeSlotGroups,
+    timeSlotsByLocation: site.timeSlotsByLocation,
     diningDuration: site.diningDuration,
     minAdvanceHours: site.minAdvanceHours || 6,
     mailConfigured: mailConfigured(),
@@ -115,7 +117,7 @@ app.get('/api/reserve/availability', (req, res) => {
   const loc = locationById(locationId);
   if (!loc) return res.status(400).json({ error: '請選擇分店' });
   if (!date || !time) return res.status(400).json({ error: '請選擇日期與時間' });
-  if (!site.timeSlots.includes(time)) return res.status(400).json({ error: '請選擇有效時段' });
+  if (!isValidTimeSlot(loc, date, time)) return res.status(400).json({ error: '請選擇有效時段' });
 
   res.json(getAvailability(loc, date, time));
 });
@@ -157,7 +159,7 @@ app.post('/api/reserve', async (req, res) => {
       return res.status(400).json({ success: false, error: '人數請填 1–20 人' });
     }
 
-    if (!site.timeSlots.includes(time)) {
+    if (!isValidTimeSlot(loc, date, time)) {
       return res.status(400).json({ success: false, error: '請選擇有效時段' });
     }
 
@@ -364,7 +366,7 @@ function validateReservationInput(fields, { requireAll } = { requireAll: true })
   }
   if (requireAll || time) {
     if (!time) return '請選擇時間';
-    if (!site.timeSlots.includes(time)) return '請選擇有效時段';
+    if (!isValidTimeSlot(loc, date, time)) return '請選擇有效時段';
   }
   if (requireAll || Number.isFinite(guestsNum)) {
     if (!guestsNum || guestsNum < 1 || guestsNum > 20) return '人數請填 1–20 人';
