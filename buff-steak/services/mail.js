@@ -101,11 +101,28 @@ function loadReservations() {
   }
 }
 
+function saveReservations(list) {
+  ensureDataDir();
+  fs.writeFileSync(RESERVATIONS_FILE, JSON.stringify(list, null, 2), 'utf8');
+}
+
 function saveReservation(entry) {
   const list = loadReservations();
   list.push(entry);
-  ensureDataDir();
-  fs.writeFileSync(RESERVATIONS_FILE, JSON.stringify(list, null, 2), 'utf8');
+  saveReservations(list);
+}
+
+function findReservation(id) {
+  return loadReservations().find((r) => r.id === id) || null;
+}
+
+function updateReservation(id, patch) {
+  const list = loadReservations();
+  const idx = list.findIndex((r) => r.id === id);
+  if (idx < 0) return null;
+  list[idx] = { ...list[idx], ...patch, id, updatedAt: new Date().toISOString() };
+  saveReservations(list);
+  return list[idx];
 }
 
 module.exports = {
@@ -113,6 +130,9 @@ module.exports = {
   initMail,
   sendMail,
   loadReservations,
+  saveReservations,
   saveReservation,
+  findReservation,
+  updateReservation,
   mailConfigured: () => resendReady() || smtpReady(),
 };

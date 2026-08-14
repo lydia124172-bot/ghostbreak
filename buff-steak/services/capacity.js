@@ -36,9 +36,13 @@ function getLocationCapacity(loc) {
   return cap > 0 ? cap : 0;
 }
 
-function buildWindows(reservations, locationId, date) {
+function isActiveReservation(r) {
+  return r && r.status !== 'cancelled';
+}
+
+function buildWindows(reservations, locationId, date, excludeId) {
   return reservations
-    .filter((r) => r.locationId === locationId && r.date === date)
+    .filter((r) => isActiveReservation(r) && r.locationId === locationId && r.date === date && r.id !== excludeId)
     .map((r) => {
       const duration = getDiningDurationMinutes(r.date);
       return {
@@ -97,11 +101,11 @@ function peakDuringWindow(existingWindows, start, end) {
   return peak;
 }
 
-function maxAddableGuests(loc, date, time) {
+function maxAddableGuests(loc, date, time, excludeId) {
   const capacity = getLocationCapacity(loc);
   if (!capacity) return 20;
 
-  const existing = buildWindows(loadReservations(), loc.id, date);
+  const existing = buildWindows(loadReservations(), loc.id, date, excludeId);
   const start = parseTime(time);
   const duration = getDiningDurationMinutes(date);
   let max = 0;
@@ -115,7 +119,10 @@ function maxAddableGuests(loc, date, time) {
   return max;
 }
 
-function getAvailability(loc, date, time) {
+function getAvailability(loc, date, time, opts = {}) {
+  const excludeId = opts.excludeId;
+  const skipLeadTime = Boolean(opts.skipLeadTime);
+
   if (isLocationClosed(loc, date)) {
     const capacity = getLocationCapacity(loc);
     return {
@@ -137,13 +144,13 @@ function getAvailability(loc, date, time) {
   }
 
   const capacity = getLocationCapacity(loc);
-  const existing = buildWindows(loadReservations(), loc.id, date);
+  const existing = buildWindows(loadReservations(), loc.id, date, excludeId);
   const start = parseTime(time);
   const duration = getDiningDurationMinutes(date);
   const end = start + duration;
   const booked = peakDuringWindow(existing, start, end);
-  const remainingSeats = maxAddableGuests(loc, date, time);
-  const tooSoon = isTooSoon(date, time);
+  const remainingSeats = maxAddableGuests(loc, date, time, excludeId);
+  const tooSoon = skipLeadTime ? false : isTooSoon(date, time);
   const remaining = tooSoon ? 0 : remainingSeats;
 
   return {
@@ -164,7 +171,7 @@ function getAvailability(loc, date, time) {
   };
 }
 
-function checkReservationCapacity(loc, date, time, guests) {
+function checkReservationCapacity(loc, date, time, guests, opts = {}) {
   if (isLocationClosed(loc, date)) {
     return {
       ok: false,
@@ -173,7 +180,7 @@ function checkReservationCapacity(loc, date, time, guests) {
     };
   }
 
-  if (isTooSoon(date, time)) {
+  if (!opts.skipLeadTime && isTooSoon(date, time)) {
     return {
       ok: false,
       message: getLeadTimeMessage(loc),
@@ -185,7 +192,7 @@ function checkReservationCapacity(loc, date, time, guests) {
   if (!capacity) return { ok: true };
 
   const guestsNum = Number(guests);
-  const { booked, remaining, diningLabel } = getAvailability(loc, date, time);
+  const { booked, remaining, diningLabel } = getAvailability(loc, date, time, opts);
 
   if (remaining <= 0) {
     return {
@@ -212,7 +219,7 @@ function checkReservationCapacity(loc, date, time, guests) {
   return { ok: true, capacity, booked, remaining };
 }
 
-function getDayAvailability(loc, date) {
+function getDayAvailability(loc, date, opts = {}) {
   const site = require('../data/site');
   if (isLocationClosed(loc, date)) {
     const msg = getClosedMessage(loc, date);
@@ -228,7 +235,7 @@ function getDayAvailability(loc, date) {
     }));
   }
   return site.timeSlots.map((time) => {
-    const info = getAvailability(loc, date, time);
+    const info = getAvailability(loc, date, time, opts);
     return {
       time,
       capacity: info.capacity,

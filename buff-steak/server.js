@@ -9,8 +9,12 @@ const {
   initMail,
   sendMail,
   saveReservation,
+  loadReservations,
+  findReservation,
+  updateReservation,
   mailConfigured,
 } = require('./services/mail');
+const { adminConfigured, login: adminLogin, requireAdmin } = require('./services/admin-auth');
 const {
   smsConfigured,
   sendReservationSms,
@@ -75,6 +79,7 @@ app.get('/api/health', (_req, res) => {
     twilioFromSuffix: from ? from.slice(-4) : null,
     franchiseNotify: null,
     hqNotify: 'email',
+    adminConfigured: adminConfigured(),
     locations: locs,
   });
 });
@@ -180,6 +185,7 @@ app.post('/api/reserve', async (req, res) => {
       phone: String(phone).trim(),
       email: String(email || '').trim(),
       notes: String(notes || '').trim(),
+      status: 'pending',
     };
 
     saveReservation(entry);
@@ -334,9 +340,215 @@ app.post('/api/franchise', async (req, res) => {
   }
 });
 
+function reservationFieldsFromBody(body) {
+  const locationId = String(body.locationId || '').trim();
+  const loc = locationById(locationId);
+  const date = String(body.date || '').trim();
+  const time = String(body.time || '').trim();
+  const guestsNum = Number(body.guests);
+  const name = String(body.name || '').trim();
+  const phone = String(body.phone || '').trim();
+  const email = String(body.email || '').trim();
+  const notes = String(body.notes || '').trim();
+  const status = String(body.status || 'pending').trim();
+  return { loc, locationId, date, time, guestsNum, name, phone, email, notes, status };
+}
+
+function validateReservationInput(fields, { requireAll } = { requireAll: true }) {
+  const { loc, date, time, guestsNum, name, phone, email, status } = fields;
+  if (requireAll || fields.locationId) {
+    if (!loc) return '請選擇分店';
+  }
+  if (requireAll || date) {
+    if (!date) return '請選擇日期';
+  }
+  if (requireAll || time) {
+    if (!time) return '請選擇時間';
+    if (!site.timeSlots.includes(time)) return '請選擇有效時段';
+  }
+  if (requireAll || Number.isFinite(guestsNum)) {
+    if (!guestsNum || guestsNum < 1 || guestsNum > 20) return '人數請填 1–20 人';
+  }
+  if (requireAll || name) {
+    if (!name || name.length < 2) return '請填寫姓名';
+  }
+  if (requireAll || phone) {
+    if (!isPhone(phone)) return '請填寫有效電話';
+  }
+  if (email && !isEmail(email)) return 'Email 格式不正確';
+  if (status && !['pending', 'confirmed', 'cancelled'].includes(status)) {
+    return '狀態請選 待確認 / 已確認 / 已取消';
+  }
+  return null;
+}
+
+async function notifyGuestReservationChange(entry, loc, kind) {
+  if (!entry.email || !isEmail(entry.email)) return;
+  const titles = {
+    created: '八斧牛排訂位已為您建立',
+    updated: '八斧牛排訂位資料已更新',
+    cancelled: '八斧牛排訂位已取消',
+    confirmed: '八斧牛排訂位已確認',
+  };
+  const subject = titles[kind] || titles.updated;
+  await safeSendMail({
+    to: entry.email,
+    subject,
+    text: [
+      `${entry.name} 您好，`,
+      '',
+      kind === 'cancelled' ? '您的訂位已取消。' : '您的訂位資料如下：',
+      '',
+      `分店：${loc?.name || entry.locationName}`,
+      `日期：${entry.date}`,
+      `時間：${entry.time}`,
+      `人數：${entry.guests} 人`,
+      `狀態：${entry.status === 'confirmed' ? '已確認' : entry.status === 'cancelled' ? '已取消' : '待確認'}`,
+      `單號：${entry.id}`,
+      '',
+      `如有疑問請致電分店：${loc?.phone || ''}`,
+      '',
+      '八斧牛排 BUFF STEAK',
+    ].join('\n'),
+  });
+}
+
+app.post('/api/admin/login', (req, res) => {
+  const result = adminLogin(req.body?.password);
+  if (!result.ok) return res.status(401).json({ error: result.error });
+  res.json({ token: result.token });
+});
+
+app.get('/api/admin/reservations', requireAdmin, (req, res) => {
+  const locationId = String(req.query.locationId || '').trim();
+  const date = String(req.query.date || '').trim();
+  const status = String(req.query.status || '').trim();
+  const q = String(req.query.q || '').trim().toLowerCase();
+
+  let list = loadReservations();
+  if (locationId) list = list.filter((r) => r.locationId === locationId);
+  if (date) list = list.filter((r) => r.date === date);
+  if (status) list = list.filter((r) => (r.status || 'pending') === status);
+  if (q) {
+    list = list.filter((r) => {
+      const hay = `${r.id} ${r.name} ${r.phone} ${r.email || ''}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  list.sort((a, b) => {
+    const da = `${a.date || ''} ${a.time || ''}`;
+    const db = `${b.date || ''} ${b.time || ''}`;
+    return db.localeCompare(da) || String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+  });
+  res.json({ reservations: list });
+});
+
+app.post('/api/admin/reservations', requireAdmin, async (req, res) => {
+  try {
+    const fields = reservationFieldsFromBody(req.body || {});
+    const err = validateReservationInput(fields);
+    if (err) return res.status(400).json({ error: err });
+
+    const { loc, date, time, guestsNum, name, phone, email, notes, status } = fields;
+    const capacityCheck = checkReservationCapacity(loc, date, time, guestsNum, { skipLeadTime: true });
+    if (!capacityCheck.ok) {
+      return res.status(400).json({ error: capacityCheck.message, code: capacityCheck.code });
+    }
+
+    const entry = {
+      id: `R-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      locationId: loc.id,
+      locationName: loc.name,
+      date,
+      time,
+      guests: guestsNum,
+      name,
+      phone,
+      email,
+      notes,
+      status: status === 'cancelled' ? 'cancelled' : (status || 'confirmed'),
+      source: 'admin',
+    };
+    saveReservation(entry);
+    await notifyGuestReservationChange(entry, loc, entry.status === 'confirmed' ? 'confirmed' : 'created');
+    res.json({ success: true, reservation: entry });
+  } catch (e) {
+    console.error('[Admin create]', e.message);
+    res.status(500).json({ error: '新增失敗' });
+  }
+});
+
+app.patch('/api/admin/reservations/:id', requireAdmin, async (req, res) => {
+  try {
+    const current = findReservation(req.params.id);
+    if (!current) return res.status(404).json({ error: '找不到這筆訂位' });
+
+    const merged = {
+      locationId: req.body.locationId ?? current.locationId,
+      date: req.body.date ?? current.date,
+      time: req.body.time ?? current.time,
+      guests: req.body.guests ?? current.guests,
+      name: req.body.name ?? current.name,
+      phone: req.body.phone ?? current.phone,
+      email: req.body.email ?? current.email,
+      notes: req.body.notes ?? current.notes,
+      status: req.body.status ?? current.status ?? 'pending',
+    };
+    const fields = reservationFieldsFromBody(merged);
+    const err = validateReservationInput(fields);
+    if (err) return res.status(400).json({ error: err });
+
+    const { loc, date, time, guestsNum, name, phone, email, notes, status } = fields;
+    if (status !== 'cancelled') {
+      const capacityCheck = checkReservationCapacity(loc, date, time, guestsNum, {
+        skipLeadTime: true,
+        excludeId: current.id,
+      });
+      if (!capacityCheck.ok) {
+        return res.status(400).json({ error: capacityCheck.message, code: capacityCheck.code });
+      }
+    }
+
+    const updated = updateReservation(current.id, {
+      locationId: loc.id,
+      locationName: loc.name,
+      date,
+      time,
+      guests: guestsNum,
+      name,
+      phone,
+      email,
+      notes,
+      status,
+    });
+
+    const kind = status === 'cancelled' ? 'cancelled' : status === 'confirmed' ? 'confirmed' : 'updated';
+    await notifyGuestReservationChange(updated, loc, kind);
+    res.json({ success: true, reservation: updated });
+  } catch (e) {
+    console.error('[Admin update]', e.message);
+    res.status(500).json({ error: '更新失敗' });
+  }
+});
+
+app.post('/api/admin/reservations/:id/cancel', requireAdmin, async (req, res) => {
+  try {
+    const current = findReservation(req.params.id);
+    if (!current) return res.status(404).json({ error: '找不到這筆訂位' });
+    const updated = updateReservation(current.id, { status: 'cancelled' });
+    const loc = locationById(updated.locationId);
+    await notifyGuestReservationChange(updated, loc, 'cancelled');
+    res.json({ success: true, reservation: updated });
+  } catch (e) {
+    console.error('[Admin cancel]', e.message);
+    res.status(500).json({ error: '取消失敗' });
+  }
+});
+
 const PUBLIC = path.join(__dirname, 'public');
 const HTML_PAGES = ['menu', 'locations', 'reserve', 'franchise', 'gallery', 'story'];
-const HTML_SKIP_GA = new Set(['404.html']);
+const HTML_SKIP_GA = new Set(['404.html', 'admin.html']);
 
 function injectGaSnippet(html) {
   if (!GA_MEASUREMENT_ID || html.includes('googletagmanager.com/gtag/js')) return html;
@@ -384,13 +596,14 @@ function buildSitemapXml() {
 }
 
 app.get('/robots.txt', (_req, res) => {
-  res.type('text/plain').send(`User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`);
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin.html\n\nSitemap: ${BASE_URL}/sitemap.xml\n`);
 });
 app.get('/sitemap.xml', (_req, res) => {
   res.type('application/xml').send(buildSitemapXml());
 });
 
 app.get('/', (_req, res) => sendPage(res, 'index.html'));
+app.get('/admin', (_req, res) => sendPage(res, 'admin.html'));
 HTML_PAGES.forEach((page) => {
   app.get(`/${page}`, (_req, res) => sendPage(res, `${page}.html`));
 });

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>訂位後台 — 八斧牛排</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/images/logo-circle-dark.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="buff-page min-h-screen">
+  <header class="buff-header sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+      <span class="buff-logo-mark">
+        <span class="buff-logo-emblem"><img src="/images/logo-circle-dark.png" alt="" width="40" height="40" /></span>
+        <span class="buff-logo-text">
+          <span class="buff-logo-cn">訂位後台</span>
+          <span class="buff-logo-en">STAFF ONLY</span>
+        </span>
+      </span>
+      <button id="logoutBtn" class="nav-link hidden" type="button">登出</button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-5 py-10">
+    <section id="loginBox" class="max-w-sm mx-auto bg-panel border border-line rounded-2xl p-6">
+      <h1 class="font-['Playfair_Display'] text-2xl mb-2 text-center">員工登入</h1>
+      <p class="text-mist text-sm text-center mb-6">僅供更改、確認、取消訂位</p>
+      <label class="block text-xs text-mist mb-2">後台密碼</label>
+      <input id="password" type="password" class="form-input mb-4" autocomplete="current-password" />
+      <p id="loginError" class="text-red-400 text-sm mb-3 hidden"></p>
+      <button id="loginBtn" type="button" class="w-full bg-gold text-black font-medium py-3 rounded-xl">進入後台</button>
+    </section>
+
+    <section id="appBox" class="hidden space-y-6">
+      <div class="bg-panel border border-line rounded-2xl p-4 grid gap-3 md:grid-cols-5">
+        <select id="filterLocation" class="form-input">
+          <option value="">全部分店</option>
+          <option value="shenkeng">深坑店</option>
+          <option value="shilin">士林店</option>
+        </select>
+        <input id="filterDate" type="date" class="form-input" />
+        <select id="filterStatus" class="form-input">
+          <option value="">全部狀態</option>
+          <option value="pending">待確認</option>
+          <option value="confirmed">已確認</option>
+          <option value="cancelled">已取消</option>
+        </select>
+        <input id="filterQ" class="form-input" placeholder="姓名 / 電話 / 單號" />
+        <button id="reloadBtn" type="button" class="bg-gold text-black font-medium rounded-xl">重新整理</button>
+      </div>
+
+      <div class="flex justify-end">
+        <button id="newBtn" type="button" class="border border-gold text-gold px-4 py-2 rounded-xl text-sm">＋ 現場新增訂位</button>
+      </div>
+
+      <div id="list" class="space-y-3"></div>
+    </section>
+  </main>
+
+  <div id="editModal" class="hidden fixed inset-0 bg-black/70 z-50 overflow-y-auto">
+    <div class="max-w-lg mx-auto my-10 bg-panel border border-line rounded-2xl p-6">
+      <h2 id="editTitle" class="text-xl mb-4">更改訂位</h2>
+      <form id="editForm" class="space-y-3">
+        <input type="hidden" id="editId" />
+        <select id="editLocation" class="form-input" required>
+          <option value="shenkeng">八斧深坑店</option>
+          <option value="shilin">八斧士林店</option>
+        </select>
+        <div class="grid grid-cols-2 gap-3">
+          <input id="editDate" type="date" class="form-input" required />
+          <select id="editTime" class="form-input" required></select>
+        </div>
+        <input id="editGuests" type="number" min="1" max="20" class="form-input" placeholder="人數" required />
+        <input id="editName" class="form-input" placeholder="姓名" required />
+        <input id="editPhone" class="form-input" placeholder="電話" required />
+        <input id="editEmail" class="form-input" placeholder="Email（選填）" />
+        <textarea id="editNotes" class="form-input" rows="2" placeholder="備註"></textarea>
+        <select id="editStatus" class="form-input">
+          <option value="pending">待確認</option>
+          <option value="confirmed">已確認</option>
+          <option value="cancelled">已取消</option>
+        </select>
+        <p id="editError" class="text-red-400 text-sm hidden"></p>
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="flex-1 bg-gold text-black font-medium py-3 rounded-xl">儲存</button>
+          <button id="closeEdit" type="button" class="flex-1 border border-line py-3 rounded-xl">關閉</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const TOKEN_KEY = 'buff_admin_token';
+    let timeSlots = ['11:00', '12:30', '17:00', '18:30'];
+    let editingId = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function token() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() };
+    }
+
+    function statusLabel(s) {
+      if (s === 'confirmed') return '已確認';
+      if (s === 'cancelled') return '已取消';
+      return '待確認';
+    }
+
+    function fillTimes(selectEl, value) {
+      selectEl.innerHTML = timeSlots.map((t) => `<option value="${t}">${t}</option>`).join('');
+      if (value) selectEl.value = value;
+    }
+
+    async function api(url, opts = {}) {
+      const res = await fetch(url, opts);
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        sessionStorage.removeItem(TOKEN_KEY);
+        showLogin();
+        throw new Error(data.error || '請重新登入');
+      }
+      if (!res.ok) throw new Error(data.error || '操作失敗');
+      return data;
+    }
+
+    function showLogin() {
+      $('loginBox').classList.remove('hidden');
+      $('appBox').classList.add('hidden');
+      $('logoutBtn').classList.add('hidden');
+    }
+
+    function showApp() {
+      $('loginBox').classList.add('hidden');
+      $('appBox').classList.remove('hidden');
+      $('logoutBtn').classList.remove('hidden');
+      loadList();
+    }
+
+    async function login() {
+      $('loginError').classList.add('hidden');
+      try {
+        const data = await api('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: $('password').value }),
+        });
+        sessionStorage.setItem(TOKEN_KEY, data.token);
+        showApp();
+      } catch (e) {
+        $('loginError').textContent = e.message;
+        $('loginError').classList.remove('hidden');
+      }
+    }
+
+    async function loadList() {
+      const params = new URLSearchParams();
+      if ($('filterLocation').value) params.set('locationId', $('filterLocation').value);
+      if ($('filterDate').value) params.set('date', $('filterDate').value);
+      if ($('filterStatus').value) params.set('status', $('filterStatus').value);
+      if ($('filterQ').value.trim()) params.set('q', $('filterQ').value.trim());
+      const data = await api('/api/admin/reservations?' + params.toString(), { headers: authHeaders() });
+      const rows = data.reservations || [];
+      if (!rows.length) {
+        $('list').innerHTML = '<p class="text-mist text-center py-10">沒有符合的訂位</p>';
+        return;
+      }
+      $('list').innerHTML = rows.map((r) => {
+        const st = r.status || 'pending';
+        const color = st === 'confirmed' ? 'text-green-400' : st === 'cancelled' ? 'text-mist line-through' : 'text-gold';
+        return `<article class="bg-panel border border-line rounded-2xl p-4 flex flex-col md:flex-row md:items-center gap-3 justify-between">
+          <div>
+            <p class="font-medium">${r.date} ${r.time} · ${r.locationName || r.locationId} · ${r.guests} 人</p>
+            <p class="text-sm text-mist mt-1">${r.name} · ${r.phone}${r.email ? ' · ' + r.email : ''}</p>
+            <p class="text-xs text-mist mt-1">${r.id} · <span class="${color}">${statusLabel(st)}</span>${r.notes ? ' · ' + r.notes : ''}</p>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-edit="${r.id}">更改</button>
+            ${st === 'cancelled' ? '' : `<button type="button" class="border border-line px-3 py-2 rounded-lg text-sm" data-cancel="${r.id}">取消</button>`}
+          </div>
+        </article>`;
+      }).join('');
+      window.__rows = rows;
+    }
+
+    function openEdit(row) {
+      editingId = row ? row.id : null;
+      $('editTitle').textContent = row ? '更改訂位 ' + row.id : '現場新增訂位';
+      $('editId').value = row ? row.id : '';
+      $('editLocation').value = row ? row.locationId : 'shenkeng';
+      $('editDate').value = row ? row.date : '';
+      fillTimes($('editTime'), row ? row.time : timeSlots[0]);
+      $('editGuests').value = row ? row.guests : 2;
+      $('editName').value = row ? row.name : '';
+      $('editPhone').value = row ? row.phone : '';
+      $('editEmail').value = row ? row.email || '' : '';
+      $('editNotes').value = row ? row.notes || '' : '';
+      $('editStatus').value = row ? (row.status || 'pending') : 'confirmed';
+      $('editError').classList.add('hidden');
+      $('editModal').classList.remove('hidden');
+    }
+
+    async function saveEdit(ev) {
+      ev.preventDefault();
+      $('editError').classList.add('hidden');
+      const body = {
+        locationId: $('editLocation').value,
+        date: $('editDate').value,
+        time: $('editTime').value,
+        guests: Number($('editGuests').value),
+        name: $('editName').value.trim(),
+        phone: $('editPhone').value.trim(),
+        email: $('editEmail').value.trim(),
+        notes: $('editNotes').value.trim(),
+        status: $('editStatus').value,
+      };
+      try {
+        if (editingId) {
+          await api('/api/admin/reservations/' + encodeURIComponent(editingId), {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify(body),
+          });
+        } else {
+          await api('/api/admin/reservations', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify(body),
+          });
+        }
+        $('editModal').classList.add('hidden');
+        await loadList();
+      } catch (e) {
+        $('editError').textContent = e.message;
+        $('editError').classList.remove('hidden');
+      }
+    }
+
+    $('loginBtn').addEventListener('click', login);
+    $('password').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+    $('logoutBtn').addEventListener('click', () => {
+      sessionStorage.removeItem(TOKEN_KEY);
+      showLogin();
+    });
+    $('reloadBtn').addEventListener('click', () => loadList().catch((e) => alert(e.message)));
+    ['filterLocation', 'filterDate', 'filterStatus'].forEach((id) => {
+      $(id).addEventListener('change', () => loadList().catch((e) => alert(e.message)));
+    });
+    $('filterQ').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') loadList().catch((err) => alert(err.message));
+    });
+    $('newBtn').addEventListener('click', () => openEdit(null));
+    $('closeEdit').addEventListener('click', () => $('editModal').classList.add('hidden'));
+    $('editForm').addEventListener('submit', saveEdit);
+    $('list').addEventListener('click', async (e) => {
+      const editId = e.target.getAttribute('data-edit');
+      const cancelId = e.target.getAttribute('data-cancel');
+      if (editId) {
+        const row = (window.__rows || []).find((r) => r.id === editId);
+        if (row) openEdit(row);
+      }
+      if (cancelId && confirm('確定取消這筆訂位？')) {
+        try {
+          await api('/api/admin/reservations/' + encodeURIComponent(cancelId) + '/cancel', {
+            method: 'POST',
+            headers: authHeaders(),
+          });
+          await loadList();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+    });
+
+    fetch('/api/config').then((r) => r.json()).then((cfg) => {
+      if (Array.isArray(cfg.timeSlots) && cfg.timeSlots.length) timeSlots = cfg.timeSlots;
+    }).catch(() => {});
+
+    if (token()) showApp();
+    else showLogin();
+  </script>
+</body>
+</html>
