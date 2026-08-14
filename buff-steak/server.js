@@ -174,8 +174,8 @@ app.post('/api/reserve', async (req, res) => {
     if (!isPhone(phone)) return res.status(400).json({ success: false, error: '請填寫有效電話' });
 
     const guestsNum = Number(guests);
-    if (!guestsNum || guestsNum < 1 || guestsNum > 20) {
-      return res.status(400).json({ success: false, error: '人數請填 1–20 人' });
+    if (!guestsNum || guestsNum < 1) {
+      return res.status(400).json({ success: false, error: '人數請填 1–9 人' });
     }
 
     const maxOnline = Number(site.maxOnlineGuests) || 9;
@@ -405,7 +405,7 @@ function validateReservationInput(fields, { requireAll } = { requireAll: true })
     if (!isValidTimeSlot(loc, date, time)) return '請選擇有效時段';
   }
   if (requireAll || Number.isFinite(guestsNum)) {
-    if (!guestsNum || guestsNum < 1 || guestsNum > 20) return '人數請填 1–20 人';
+    if (!guestsNum || guestsNum < 1 || guestsNum > 9) return '人數請填 1–9 人；10 人以上請致電分店，不在系統建檔';
   }
   if (requireAll || name) {
     if (!name || name.length < 2) return '請填寫姓名';
