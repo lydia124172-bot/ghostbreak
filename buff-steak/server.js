@@ -266,7 +266,7 @@ app.post('/api/reserve', async (req, res) => {
           `人數：${guestsNum} 人`,
           `單號：${entry.id}`,
           '',
-          '我們將盡快致電與您確認。如需更改請直接致電分店：',
+          '如需更改或取消請提早 2 小時致電分店：',
           `${loc.phone}`,
           '',
           '感謝您選擇八斧牛排。',
@@ -287,7 +287,7 @@ app.post('/api/reserve', async (req, res) => {
     res.json({
       success: true,
       id: entry.id,
-      message: '訂位已送出，我們將電話與您確認。',
+      message: '訂位已送出。',
       reservation: {
         id: entry.id,
         locationName: loc.name,

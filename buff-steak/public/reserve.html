@@ -31,7 +31,6 @@
 
   <main class="max-w-lg mx-auto px-5 py-12">
     <h1 class="font-['Playfair_Display'] text-3xl mb-2 text-center">線上訂位</h1>
-    <p class="text-mist text-sm text-center mb-2">送出後我們將電話與您確認座位</p>
     <p class="text-mist text-xs text-center mb-2" id="slotIntro">請先選分店與日期後顯示可訂時段 · 平日 2 小時 · 假日 1.5 小時</p>
     <p class="text-gold text-base sm:text-lg font-semibold text-center leading-relaxed mb-4 px-2">線上訂位需至少提前 6 小時，因即時訂位時間不及，無法為您排位；臨時訂位請致電分店</p>
     <div class="bg-panel border border-line rounded-2xl p-4 mb-8 text-sm leading-relaxed space-y-2">
@@ -76,7 +75,7 @@
       <div>
         <label class="block text-xs text-mist mb-2">手機 *</label>
         <input type="tel" id="phone" class="form-input" required placeholder="09xx xxx xxx" />
-        <p class="text-[11px] text-mist mt-1">僅供餐廳致電確認，只填電話不會收到確認簡訊或確認信</p>
+        <p class="text-[11px] text-mist mt-1">只填電話不會收到確認簡訊或確認信</p>
       </div>
       <div>
         <label class="block text-xs text-mist mb-2">Email（選填）</label>
@@ -424,8 +423,8 @@
         const hints = [];
         if (data.guestConfirmation?.email) hints.push('確認信已發送至您的 Email');
         document.getElementById('confirmHint').textContent = hints.length
-          ? hints.join('，') + '。請留意手機來電，我們將與您確認座位。'
-          : '未填 Email，不會寄出確認信。請留意手機來電，我們將與您確認座位。';
+          ? hints.join('，') + '。'
+          : '未填 Email，不會寄出確認信。';
         trackEvent('reserve_submit', {
           location_id: locationSelect.value,
           reservation_id: data.id || '',

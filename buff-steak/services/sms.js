@@ -155,7 +155,7 @@ function buildFranchiseSms(entry) {
 function buildGuestReserveSms(entry, loc) {
   const shortLoc = shortLocationName(loc.name);
   const dateShort = formatDateShort(entry.date);
-  const body = `【八斧牛排】${entry.name}您好，已收到訂位（待確認）${shortLoc} ${dateShort} ${entry.time} ${entry.guests}人 單號${entry.id} 我們將電話確認`;
+  const body = `【八斧牛排】${entry.name}您好，已收到訂位 ${shortLoc} ${dateShort} ${entry.time} ${entry.guests}人 單號${entry.id}`;
   return body.slice(0, getMaxLength());
 }
 
