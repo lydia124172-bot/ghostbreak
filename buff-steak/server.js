@@ -287,7 +287,7 @@ app.post('/api/reserve', async (req, res) => {
     res.json({
       success: true,
       id: entry.id,
-      message: '訂位已送出。',
+      message: '訂位成功，有變動會以電話通知。',
       reservation: {
         id: entry.id,
         locationName: loc.name,
