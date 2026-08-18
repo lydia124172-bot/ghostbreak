@@ -28,6 +28,7 @@ const { getDomainName, getOfficialEmailFrom } = require('./services/privacy');
 
 const PORT = process.env.PORT || 3000;
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
+const HTML_SKIP_GA = new Set(['admin.html']);
 
 const PAYPAL_MODE = (process.env.PAYPAL_MODE || 'sandbox').toLowerCase();
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || '';
@@ -586,16 +587,56 @@ app.post('/api/paypal/capture-order', async (req, res) => {
   }
 });
 
+function getGaMeasurementId() {
+  return String(process.env.GA_MEASUREMENT_ID || '').trim();
+}
+
+function injectGaSnippet(html) {
+  const gaId = getGaMeasurementId().replace(/[^A-Za-z0-9_-]/g, '');
+  if (!gaId || html.includes('googletagmanager.com/gtag/js')) return html;
+  const snippet = `
+  <script async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '${gaId}', { anonymize_ip: true });
+  </script>`;
+  if (!html.includes('</head>')) return html;
+  return html.replace('</head>', `${snippet}\n</head>`);
+}
+
+function renderPublicHtml(relPath) {
+  const filePath = path.join(__dirname, 'public', relPath);
+  let html = fs.readFileSync(filePath, 'utf8');
+  if (!HTML_SKIP_GA.has(relPath)) {
+    html = injectGaSnippet(html);
+  }
+  return html;
+}
+
 function renderIndexHtml() {
   const template = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
   const siteKey = getRecaptchaSiteKey() || '';
   const buildId = String(Date.now());
   const sandboxBadgeClass = PAYPAL_MODE === 'live' ? 'hidden' : 'inline';
-  return template
+  return injectGaSnippet(template
     .replaceAll('__RECAPTCHA_SITE_KEY__', siteKey)
     .replace('__BUILD_ID__', buildId)
-    .replace('__SANDBOX_BADGE_CLASS__', sandboxBadgeClass);
+    .replace('__SANDBOX_BADGE_CLASS__', sandboxBadgeClass));
 }
+
+app.get('/tools/sms-character-counter', (_req, res) => {
+  res.type('html').send(renderPublicHtml('tools/sms-character-counter.html'));
+});
+
+app.get(/\.html$/, (req, res, next) => {
+  if (req.path === '/index.html') return next();
+  const rel = req.path.replace(/^\//, '');
+  const filePath = path.join(__dirname, 'public', rel);
+  if (!fs.existsSync(filePath)) return next();
+  res.type('html').send(renderPublicHtml(rel));
+});
 
 app.get(['/', '/index.html'], (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -612,7 +653,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 app.use((_req, res) => {
-  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+  res.status(404).type('html').send(renderPublicHtml('404.html'));
 });
 
 app.listen(PORT, async () => {
@@ -656,6 +697,7 @@ app.listen(PORT, async () => {
     console.log(`📱 Twilio SMS 模式: ${isTwilioTrialAccount() ? 'Trial 短簡訊（≤70字）' : '完整簡訊（≤1500字）'} | TWILIO_TRIAL_MODE=${trialEnv}`);
   }
   console.log(`🛡️  reCAPTCHA v3: ${isRecaptchaDevBypass() ? '本機略過（RECAPTCHA_DEV_BYPASS=true）' : recaptchaConfigured() ? `LIVE（min score ${getRecaptchaMinScore()}）` : '未設定（開發模式略過）'}`);
+  console.log(`📊 GA4: ${getGaMeasurementId() ? getGaMeasurementId() : '未設定（GA_MEASUREMENT_ID）'}`);
   if (!twilioDiag.ok) {
     console.log('   ↳ 填入 LIVE Auth Token、FROM (+1 虛擬號)、TO (Verified Caller ID) 後執行 npm run test:sms');
   }
