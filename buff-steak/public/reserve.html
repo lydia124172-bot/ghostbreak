@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>線上訂位 — 八斧牛排</title>
-  <meta name="description" content="八斧牛排深坑店、士林店線上訂位。選擇分店、日期、時間與人數。" />
+  <meta name="description" content="八斧牛排深坑店、士林店線上訂位。填寫 Email 才會收到訂位確認信；未填 Email 不會寄出確認。" />
   <link rel="canonical" href="https://steak.bafuholdings.com/reserve" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="icon" href="/images/logo-circle-dark.png" type="image/png" />
@@ -77,9 +77,9 @@
         <input type="tel" id="phone" class="form-input" required placeholder="09xx xxx xxx" />
       </div>
       <div>
-        <label class="block text-xs text-mist mb-2">Email（選填）</label>
+        <label class="block text-xs text-mist mb-2">Email（選填，建議填寫）</label>
         <input type="email" id="email" class="form-input" placeholder="you@email.com" />
-        <p class="text-[11px] text-mist mt-1">訂位後會以 Email 確認</p>
+        <p class="text-[11px] text-mist mt-1">訂位確認只寄 Email。有填寫才會收到確認信；只填電話不會收到確認。</p>
       </div>
       <div>
         <label class="block text-xs text-mist mb-2">備註</label>
@@ -91,7 +91,7 @@
 
     <div id="successBox" class="hidden mt-8 menu-card text-center">
       <p class="text-gold font-semibold mb-2">訂位成功</p>
-      <p id="successMsg" class="text-sm text-mist">有變動會以電話通知</p>
+      <p id="successMsg" class="text-sm text-mist"></p>
       <p id="holdHint" class="text-sm text-gold mt-2">請準時到店，位置只保留 15 分鐘。</p>
       <div id="successDetails" class="text-sm text-left mt-4 space-y-1 hidden"></div>
       <p id="confirmHint" class="text-xs text-mist mt-3"></p>
@@ -394,7 +394,7 @@
         });
         document.getElementById('reserveForm').classList.add('hidden');
         document.getElementById('successBox').classList.remove('hidden');
-        document.getElementById('successMsg').textContent = '有變動會以電話通知' + (data.id ? `（單號 ${data.id}）` : '');
+        document.getElementById('successMsg').textContent = (data.message || '訂位成功') + (data.id ? `（單號 ${data.id}）` : '');
         const r = data.reservation;
         const details = document.getElementById('successDetails');
         if (r) {
@@ -408,7 +408,9 @@
           details.classList.remove('hidden');
         }
 
-        document.getElementById('confirmHint').textContent = '';
+        document.getElementById('confirmHint').textContent = data.guestConfirmation?.email
+          ? '訂位確認信已寄至您的 Email。'
+          : '未填 Email，不會寄出確認信。';
         trackEvent('reserve_submit', {
           location_id: locationSelect.value,
           reservation_id: data.id || '',

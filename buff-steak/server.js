@@ -254,11 +254,11 @@ app.post('/api/reserve', async (req, res) => {
     if (entry.email && isEmail(entry.email)) {
       const guestMail = await safeSendMail({
         to: entry.email,
-        subject: '八斧牛排訂位已收到（待餐廳確認）',
+        subject: '八斧牛排訂位確認',
         text: [
           `${entry.name} 您好，`,
           '',
-          '我們已收到您的線上訂位，此為「待確認」狀態，尚未保留座位。',
+          '我們已收到您的線上訂位，此為 Email 訂位確認。',
           '',
           `分店：${loc.name}`,
           `日期：${dateLabel}`,
@@ -289,7 +289,9 @@ app.post('/api/reserve', async (req, res) => {
     res.json({
       success: true,
       id: entry.id,
-      message: '訂位成功，有變動會以電話通知。',
+      message: guestEmailSent
+        ? '訂位成功，確認信已寄至您的 Email。'
+        : '訂位成功。未填 Email，不會寄出確認信。',
       reservation: {
         id: entry.id,
         locationName: loc.name,
@@ -655,7 +657,7 @@ function sendPublicText(res, file, contentType) {
 }
 
 function buildSitemapXml() {
-  const lastmod = '2026-08-11';
+  const lastmod = '2026-08-20';
   const paths = ['/', '/menu', '/reserve', '/locations', '/gallery', '/story', '/franchise'];
   const priorities = { '/': '1.0', '/menu': '0.9', '/reserve': '0.95', '/locations': '0.9', '/gallery': '0.7', '/story': '0.7', '/franchise': '0.6' };
   const urls = paths.map((p) => {
