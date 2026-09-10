@@ -136,10 +136,15 @@ body.buff-page {
 }
 
 .btn-gold {
-  background: linear-gradient(135deg, #a67c00, var(--gold-light));
-  color: #1a1008;
+  display: inline-block;
+  background: #e8c547 !important;
+  color: #111 !important;
   font-weight: 600;
+  border: none !important;
   border-radius: 9999px;
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  text-align: center;
   transition: opacity 0.2s, transform 0.2s;
 }
 

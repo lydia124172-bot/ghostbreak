@@ -31,7 +31,7 @@
       <label class="block text-xs text-mist mb-2">後台密碼</label>
       <input id="password" type="password" class="form-input mb-4" autocomplete="current-password" />
       <p id="loginError" class="text-red-400 text-sm mb-3 hidden"></p>
-      <button id="loginBtn" type="button" class="w-full bg-gold text-black font-medium py-3 rounded-xl">進入後台</button>
+      <button id="loginBtn" type="button" class="w-full py-3 rounded-xl font-semibold text-lg" style="background:#e8c547;color:#111;border:none;cursor:pointer;">進入後台</button>
     </section>
 
     <section id="appBox" class="hidden space-y-6">
@@ -49,7 +49,7 @@
           <option value="cancelled">已取消</option>
         </select>
         <input id="filterQ" class="form-input" placeholder="姓名 / 電話 / 單號" />
-        <button id="reloadBtn" type="button" class="bg-gold text-black font-medium rounded-xl">重新整理</button>
+        <button id="reloadBtn" type="button" class="btn-gold font-medium rounded-xl">重新整理</button>
       </div>
 
       <div class="flex justify-between items-center gap-3 flex-wrap">
@@ -66,7 +66,7 @@
         <form id="videoForm" class="grid gap-3 md:grid-cols-3">
           <input id="videoUrl" class="form-input md:col-span-2" placeholder="YouTube / Shorts / Vimeo 連結" required />
           <input id="videoTitle" class="form-input" placeholder="標題（選填）" />
-          <button type="submit" class="bg-gold text-black font-medium rounded-xl py-3 md:col-span-3">新增影片到官網</button>
+          <button type="submit" class="btn-gold font-medium rounded-xl py-3 md:col-span-3">新增影片到官網</button>
         </form>
         <p id="videoError" class="text-red-400 text-sm hidden"></p>
         <div id="videoList" class="space-y-3"></div>
@@ -101,7 +101,7 @@
         </select>
         <p id="editError" class="text-red-400 text-sm hidden"></p>
         <div class="flex gap-3 pt-2">
-          <button type="submit" class="flex-1 bg-gold text-black font-medium py-3 rounded-xl">儲存</button>
+          <button type="submit" class="flex-1 btn-gold font-medium py-3 rounded-xl">儲存</button>
           <button id="closeEdit" type="button" class="flex-1 border border-line py-3 rounded-xl">關閉</button>
         </div>
       </form>
