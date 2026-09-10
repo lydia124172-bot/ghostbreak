@@ -27,7 +27,7 @@
   <main class="max-w-6xl mx-auto px-5 py-10">
     <section id="loginBox" class="max-w-sm mx-auto bg-panel border border-line rounded-2xl p-6">
       <h1 class="font-['Playfair_Display'] text-2xl mb-2 text-center">員工登入</h1>
-      <p class="text-mist text-sm text-center mb-6">僅供更改、確認、取消訂位</p>
+      <p class="text-mist text-sm text-center mb-6">訂位管理、分店滿位設定、影像影片</p>
       <label class="block text-xs text-mist mb-2">後台密碼</label>
       <input id="password" type="password" class="form-input mb-4" autocomplete="current-password" />
       <p id="loginError" class="text-red-400 text-sm mb-3 hidden"></p>
@@ -57,6 +57,20 @@
         <button id="newBtn" type="button" class="border border-gold text-gold px-4 py-2 rounded-xl text-sm">＋ 現場新增訂位</button>
       </div>
       <div id="storeToggles" class="bg-panel border border-line rounded-2xl p-4 space-y-3"></div>
+
+      <section class="bg-panel border border-line rounded-2xl p-4 space-y-4">
+        <div>
+          <h2 class="text-lg font-medium">影像影片</h2>
+          <p class="text-sm text-mist mt-1">把影片先上傳到 YouTube（可設不公開），再把連結貼到這裡，影像頁就會顯示。</p>
+        </div>
+        <form id="videoForm" class="grid gap-3 md:grid-cols-3">
+          <input id="videoUrl" class="form-input md:col-span-2" placeholder="YouTube / Shorts / Vimeo 連結" required />
+          <input id="videoTitle" class="form-input" placeholder="標題（選填）" />
+          <button type="submit" class="bg-gold text-black font-medium rounded-xl py-3 md:col-span-3">新增影片到官網</button>
+        </form>
+        <p id="videoError" class="text-red-400 text-sm hidden"></p>
+        <div id="videoList" class="space-y-3"></div>
+      </section>
 
       <div id="list" class="space-y-3"></div>
     </section>
@@ -160,6 +174,7 @@
       $('logoutBtn').classList.remove('hidden');
       loadList();
       loadStoreToggles();
+      loadVideos();
     }
 
     async function login() {
@@ -189,6 +204,24 @@
             <span class="block text-sm text-mist mt-1">線上訂位已滿，請致電各店詢問現場保留位（${loc.phone}）</span>
           </span>
         </label>
+      `).join('');
+    }
+
+    async function loadVideos() {
+      const data = await api('/api/admin/gallery', { headers: authHeaders() });
+      const videos = data.videos || [];
+      if (!videos.length) {
+        $('videoList').innerHTML = '<p class="text-mist text-sm">尚未新增影片</p>';
+        return;
+      }
+      $('videoList').innerHTML = videos.map((v) => `
+        <article class="border border-line rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="font-medium truncate">${v.title || '影片'}</p>
+            <p class="text-xs text-mist break-all mt-1">${v.url}</p>
+          </div>
+          <button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm shrink-0" data-remove-video="${v.id}">移除</button>
+        </article>
       `).join('');
     }
 
@@ -308,6 +341,40 @@
       } catch (err) {
         alert(err.message);
         e.target.checked = !e.target.checked;
+      }
+    });
+    $('videoForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('videoError').classList.add('hidden');
+      try {
+        await api('/api/admin/gallery/videos', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            url: $('videoUrl').value.trim(),
+            title: $('videoTitle').value.trim(),
+          }),
+        });
+        $('videoUrl').value = '';
+        $('videoTitle').value = '';
+        await loadVideos();
+      } catch (err) {
+        $('videoError').textContent = err.message;
+        $('videoError').classList.remove('hidden');
+      }
+    });
+    $('videoList').addEventListener('click', async (e) => {
+      const id = e.target.getAttribute('data-remove-video');
+      if (!id) return;
+      if (!window.confirm('確定移除這支影片？')) return;
+      try {
+        await api('/api/admin/gallery/videos/' + encodeURIComponent(id), {
+          method: 'DELETE',
+          headers: authHeaders(),
+        });
+        await loadVideos();
+      } catch (err) {
+        alert(err.message);
       }
     });
     $('list').addEventListener('click', async (e) => {

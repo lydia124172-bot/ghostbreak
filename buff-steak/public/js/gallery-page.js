@@ -4,8 +4,15 @@ async function loadGalleryPage() {
   if (!photoGrid || !videoGrid) return;
 
   try {
-    const res = await fetch('/data/gallery.json');
-    const data = await res.json();
+    let data = null;
+    try {
+      const res = await fetch('/api/gallery');
+      if (res.ok) data = await res.json();
+    } catch {}
+    if (!data) {
+      const res = await fetch('/data/gallery.json');
+      data = await res.json();
+    }
 
     const photos = (data.photos || []).filter((p) => p.src && String(p.src).trim());
     if (photos.length) {
@@ -16,17 +23,17 @@ async function loadGalleryPage() {
         </figure>
       `).join('');
     } else {
-      photoGrid.innerHTML = '<p class="text-mist text-sm col-span-full text-center">尚無照片，請編輯 data/gallery.json 或將圖片放入 images/gallery/</p>';
+      photoGrid.innerHTML = '<p class="text-mist text-sm col-span-full text-center">照片陸續更新中</p>';
     }
 
     const videos = (data.videos || []).filter((v) => v.url && String(v.url).trim());
     if (videos.length) {
       videoGrid.innerHTML = videos.map((v) => buildVideoHtml(v)).join('');
     } else {
-      videoGrid.innerHTML = '<p class="text-mist text-sm col-span-full">尚無影片。請編輯 <code class="text-xs bg-black/30 px-1 rounded">public/data/gallery.json</code>，在 videos 貼上 YouTube 連結。</p>';
+      videoGrid.innerHTML = '<p class="text-mist text-sm col-span-full text-center">影片陸續更新中</p>';
     }
   } catch (err) {
-    photoGrid.innerHTML = '<p class="text-mist text-sm">無法載入相簿設定</p>';
+    photoGrid.innerHTML = '<p class="text-mist text-sm text-center">影像暫時無法載入，請稍後再試</p>';
     videoGrid.innerHTML = '';
     console.error(err);
   }

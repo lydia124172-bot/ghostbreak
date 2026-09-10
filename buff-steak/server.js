@@ -32,6 +32,7 @@ const { getLocationClosedInfo } = require('./services/store-hours');
 const { isValidTimeSlot, getAllPossibleTimeSlots } = require('./services/time-slots');
 const { loadSettings, setOnlineFull, isOnlineFull, getOnlineFullMessage } = require('./services/store-settings');
 const { formatDateWithWeekday } = require('./services/dates');
+const { loadGallery, addVideo, removeVideo } = require('./services/gallery');
 
 const PORT = process.env.PORT || 3001;
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
@@ -616,6 +617,30 @@ app.patch('/api/admin/settings', requireAdmin, (req, res) => {
   if (!locationById(locationId)) return res.status(400).json({ error: '請選擇分店' });
   const settings = setOnlineFull(locationId, Boolean(req.body?.onlineFull));
   res.json({ success: true, settings });
+});
+
+app.get('/api/gallery', (_req, res) => {
+  res.json(loadGallery());
+});
+
+app.get('/api/admin/gallery', requireAdmin, (_req, res) => {
+  res.json(loadGallery());
+});
+
+app.post('/api/admin/gallery/videos', requireAdmin, (req, res) => {
+  const result = addVideo({
+    url: req.body?.url,
+    title: req.body?.title,
+    note: req.body?.note,
+  });
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ success: true, video: result.video, gallery: result.gallery });
+});
+
+app.delete('/api/admin/gallery/videos/:id', requireAdmin, (req, res) => {
+  const result = removeVideo(req.params.id);
+  if (!result.ok) return res.status(404).json({ error: result.error });
+  res.json({ success: true, gallery: result.gallery });
 });
 
 const PUBLIC = path.join(__dirname, 'public');
