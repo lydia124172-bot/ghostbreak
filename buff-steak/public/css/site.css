@@ -315,6 +315,153 @@ body.buff-page {
   color: var(--mist);
 }
 
+.cal-wrap {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 0.85rem;
+  background: #0f0c09;
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.cal-nav button {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--cream);
+  background: transparent;
+  cursor: pointer;
+}
+
+.cal-nav button:hover { border-color: var(--gold); color: var(--gold-light); }
+
+.cal-weekdays,
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.3rem;
+}
+
+.cal-weekdays span {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--mist);
+  padding-bottom: 0.25rem;
+}
+
+.cal-cell {
+  min-height: 3.1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  background: #16110c;
+  color: var(--cream);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  cursor: pointer;
+  padding: 0.25rem 0.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+}
+
+.cal-cell small {
+  font-size: 0.62rem;
+  color: var(--mist);
+}
+
+.cal-cell:hover:not(:disabled) { border-color: var(--gold); }
+
+.cal-cell.muted {
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.cal-cell.past,
+.cal-cell.closed {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.cal-cell.closed small { color: #9a8f84; }
+
+.cal-cell.temp-closed {
+  opacity: 1;
+  border-color: #ef4444;
+  color: #f87171;
+  cursor: not-allowed;
+}
+
+.cal-cell.temp-open {
+  border-color: var(--gold);
+}
+
+.cal-cell.selected {
+  background: #e8c547;
+  color: #111;
+  border-color: #e8c547;
+}
+
+.cal-cell.selected small { color: #4a3d18; }
+
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-top: 0.7rem;
+  font-size: 0.7rem;
+  color: var(--mist);
+}
+
+.slot-group { margin-bottom: 0.75rem; }
+.slot-group-label {
+  font-size: 0.75rem;
+  color: var(--gold-light);
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.08em;
+}
+
+.slot-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.slot-btn {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  background: #0f0c09;
+  color: var(--cream);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.slot-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold-light); }
+
+.slot-btn.selected {
+  background: #e8c547;
+  color: #111;
+  border-color: #e8c547;
+}
+
+.slot-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.slot-placeholder {
+  font-size: 0.85rem;
+  color: var(--mist);
+}
+
 @media (max-width: 640px) {
   .buff-nav { display: none; }
   .buff-nav.open {

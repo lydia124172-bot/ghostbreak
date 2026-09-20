@@ -1,3 +1,5 @@
+const { loadSettings } = require('./store-settings');
+
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
 function getWeekday(dateStr) {
@@ -14,7 +16,7 @@ function formatClosedWeekdays(days) {
   return `每${labels.join('、')}`;
 }
 
-function isLocationClosed(loc, dateStr) {
+function isWeeklyClosed(loc, dateStr) {
   const closed = loc?.closedWeekdays;
   if (!closed?.length) return false;
   const weekday = getWeekday(dateStr);
@@ -22,8 +24,26 @@ function isLocationClosed(loc, dateStr) {
   return closed.includes(weekday);
 }
 
+function isLocationClosed(loc, dateStr) {
+  const locId = loc?.id;
+  const date = String(dateStr || '').trim();
+  if (locId && date) {
+    const schedule = loadSettings().schedule;
+    if ((schedule.extraClosed[locId] || []).includes(date)) return true;
+    if ((schedule.extraOpen[locId] || []).includes(date)) return false;
+  }
+  return isWeeklyClosed(loc, dateStr);
+}
+
 function getClosedMessage(loc, dateStr) {
   if (!isLocationClosed(loc, dateStr)) return null;
+  const locId = loc?.id;
+  const date = String(dateStr || '').trim();
+  const schedule = locId ? loadSettings().schedule : null;
+  if (schedule && (schedule.extraClosed[locId] || []).includes(date)) {
+    const note = schedule.notes?.[locId]?.[date];
+    return `${loc.name} ${date} 暫停線上訂位${note ? `（${note}）` : ''}，請選擇其他日期或直接致電分店。`;
+  }
   const label = loc.closedLabel || formatClosedWeekdays(loc.closedWeekdays);
   return `${loc.name}${label}公休，請選擇其他日期或直接致電分店。`;
 }
@@ -38,6 +58,7 @@ function getLocationClosedInfo(loc, dateStr) {
 
 module.exports = {
   isLocationClosed,
+  isWeeklyClosed,
   getClosedMessage,
   getLocationClosedInfo,
   formatClosedWeekdays,

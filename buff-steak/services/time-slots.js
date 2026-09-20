@@ -1,5 +1,6 @@
 const site = require('../data/site');
 const { isHolidayDate } = require('./holidays');
+const { getClosedSlots } = require('./store-settings');
 
 const DEFAULT_SLOTS = ['11:00', '11:30', '12:00', '12:30', '13:00', '17:00', '17:30', '18:00', '18:30', '19:00'];
 
@@ -14,10 +15,18 @@ function getLocationSlotConfig(loc) {
 
 function getTimeSlots(loc, date) {
   const cfg = getLocationSlotConfig(loc);
-  if (!cfg) return [...(site.timeSlots || DEFAULT_SLOTS)];
-  const holiday = date ? isHolidayDate(date) : false;
-  const slots = holiday ? (cfg.holiday || cfg.weekday) : (cfg.weekday || cfg.holiday);
-  return uniqueSorted(slots || site.timeSlots || DEFAULT_SLOTS);
+  let slots;
+  if (!cfg) {
+    slots = [...(site.timeSlots || DEFAULT_SLOTS)];
+  } else {
+    const holiday = date ? isHolidayDate(date) : false;
+    slots = holiday ? (cfg.holiday || cfg.weekday) : (cfg.weekday || cfg.holiday);
+    slots = uniqueSorted(slots || site.timeSlots || DEFAULT_SLOTS);
+  }
+  const locId = loc?.id || loc;
+  const blocked = date && locId ? getClosedSlots(locId, date) : [];
+  if (blocked.length) slots = slots.filter((t) => !blocked.includes(t));
+  return uniqueSorted(slots);
 }
 
 function isValidTimeSlot(loc, date, time) {

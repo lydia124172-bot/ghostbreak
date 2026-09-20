@@ -30,7 +30,7 @@ const {
 } = require('./services/capacity');
 const { getLocationClosedInfo } = require('./services/store-hours');
 const { isValidTimeSlot, getAllPossibleTimeSlots } = require('./services/time-slots');
-const { loadSettings, setOnlineFull, isOnlineFull, getOnlineFullMessage, setHomepageNotice } = require('./services/store-settings');
+const { loadSettings, setOnlineFull, isOnlineFull, getOnlineFullMessage, setHomepageNotice, setScheduleOverride, listScheduleOverrides } = require('./services/store-settings');
 const { formatDateWithWeekday } = require('./services/dates');
 const { loadGallery, addVideo, removeVideo } = require('./services/gallery');
 const { loadNews, addNews, updateNews, removeNews } = require('./services/news');
@@ -101,6 +101,7 @@ app.get('/api/config', (_req, res) => {
       address: loc.address,
       hours: loc.hours,
       closedWeekdays: loc.closedWeekdays || [],
+      closedLabel: loc.hours?.find((h) => String(h).includes('公休')) || '',
       mapQuery: loc.mapQuery,
       capacity: loc.capacity,
       onlineFull: Boolean(settings.onlineFull[loc.id]),
@@ -114,6 +115,7 @@ app.get('/api/config', (_req, res) => {
     maxOnlineGuests: site.maxOnlineGuests || 9,
     reservationNotices: site.reservationNotices || [],
     homepageNotice: settings.homepageNotice || '',
+    schedule: settings.schedule,
     mailConfigured: mailConfigured(),
     smsConfigured: smsConfigured(),
   });
@@ -606,12 +608,17 @@ app.get('/api/admin/settings', requireAdmin, (_req, res) => {
   const settings = loadSettings();
   res.json({
     homepageNotice: settings.homepageNotice || '',
+    schedule: settings.schedule,
+    scheduleOverrides: listScheduleOverrides(),
     locations: site.locations.map((loc) => ({
       id: loc.id,
       name: loc.name,
       phone: loc.phone,
+      closedWeekdays: loc.closedWeekdays || [],
+      hours: loc.hours || [],
       onlineFull: Boolean(settings.onlineFull[loc.id]),
     })),
+    timeSlots: getAllPossibleTimeSlots(),
   });
 });
 
@@ -624,6 +631,28 @@ app.patch('/api/admin/settings', requireAdmin, (req, res) => {
   if (!locationById(locationId)) return res.status(400).json({ error: '請選擇分店' });
   const settings = setOnlineFull(locationId, Boolean(req.body?.onlineFull));
   res.json({ success: true, settings });
+});
+
+app.post('/api/admin/schedule', requireAdmin, (req, res) => {
+  const result = setScheduleOverride({
+    locationId: req.body?.locationId,
+    date: req.body?.date,
+    type: req.body?.type,
+    times: req.body?.times,
+    note: req.body?.note,
+  });
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ success: true, overrides: result.overrides, schedule: result.settings.schedule });
+});
+
+app.delete('/api/admin/schedule/:locationId/:date', requireAdmin, (req, res) => {
+  const result = setScheduleOverride({
+    locationId: req.params.locationId,
+    date: req.params.date,
+    type: 'clear',
+  });
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ success: true, overrides: result.overrides, schedule: result.settings.schedule });
 });
 
 app.get('/api/gallery', (_req, res) => {

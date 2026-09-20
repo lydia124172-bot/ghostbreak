@@ -27,7 +27,7 @@
   <main class="max-w-6xl mx-auto px-5 py-10">
     <section id="loginBox" class="max-w-sm mx-auto bg-panel border border-line rounded-2xl p-6">
       <h1 class="font-['Playfair_Display'] text-2xl mb-2 text-center">員工登入</h1>
-      <p class="text-mist text-sm text-center mb-6">訂位管理、分店滿位設定、最新消息、影像影片</p>
+      <p class="text-mist text-sm text-center mb-6">訂位管理、時間表、最新消息、影像影片</p>
       <label class="block text-xs text-mist mb-2">後台密碼</label>
       <input id="password" type="password" class="form-input mb-4" autocomplete="current-password" />
       <p id="loginError" class="text-red-400 text-sm mb-3 hidden"></p>
@@ -71,6 +71,38 @@
         <p id="newsError" class="text-red-400 text-sm hidden"></p>
         <p id="newsOk" class="text-green-400 text-sm hidden"></p>
         <div id="newsAdminList" class="space-y-3"></div>
+      </section>
+
+      <section class="bg-panel border border-line rounded-2xl p-4 space-y-4">
+        <div>
+          <h2 class="text-lg font-medium">訂位時間表（臨時調整）</h2>
+          <p class="text-sm text-mist mt-1">固定公休已標在日曆：深坑每週三、士林每週一與二。這裡可臨時公休、公休日補開，或關掉某天部分時段。</p>
+        </div>
+        <form id="scheduleForm" class="grid gap-3">
+          <div class="grid gap-3 md:grid-cols-3">
+            <select id="scheduleLocation" class="form-input" required>
+              <option value="shenkeng">八斧深坑店</option>
+              <option value="shilin">八斧士林店</option>
+            </select>
+            <input id="scheduleDate" type="date" class="form-input" required />
+            <select id="scheduleType" class="form-input" required>
+              <option value="closed">這天臨時公休</option>
+              <option value="open">這天臨時營業（原本公休改開）</option>
+              <option value="slots">只關部分時段</option>
+            </select>
+          </div>
+          <div id="scheduleSlotsBox" class="hidden">
+            <p class="text-xs text-mist mb-2">勾選要關閉的時段</p>
+            <div id="scheduleSlots" class="flex flex-wrap gap-2"></div>
+          </div>
+          <input id="scheduleNote" class="form-input" maxlength="80" placeholder="備註（選填，例如：店內整修、補班日營業）" />
+          <div class="flex flex-wrap gap-3">
+            <button type="submit" class="btn-gold font-medium rounded-xl py-3 px-6">套用到官網時間表</button>
+          </div>
+        </form>
+        <p id="scheduleError" class="text-red-400 text-sm hidden"></p>
+        <p id="scheduleOk" class="text-green-400 text-sm hidden"></p>
+        <div id="scheduleList" class="space-y-3"></div>
       </section>
 
       <div class="bg-panel border border-line rounded-2xl p-4 grid gap-3 md:grid-cols-5">
@@ -215,6 +247,7 @@
       loadStoreToggles();
       loadVideos();
       loadNewsAdmin();
+      loadScheduleAdmin();
     }
 
     async function login() {
@@ -351,6 +384,38 @@
             <button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-edit-news="${escapeHtml(n.id)}">修改</button>
             <button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-remove-news="${escapeHtml(n.id)}">刪除</button>
           </div>
+        </article>
+      `).join('');
+    }
+
+    function renderScheduleSlots() {
+      $('scheduleSlots').innerHTML = timeSlots.map((t) => `
+        <label class="text-sm border border-line rounded-lg px-3 py-2 cursor-pointer inline-flex items-center">
+          <input type="checkbox" value="${t}" class="mr-2" /> ${t}
+        </label>
+      `).join('');
+    }
+
+    function toggleScheduleSlots() {
+      $('scheduleSlotsBox').classList.toggle('hidden', $('scheduleType').value !== 'slots');
+    }
+
+    async function loadScheduleAdmin() {
+      const data = await api('/api/admin/settings', { headers: authHeaders() });
+      if (Array.isArray(data.timeSlots) && data.timeSlots.length) timeSlots = data.timeSlots;
+      renderScheduleSlots();
+      const rows = data.scheduleOverrides || [];
+      if (!rows.length) {
+        $('scheduleList').innerHTML = '<p class="text-mist text-sm">目前沒有臨時調整，時間表只顯示固定公休日。</p>';
+        return;
+      }
+      $('scheduleList').innerHTML = rows.map((r) => `
+        <article class="border border-line rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p class="font-medium">${escapeHtml(r.date)} · ${escapeHtml(r.locationName)} · ${escapeHtml(r.typeLabel)}</p>
+            <p class="text-xs text-mist mt-1">${escapeHtml((r.times || []).join('、'))}${r.note ? ' · ' + escapeHtml(r.note) : ''}</p>
+          </div>
+          <button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm shrink-0" data-clear-schedule="${escapeHtml(r.locationId)}|${escapeHtml(r.date)}">移除</button>
         </article>
       `).join('');
     }
@@ -553,6 +618,50 @@
       } catch (err) {
         $('newsError').textContent = err.message;
         $('newsError').classList.remove('hidden');
+      }
+    });
+    $('scheduleType').addEventListener('change', toggleScheduleSlots);
+    toggleScheduleSlots();
+    $('scheduleForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('scheduleError').classList.add('hidden');
+      $('scheduleOk').classList.add('hidden');
+      const type = $('scheduleType').value;
+      const times = [...$('scheduleSlots').querySelectorAll('input:checked')].map((el) => el.value);
+      try {
+        await api('/api/admin/schedule', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            locationId: $('scheduleLocation').value,
+            date: $('scheduleDate').value,
+            type,
+            times,
+            note: $('scheduleNote').value.trim(),
+          }),
+        });
+        $('scheduleNote').value = '';
+        $('scheduleOk').textContent = '已套用，官網訂位時間表立刻更新';
+        $('scheduleOk').classList.remove('hidden');
+        await loadScheduleAdmin();
+      } catch (err) {
+        $('scheduleError').textContent = err.message;
+        $('scheduleError').classList.remove('hidden');
+      }
+    });
+    $('scheduleList').addEventListener('click', async (e) => {
+      const raw = e.target.getAttribute('data-clear-schedule');
+      if (!raw) return;
+      const [locationId, date] = raw.split('|');
+      if (!window.confirm('確定移除這筆臨時調整？')) return;
+      try {
+        await api('/api/admin/schedule/' + encodeURIComponent(locationId) + '/' + encodeURIComponent(date), {
+          method: 'DELETE',
+          headers: authHeaders(),
+        });
+        await loadScheduleAdmin();
+      } catch (err) {
+        alert(err.message);
       }
     });
     $('newsCancelEdit').addEventListener('click', resetNewsForm);
