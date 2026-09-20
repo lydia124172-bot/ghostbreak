@@ -20,6 +20,12 @@ function hoursUntilSlot(dateStr, timeStr, now = new Date()) {
   return (slot.getTime() - now.getTime()) / (60 * 60 * 1000);
 }
 
+function isPastSlot(dateStr, timeStr, now = new Date()) {
+  const hours = hoursUntilSlot(dateStr, timeStr, now);
+  if (hours === null) return true;
+  return hours < 0;
+}
+
 function isTooSoon(dateStr, timeStr, now = new Date()) {
   const hours = hoursUntilSlot(dateStr, timeStr, now);
   if (hours === null) return true;
@@ -36,6 +42,7 @@ module.exports = {
   getMinAdvanceHours,
   getSlotDateTime,
   hoursUntilSlot,
+  isPastSlot,
   isTooSoon,
   getLeadTimeMessage,
 };

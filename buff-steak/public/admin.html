@@ -142,6 +142,10 @@
         <div id="videoList" class="space-y-3"></div>
       </section>
 
+      <div class="flex justify-between items-center gap-3 flex-wrap">
+        <h2 class="text-lg font-medium">訂位列表</h2>
+        <button id="purgePastBtn" type="button" class="border border-gold text-gold px-4 py-2 rounded-xl text-sm">清除已過時間的訂位</button>
+      </div>
       <div id="list" class="space-y-3"></div>
     </section>
   </main>
@@ -204,6 +208,12 @@
       return `${dateStr}（星期${days[dt.getDay()]}）`;
     }
 
+    function isSlotPast(date, time) {
+      if (!date || !time) return false;
+      const slot = new Date(`${date}T${time}:00+08:00`);
+      return !Number.isNaN(slot.getTime()) && slot.getTime() < Date.now();
+    }
+
     async function fillTimes(selectEl, locationId, date, value) {
       let slots = timeSlots;
       if (locationId && date) {
@@ -211,10 +221,11 @@
           const res = await fetch(`/api/reserve/day-availability?locationId=${encodeURIComponent(locationId)}&date=${encodeURIComponent(date)}`);
           const data = await res.json();
           if (Array.isArray(data.slots) && data.slots.length) {
-            slots = data.slots.map((s) => s.time);
+            slots = data.slots.filter((s) => !s.past).map((s) => s.time);
           }
         } catch {}
       }
+      if (date) slots = slots.filter((t) => !isSlotPast(date, t));
       if (value && !slots.includes(value)) slots = [value, ...slots];
       selectEl.innerHTML = slots.map((t) => `<option value="${t}">${t}</option>`).join('');
       if (value) selectEl.value = value;
@@ -435,15 +446,18 @@
       $('list').innerHTML = rows.map((r) => {
         const st = r.status || 'pending';
         const color = st === 'confirmed' ? 'text-green-400' : st === 'cancelled' ? 'text-mist line-through' : 'text-gold';
+        const past = isSlotPast(r.date, r.time);
+        const canRemove = past || st === 'cancelled';
         return `<article class="bg-panel border border-line rounded-2xl p-4 flex flex-col md:flex-row md:items-center gap-3 justify-between">
           <div>
-            <p class="font-medium">${formatAdminDate(r.date)} ${r.time} · ${r.locationName || r.locationId} · ${r.guests} 人</p>
+            <p class="font-medium">${formatAdminDate(r.date)} ${r.time} · ${r.locationName || r.locationId} · ${r.guests} 人${past ? ' <span class="text-mist text-sm font-normal">已過時</span>' : ''}</p>
             <p class="text-sm text-mist mt-1">${r.name} · ${r.phone}${r.email ? ' · ' + r.email : ''}</p>
             <p class="text-xs text-mist mt-1">${r.id} · <span class="${color}">${statusLabel(st)}</span>${r.notes ? ' · ' + r.notes : ''}</p>
           </div>
           <div class="flex gap-2 flex-wrap">
             <button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-edit="${r.id}">更改</button>
-            ${st === 'cancelled' ? '' : `<button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-cancel="${r.id}">取消訂位</button>`}
+            ${st === 'cancelled' || past ? '' : `<button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-cancel="${r.id}">取消訂位</button>`}
+            ${canRemove ? `<button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-remove="${r.id}">移除</button>` : ''}
           </div>
         </article>`;
       }).join('');
@@ -689,6 +703,7 @@
     $('list').addEventListener('click', async (e) => {
       const editBtn = e.target.closest('[data-edit]');
       const cancelBtn = e.target.closest('[data-cancel]');
+      const removeBtn = e.target.closest('[data-remove]');
       if (editBtn) {
         const row = (window.__rows || []).find((r) => r.id === editBtn.getAttribute('data-edit'));
         if (row) openEdit(row);
@@ -705,6 +720,33 @@
         } catch (err) {
           alert(err.message);
         }
+      }
+      if (removeBtn) {
+        const removeId = removeBtn.getAttribute('data-remove');
+        if (!window.confirm('確定從列表移除這筆已過時的訂位？移除後無法復原。')) return;
+        try {
+          await api('/api/admin/reservations/' + encodeURIComponent(removeId), {
+            method: 'DELETE',
+            headers: authHeaders(),
+          });
+          await loadList();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+    });
+
+    $('purgePastBtn').addEventListener('click', async () => {
+      if (!window.confirm('確定清除所有已過時間的訂位？清除後無法復原。')) return;
+      try {
+        const data = await api('/api/admin/reservations/purge-past', {
+          method: 'POST',
+          headers: authHeaders(),
+        });
+        await loadList();
+        alert(data.removed ? `已清除 ${data.removed} 筆已過時間的訂位` : '目前沒有已過時間的訂位');
+      } catch (err) {
+        alert(err.message);
       }
     });
 

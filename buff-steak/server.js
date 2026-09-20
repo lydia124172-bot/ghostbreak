@@ -10,8 +10,10 @@ const {
   sendMail,
   saveReservation,
   loadReservations,
+  saveReservations,
   findReservation,
   updateReservation,
+  deleteReservation,
   mailConfigured,
 } = require('./services/mail');
 const { adminConfigured, login: adminLogin, requireAdmin } = require('./services/admin-auth');
@@ -32,6 +34,7 @@ const { getLocationClosedInfo } = require('./services/store-hours');
 const { isValidTimeSlot, getAllPossibleTimeSlots } = require('./services/time-slots');
 const { loadSettings, setOnlineFull, isOnlineFull, getOnlineFullMessage, setHomepageNotice, setScheduleOverride, listScheduleOverrides } = require('./services/store-settings');
 const { formatDateWithWeekday } = require('./services/dates');
+const { isPastSlot } = require('./services/lead-time');
 const { loadGallery, addVideo, removeVideo } = require('./services/gallery');
 const { loadNews, addNews, updateNews, removeNews } = require('./services/news');
 
@@ -559,9 +562,11 @@ app.patch('/api/admin/reservations/:id', requireAdmin, async (req, res) => {
 
     const { loc, date, time, guestsNum, name, phone, email, notes, status } = fields;
     if (status !== 'cancelled') {
+      const sameSlot = current.date === date && current.time === time;
       const capacityCheck = checkReservationCapacity(loc, date, time, guestsNum, {
         skipLeadTime: true,
         excludeId: current.id,
+        allowPast: sameSlot,
       });
       if (!capacityCheck.ok) {
         return res.status(400).json({ error: capacityCheck.message, code: capacityCheck.code });
@@ -602,6 +607,24 @@ app.post('/api/admin/reservations/:id/cancel', requireAdmin, async (req, res) =>
     console.error('[Admin cancel]', e.message);
     res.status(500).json({ error: '取消失敗' });
   }
+});
+
+app.delete('/api/admin/reservations/:id', requireAdmin, (req, res) => {
+  const current = findReservation(req.params.id);
+  if (!current) return res.status(404).json({ error: '找不到這筆訂位' });
+  if (!isPastSlot(current.date, current.time) && (current.status || 'pending') !== 'cancelled') {
+    return res.status(400).json({ error: '尚未過時的訂位請先取消，過時後才能移除。' });
+  }
+  deleteReservation(current.id);
+  res.json({ success: true });
+});
+
+app.post('/api/admin/reservations/purge-past', requireAdmin, (req, res) => {
+  const list = loadReservations();
+  const kept = list.filter((r) => !isPastSlot(r.date, r.time));
+  const removed = list.length - kept.length;
+  saveReservations(kept);
+  res.json({ success: true, removed });
 });
 
 app.get('/api/admin/settings', requireAdmin, (_req, res) => {

@@ -183,7 +183,7 @@ function buildTimeOptions() {
     return;
   }
 
-  const times = daySlots.map((s) => s.time);
+  const times = daySlots.filter((s) => !s.past).map((s) => s.time);
   if (!times.length) {
     slotBoard.innerHTML = '<p class="slot-placeholder">這天沒有可線上訂位的時段</p>';
     return;
@@ -243,9 +243,15 @@ async function loadDaySlots() {
       timeInput.value = '';
       return;
     }
-    const allTooSoon = daySlots.length > 0 && daySlots.every((s) => s.tooSoon);
-    if (allTooSoon) {
-      const phone = loc?.phone ? ` ${loc.phone}` : '';
+    const upcoming = daySlots.filter((s) => !s.past);
+    const phone = loc?.phone ? ` ${loc.phone}` : '';
+    if (!upcoming.length && daySlots.length) {
+      capacityHint.textContent = `今日可訂時段已過，請選擇其他日期，或直接致電分店${phone}。`;
+      capacityHint.classList.remove('hidden');
+      capacityHint.classList.add('capacity-hint-full');
+      submitBtn.disabled = true;
+      if (timeInput.value) timeInput.value = '';
+    } else if (upcoming.length > 0 && upcoming.every((s) => s.tooSoon)) {
       capacityHint.textContent = `今日剩餘時段已過線上訂位截止（需提前 6 小時）。因即時訂位時間不及，無法為您排位，請直接致電分店${phone}。`;
       capacityHint.classList.remove('hidden');
       capacityHint.classList.add('capacity-hint-full');

@@ -2,7 +2,7 @@ const { loadReservations } = require('./mail');
 const site = require('../data/site');
 const { isHolidayDate, getHolidayReason } = require('./holidays');
 const { isLocationClosed, getClosedMessage } = require('./store-hours');
-const { isTooSoon, getLeadTimeMessage } = require('./lead-time');
+const { isTooSoon, isPastSlot, getLeadTimeMessage } = require('./lead-time');
 const { getTimeSlots } = require('./time-slots');
 
 const WEEKDAY_MINUTES = 120;
@@ -81,8 +81,9 @@ function getAvailability(loc, date, time, opts = {}) {
   const capacity = getLocationCapacity(loc);
   const booked = slotBookedGuests(loc.id, date, time, excludeId);
   const remainingSeats = Math.max(0, capacity - booked);
+  const past = isPastSlot(date, time);
   const tooSoon = skipLeadTime ? false : isTooSoon(date, time);
-  const remaining = tooSoon ? 0 : remainingSeats;
+  const remaining = ((past && !opts.allowPast) || tooSoon) ? 0 : remainingSeats;
   const duration = getDiningDurationMinutes(date);
 
   return {
@@ -94,6 +95,7 @@ function getAvailability(loc, date, time, opts = {}) {
     booked,
     remaining,
     available: remaining > 0,
+    past,
     tooSoon,
     tooSoonMessage: tooSoon ? getLeadTimeMessage(loc) : null,
     diningMinutes: duration,
@@ -109,6 +111,14 @@ function checkReservationCapacity(loc, date, time, guests, opts = {}) {
       ok: false,
       message: getClosedMessage(loc, date),
       code: 'STORE_CLOSED',
+    };
+  }
+
+  if (isPastSlot(date, time) && !opts.allowPast) {
+    return {
+      ok: false,
+      message: '此時段已過，請選擇其他時間。',
+      code: 'SLOT_PAST',
     };
   }
 
@@ -174,6 +184,7 @@ function getDayAvailability(loc, date, opts = {}) {
       booked: info.booked,
       remaining: info.remaining,
       available: info.available,
+      past: info.past,
       tooSoon: info.tooSoon,
       tooSoonMessage: info.tooSoonMessage,
       diningLabel: info.diningLabel,

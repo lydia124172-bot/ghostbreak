@@ -125,6 +125,14 @@ function updateReservation(id, patch) {
   return list[idx];
 }
 
+function deleteReservation(id) {
+  const list = loadReservations();
+  const next = list.filter((r) => r.id !== id);
+  if (next.length === list.length) return false;
+  saveReservations(next);
+  return true;
+}
+
 module.exports = {
   RESTAURANT_EMAIL,
   initMail,
@@ -134,5 +142,6 @@ module.exports = {
   saveReservation,
   findReservation,
   updateReservation,
+  deleteReservation,
   mailConfigured: () => resendReady() || smtpReady(),
 };
