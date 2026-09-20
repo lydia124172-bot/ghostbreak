@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>找人幫忙 — 麋鹿網</title>
+  <meta name="description" content="居家打掃、化妝造型、到府維修等需求媒合。填寫後由專人聯繫。" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=match" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>MooseWeb</small></span>
+      </a>
+      <button class="menu-btn" id="menuBtn" type="button">選單</button>
+      <nav class="nav" id="nav">
+        <a href="/">首頁</a>
+        <a href="/works">看作品</a>
+        <a href="/courses">我要上課</a>
+        <a href="/hire">找我做網站</a>
+        <a href="/match" class="active">找人幫忙</a>
+        <a href="/saas">線上工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="page-head">
+      <p class="kicker">媒合</p>
+      <h1>找人幫忙</h1>
+      <p class="lead">目前先開放居家打掃、化妝造型與到府維修。填寫後我們會與你聯繫，尚未開放自行配對。</p>
+    </section>
+
+    <section class="grid" style="padding-top:0;">
+      <a class="card" href="#demand">
+        <p class="meta">需求方</p>
+        <h3>我要找人</h3>
+        <p>說明服務、地區與時間，我們協助媒合。</p>
+      </a>
+      <a class="card" href="#supply">
+        <p class="meta">服務方</p>
+        <h3>我可以接案</h3>
+        <p>登記服務項目與區域，通過後再接到需求通知。</p>
+      </a>
+    </section>
+
+    <section class="page-head" id="demand">
+      <p class="kicker">需求</p>
+      <h2>我要找人</h2>
+    </section>
+    <form id="demandForm" class="panel admin-grid" style="margin-bottom: 48px;">
+      <input type="hidden" name="role" value="需求" />
+      <div class="admin-2">
+        <div>
+          <label class="field" for="dName">姓名</label>
+          <input id="dName" class="form-input" required maxlength="40" />
+        </div>
+        <div>
+          <label class="field" for="dCat">需要的服務</label>
+          <select id="dCat" class="form-input" required>
+            <option value="">請選擇</option>
+            <option>居家打掃</option>
+            <option>化妝造型</option>
+            <option>到府維修</option>
+            <option>其他</option>
+          </select>
+        </div>
+      </div>
+      <div class="admin-2">
+        <div>
+          <label class="field" for="dArea">地區</label>
+          <input id="dArea" class="form-input" required maxlength="40" placeholder="例如：新北市板橋區" />
+        </div>
+        <div>
+          <label class="field" for="dWhen">希望時間</label>
+          <input id="dWhen" class="form-input" required maxlength="40" placeholder="例如：平日晚上或某日期" />
+        </div>
+      </div>
+      <div class="admin-2">
+        <div>
+          <label class="field" for="dPhone">電話</label>
+          <input id="dPhone" class="form-input" maxlength="30" />
+        </div>
+        <div>
+          <label class="field" for="dEmail">Email</label>
+          <input id="dEmail" class="form-input" type="email" maxlength="120" />
+        </div>
+      </div>
+      <div>
+        <label class="field" for="dMsg">補充說明</label>
+        <textarea id="dMsg" class="form-input" rows="4" required maxlength="1500" placeholder="例如：坪數、場合、預算範圍。"></textarea>
+      </div>
+      <p id="dErr" class="status-err hidden"></p>
+      <p id="dOk" class="status-ok hidden"></p>
+      <div class="admin-actions">
+        <button type="submit" class="btn btn-copper">送出需求</button>
+        <a class="btn btn-line hidden" data-line href="#">改用 LINE</a>
+      </div>
+    </form>
+
+    <section class="page-head" id="supply">
+      <p class="kicker">接案</p>
+      <h2>我可以接案</h2>
+    </section>
+    <form id="supplyForm" class="panel admin-grid" style="margin-bottom: 80px;">
+      <div class="admin-2">
+        <div>
+          <label class="field" for="sName">姓名或工作室名稱</label>
+          <input id="sName" class="form-input" required maxlength="40" />
+        </div>
+        <div>
+          <label class="field" for="sCat">可提供的服務</label>
+          <select id="sCat" class="form-input" required>
+            <option value="">請選擇</option>
+            <option>居家打掃</option>
+            <option>化妝造型</option>
+            <option>到府維修</option>
+            <option>其他</option>
+          </select>
+        </div>
+      </div>
+      <div class="admin-2">
+        <div>
+          <label class="field" for="sArea">服務地區</label>
+          <input id="sArea" class="form-input" required maxlength="40" placeholder="例如：台北市、新北市" />
+        </div>
+        <div>
+          <label class="field" for="sWhen">可服務時段</label>
+          <input id="sWhen" class="form-input" required maxlength="40" placeholder="例如：週六日、平日白天" />
+        </div>
+      </div>
+      <div class="admin-2">
+        <div>
+          <label class="field" for="sPhone">電話</label>
+          <input id="sPhone" class="form-input" maxlength="30" />
+        </div>
+        <div>
+          <label class="field" for="sEmail">Email</label>
+          <input id="sEmail" class="form-input" type="email" maxlength="120" />
+        </div>
+      </div>
+      <div>
+        <label class="field" for="sMsg">經歷或價目說明</label>
+        <textarea id="sMsg" class="form-input" rows="4" required maxlength="1500" placeholder="請簡述經驗、作品或收費方式。"></textarea>
+      </div>
+      <p id="sErr" class="status-err hidden"></p>
+      <p id="sOk" class="status-ok hidden"></p>
+      <div class="admin-actions">
+        <button type="submit" class="btn btn-copper">送出登記</button>
+        <a class="btn btn-line hidden" data-line href="#">改用 LINE</a>
+      </div>
+    </form>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© 麋鹿網</span>
+      <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
+    </div>
+  </footer>
+  <script src="/js/site.js?v=match"></script>
+  <script>
+    async function sendMatch(formKind, fields, errEl, okEl, btn) {
+      errEl.classList.add('hidden');
+      okEl.classList.add('hidden');
+      if (!fields.phone && !fields.email) {
+        errEl.textContent = '請留下電話或 Email';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      btn.disabled = true;
+      const role = formKind === 'demand' ? '媒合需求' : '媒合接案';
+      const message = [
+        `地區：${fields.area}`,
+        `時間：${fields.when}`,
+        '',
+        fields.message,
+      ].join('\n');
+      try {
+        const res = await fetch('/api/inquire', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: fields.name,
+            phone: fields.phone,
+            email: fields.email,
+            service: `${role}・${fields.cat}`,
+            message,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || '送出失敗');
+        okEl.textContent = '已送出，我們會再與你聯繫。';
+        okEl.classList.remove('hidden');
+      } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById('demandForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      sendMatch('demand', {
+        name: document.getElementById('dName').value.trim(),
+        cat: document.getElementById('dCat').value.trim(),
+        area: document.getElementById('dArea').value.trim(),
+        when: document.getElementById('dWhen').value.trim(),
+        phone: document.getElementById('dPhone').value.trim(),
+        email: document.getElementById('dEmail').value.trim(),
+        message: document.getElementById('dMsg').value.trim(),
+      }, document.getElementById('dErr'), document.getElementById('dOk'), e.submitter);
+    });
+
+    document.getElementById('supplyForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      sendMatch('supply', {
+        name: document.getElementById('sName').value.trim(),
+        cat: document.getElementById('sCat').value.trim(),
+        area: document.getElementById('sArea').value.trim(),
+        when: document.getElementById('sWhen').value.trim(),
+        phone: document.getElementById('sPhone').value.trim(),
+        email: document.getElementById('sEmail').value.trim(),
+        message: document.getElementById('sMsg').value.trim(),
+      }, document.getElementById('sErr'), document.getElementById('sOk'), e.submitter);
+    });
+  </script>
+</body>
+</html>

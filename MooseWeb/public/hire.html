@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>找我做網站 — 麋鹿網</title>
+  <meta name="description" content="委託麋鹿網製作品牌官網、AI 工具與視覺設計。可查看功能項目並送出諮詢。" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=linefab" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>MooseWeb</small></span>
+      </a>
+      <button class="menu-btn" id="menuBtn" type="button">選單</button>
+      <nav class="nav" id="nav">
+        <a href="/">首頁</a>
+        <a href="/works">看作品</a>
+        <a href="/courses">我要上課</a>
+        <a href="/hire" class="active">找我做網站</a>
+        <a href="/match">找人幫忙</a>
+        <a href="/saas">線上工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="page-head">
+      <p class="kicker">委託</p>
+      <h1>找我做網站</h1>
+      <p class="lead">請點選項目查看可提供的功能，並透過表單提出諮詢。確認範圍後再提供報價與時程。</p>
+    </section>
+    <section class="list" id="hire"></section>
+
+    <section class="page-head" id="consult">
+      <p class="kicker">諮詢</p>
+      <h2>提出諮詢</h2>
+      <p class="lead">請選擇項目並留下聯絡方式。可填寫表單，或透過 LINE 官方帳號諮詢。</p>
+    </section>
+    <form id="inquireForm" class="panel admin-grid" style="margin-bottom: 56px;">
+      <div class="admin-2">
+        <div>
+          <label class="field" for="inqName">姓名</label>
+          <input id="inqName" class="form-input" required maxlength="40" />
+        </div>
+        <div>
+          <label class="field" for="inqService">諮詢項目</label>
+          <select id="inqService" class="form-input" required></select>
+        </div>
+      </div>
+      <div class="admin-2">
+        <div>
+          <label class="field" for="inqPhone">電話</label>
+          <input id="inqPhone" class="form-input" maxlength="30" />
+        </div>
+        <div>
+          <label class="field" for="inqEmail">Email</label>
+          <input id="inqEmail" class="form-input" type="email" maxlength="120" />
+        </div>
+      </div>
+      <div>
+        <label class="field" for="inqMessage">需求說明</label>
+        <textarea id="inqMessage" class="form-input" rows="5" required maxlength="2000" placeholder="例如：產業、是否需要訂位／表單、希望上線時間、參考網站。"></textarea>
+      </div>
+      <p id="inqError" class="status-err hidden"></p>
+      <p id="inqOk" class="status-ok hidden"></p>
+      <div class="admin-actions">
+        <button type="submit" class="btn btn-copper" id="inqBtn">送出諮詢</button>
+        <a class="btn btn-line hidden" data-line href="#">透過 LINE 諮詢</a>
+      </div>
+    </form>
+
+    <section class="page-head">
+      <p class="kicker">問答</p>
+      <h2>常見問題</h2>
+    </section>
+    <section class="list" id="faqs" style="padding-bottom: 80px;"></section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© 麋鹿網</span>
+      <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
+    </div>
+  </footer>
+  <script src="/js/site.js?v=linefab"></script>
+  <script>
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function selectService(id) {
+      const select = document.getElementById('inqService');
+      if (id && [...select.options].some((o) => o.value === id)) select.value = id;
+      document.getElementById('consult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('inqName').focus();
+    }
+
+    fetch('/api/config').then((r) => r.json()).then((data) => {
+      const items = data.hire || [];
+      const select = document.getElementById('inqService');
+      select.innerHTML = '<option value="">請選擇項目</option>' + items.map((h) =>
+        `<option value="${escapeHtml(h.id)}">${escapeHtml(h.name)}</option>`
+      ).join('');
+
+      document.getElementById('hire').innerHTML = items.map((h) => {
+        const features = (h.features || []).map((f) => `<li>${escapeHtml(f)}</li>`).join('');
+        return `<article class="item item-click" data-id="${escapeHtml(h.id)}">
+          <div>
+            <h3>${escapeHtml(h.name)}</h3>
+            <p>${escapeHtml(h.summary || '')}</p>
+            <p class="consult-detail">${escapeHtml(h.detail || '')}</p>
+            ${features ? `<ul class="feature-list">${features}</ul>` : ''}
+          </div>
+          <button type="button" class="btn btn-copper" data-consult="${escapeHtml(h.id)}">提出諮詢</button>
+        </article>`;
+      }).join('');
+
+      document.getElementById('faqs').innerHTML = (data.faqs || []).map((f) => `
+        <article class="faq-item">
+          <button type="button">${escapeHtml(f.q || '')}</button>
+          <p class="faq-a">${escapeHtml(f.a || '')}</p>
+        </article>
+      `).join('');
+
+      const wanted = new URLSearchParams(location.search).get('service');
+      if (wanted) selectService(wanted);
+    });
+
+    document.getElementById('hire').addEventListener('click', (e) => {
+      const consultId = e.target.getAttribute('data-consult');
+      if (consultId) {
+        e.stopPropagation();
+        selectService(consultId);
+        return;
+      }
+      const card = e.target.closest('.item-click');
+      if (!card) return;
+      card.classList.toggle('open');
+    });
+
+    document.getElementById('faqs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.faq-item button');
+      if (!btn) return;
+      btn.parentElement.classList.toggle('open');
+    });
+
+    document.getElementById('inquireForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('inqError');
+      const ok = document.getElementById('inqOk');
+      err.classList.add('hidden');
+      ok.classList.add('hidden');
+      const btn = document.getElementById('inqBtn');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/inquire', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: document.getElementById('inqName').value.trim(),
+            phone: document.getElementById('inqPhone').value.trim(),
+            email: document.getElementById('inqEmail').value.trim(),
+            service: document.getElementById('inqService').value,
+            message: document.getElementById('inqMessage').value.trim(),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || '送出失敗');
+        ok.textContent = '已收到諮詢，我們會再與您聯繫。';
+        ok.classList.remove('hidden');
+        e.target.reset();
+      } catch (ex) {
+        err.textContent = ex.message;
+        err.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

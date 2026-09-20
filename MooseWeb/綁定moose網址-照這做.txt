@@ -1,0 +1,42 @@
+麋鹿網 — 綁定 moose.bafuholdings.com（照順序做）
+
+這是八斧牛排同一個網域底下的另一個子網域。
+牛排仍是 steak.bafuholdings.com，不會被改到。
+
+【前提】Render 上 mooseweb 服務狀態要是 Live（綠色）
+      先打開 Render 給的 xxx.onrender.com 確認是麋鹿網首頁
+
+========================================
+A. Render 加自訂網址
+========================================
+1. 登入 https://dashboard.render.com
+2. 左邊點服務「mooseweb」（不要點 buff-steak 或 ghostbreak）
+3. Settings → Custom Domains
+4. 輸入：moose.bafuholdings.com
+5. 點 Add
+6. 記下 Render 顯示的 CNAME，例如：
+   CNAME  moose  →  mooseweb-xxxx.onrender.com
+
+========================================
+B. Cloudflare 加 DNS
+========================================
+1. 登入 https://dash.cloudflare.com
+2. 選網域 bafuholdings.com
+3. DNS → Records → Add record
+4. 填：
+   Type（類型）    CNAME
+   Name（名稱）    moose
+   Target（目標）  貼上 Render 給的 onrender.com（不要 https://）
+   Proxy status    橘色雲 Proxied 可以開
+5. Save
+
+========================================
+C. 等待生效（5～30 分鐘）
+========================================
+1. 打開 https://moose.bafuholdings.com
+2. 打開 https://moose.bafuholdings.com/api/health
+
+LINE 圖文選單「連結」請填：
+https://moose.bafuholdings.com
+
+本機開發仍用：啟動網站.bat → http://127.0.0.1:3002

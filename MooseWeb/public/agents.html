@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>看作品 — 麋鹿網</title>
+  <meta name="description" content="看麋鹿網做過的官網、線上工具與設計案例。" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=linefab" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>MooseWeb</small></span>
+      </a>
+      <button class="menu-btn" id="menuBtn" type="button">選單</button>
+      <nav class="nav" id="nav">
+        <a href="/">首頁</a>
+        <a href="/works" class="active">看作品</a>
+        <a href="/courses">我要上課</a>
+        <a href="/hire">找我做網站</a>
+        <a href="/match">找人幫忙</a>
+        <a href="/saas">線上工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="page-head">
+      <p class="kicker">案例</p>
+      <h1>看作品</h1>
+      <p class="lead">先看做過什麼，再決定要上課還是委託。</p>
+    </section>
+    <div class="filters" id="filters"></div>
+    <section class="list" id="works"></section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© 麋鹿網</span>
+      <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
+    </div>
+  </footer>
+  <script src="/js/site.js?v=linefab"></script>
+  <script>
+    let allWorks = [];
+    let kinds = [];
+    let current = '全部';
+
+    function render() {
+      const rows = current === '全部' ? allWorks : allWorks.filter((w) => w.kind === current);
+      document.getElementById('works').innerHTML = rows.map((w) => `
+        <article class="item">
+          <div>
+            <p class="meta">${w.kind || ''}</p>
+            <h3>${w.name}</h3>
+            <p>${w.summary}</p>
+          </div>
+          ${w.href ? `<a class="btn btn-ghost" href="${w.href}" target="_blank" rel="noopener">打開看看</a>` : ''}
+        </article>
+      `).join('') || '<p class="lead">這個分類之後會補作品。</p>';
+    }
+
+    fetch('/api/config').then((r) => r.json()).then((data) => {
+      allWorks = data.works || [];
+      kinds = ['全部', ...(data.workKinds || [])];
+      document.getElementById('filters').innerHTML = kinds.map((k) =>
+        `<button type="button" class="filter-btn${k === '全部' ? ' active' : ''}" data-kind="${k}">${k}</button>`
+      ).join('');
+      document.getElementById('filters').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-kind]');
+        if (!btn) return;
+        current = btn.getAttribute('data-kind');
+        document.querySelectorAll('.filter-btn').forEach((el) => el.classList.toggle('active', el === btn));
+        render();
+      });
+      render();
+    });
+  </script>
+</body>
+</html>

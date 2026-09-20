@@ -1,0 +1,33 @@
+# 麋鹿網 — Render 部署（moose.bafuholdings.com）
+# 與八斧牛排同一 GitHub repo，Root Directory 填 MooseWeb
+
+services:
+  - type: web
+    name: mooseweb
+    runtime: node
+    rootDir: MooseWeb
+    plan: starter
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: mooseweb-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BASE_URL
+        value: https://moose.bafuholdings.com
+      - key: DATA_DIR
+        value: /var/data
+      - key: INQUIRE_EMAIL
+        value: lydia3530@gmail.com
+      - key: RESEND_FROM
+        value: "MooseWeb <noreply@bafuholdings.com>"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

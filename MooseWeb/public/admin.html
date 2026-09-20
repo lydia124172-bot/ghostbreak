@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>後台 — 麋鹿網</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=admin" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/admin">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>內容後台</small></span>
+      </a>
+      <div class="admin-actions">
+        <a class="nav-link" href="/" target="_blank" rel="noopener">查看前台</a>
+        <button id="logoutBtn" class="menu-btn hidden" type="button">登出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding: 40px 0 80px;">
+    <section id="loginBox" class="panel" style="max-width: 420px; margin: 40px auto;">
+      <h1>後台登入</h1>
+      <p class="lead">修改後，前台會立刻更新。訪客看不到此頁。</p>
+      <form id="loginForm">
+      <label class="field" for="password">後台密碼</label>
+      <input id="password" type="password" class="form-input" autocomplete="current-password" />
+      <p id="loginError" class="status-err hidden" style="margin: 12px 0 0;"></p>
+      <button id="loginBtn" type="submit" class="btn btn-copper" style="width:100%;margin-top:16px;">進入後台</button>
+      </form>
+    </section>
+
+    <section id="appBox" class="hidden" style="display:grid;gap:22px;">
+      <section class="panel">
+        <h2>首頁文案</h2>
+        <p class="lead">對外顯示用，請用正式語氣。</p>
+        <form id="settingsForm" class="admin-grid">
+          <div>
+            <label class="field" for="tagline">品牌副標</label>
+            <input id="tagline" class="form-input" maxlength="80" />
+          </div>
+          <div>
+            <label class="field" for="email">聯絡 Email</label>
+            <input id="email" class="form-input" maxlength="120" />
+          </div>
+          <div>
+            <label class="field" for="lineUrl">LINE 官方帳號連結</label>
+            <input id="lineUrl" class="form-input" maxlength="200" placeholder="https://lin.ee/xxxx 或 @帳號" />
+          </div>
+          <div>
+            <label class="field" for="heroTitle">首頁主標題（換行請按 Enter）</label>
+            <textarea id="heroTitle" class="form-input" rows="3" maxlength="160"></textarea>
+          </div>
+          <div>
+            <label class="field" for="heroLead">首頁說明</label>
+            <textarea id="heroLead" class="form-input" rows="3" maxlength="300"></textarea>
+          </div>
+          <div>
+            <label class="field" for="workKinds">作品分類（逗號分隔）</label>
+            <input id="workKinds" class="form-input" />
+          </div>
+          <div class="admin-actions">
+            <button type="submit" class="btn btn-copper">儲存文案</button>
+            <span id="settingsStatus" class="status-ok hidden"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" data-list="courses">
+        <h2>課程</h2>
+        <p class="lead">前台只顯示名稱、對象與說明。備註僅後台可見，方便自己記開課方式。</p>
+        <form class="admin-grid item-form">
+          <input type="hidden" name="id" />
+          <div class="admin-2">
+            <div>
+              <label class="field">波次</label>
+              <input name="wave" class="form-input" placeholder="先開 / 第二波" />
+            </div>
+            <div>
+              <label class="field">狀態</label>
+              <input name="status" class="form-input" placeholder="籌備招生" />
+            </div>
+          </div>
+          <div>
+            <label class="field">課程名稱</label>
+            <input name="title" class="form-input" required />
+          </div>
+          <div>
+            <label class="field">適合對象（前台）</label>
+            <input name="audience" class="form-input" />
+          </div>
+          <div>
+            <label class="field">前台說明</label>
+            <textarea name="summary" class="form-input" rows="3" placeholder="對外正式說明"></textarea>
+          </div>
+          <div>
+            <label class="field">後台備註（不對外顯示）</label>
+            <textarea name="notes" class="form-input" rows="3" placeholder="給自己看的口語說明，例如教材、班型、單價"></textarea>
+          </div>
+          <div>
+            <label class="field">詳細說明</label>
+            <textarea name="detail" class="form-input" rows="3"></textarea>
+          </div>
+          <div>
+            <label class="field">可提供功能（一行一項）</label>
+            <textarea name="features" class="form-input" rows="6" placeholder="線上訂位或諮詢表單"></textarea>
+          </div>
+          <div class="admin-actions">
+            <button type="submit" class="btn btn-copper">儲存課程</button>
+            <button type="button" class="btn btn-ghost cancel-edit hidden">取消修改</button>
+          </div>
+        </form>
+        <div class="list rows" style="padding-bottom:0;margin-top:18px;"></div>
+      </section>
+
+      <section class="panel" data-list="works">
+        <h2>作品</h2>
+        <p class="lead">前台「看作品」顯示這些項目。</p>
+        <form class="admin-grid item-form">
+          <input type="hidden" name="id" />
+          <div class="admin-2">
+            <div>
+              <label class="field">分類</label>
+              <input name="kind" class="form-input" placeholder="品牌官網" />
+            </div>
+            <div>
+              <label class="field">連結</label>
+              <input name="href" class="form-input" placeholder="https://" />
+            </div>
+          </div>
+          <div>
+            <label class="field">名稱</label>
+            <input name="name" class="form-input" required />
+          </div>
+          <div>
+            <label class="field">說明</label>
+            <textarea name="summary" class="form-input" rows="3"></textarea>
+          </div>
+          <div class="admin-actions">
+            <button type="submit" class="btn btn-copper">儲存作品</button>
+            <button type="button" class="btn btn-ghost cancel-edit hidden">取消修改</button>
+          </div>
+        </form>
+        <div class="list rows" style="padding-bottom:0;margin-top:18px;"></div>
+      </section>
+
+      <section class="panel" data-list="hire">
+        <h2>委託項目</h2>
+        <p class="lead">前台「找我做網站」顯示這些項目。</p>
+        <form class="admin-grid item-form">
+          <input type="hidden" name="id" />
+          <div>
+            <label class="field">項目名稱</label>
+            <input name="name" class="form-input" required />
+          </div>
+          <div>
+            <label class="field">簡短說明</label>
+            <textarea name="summary" class="form-input" rows="2"></textarea>
+          </div>
+          <div>
+            <label class="field">詳細說明</label>
+            <textarea name="detail" class="form-input" rows="3"></textarea>
+          </div>
+          <div>
+            <label class="field">可提供功能（一行一項）</label>
+            <textarea name="features" class="form-input" rows="6"></textarea>
+          </div>
+          <div class="admin-actions">
+            <button type="submit" class="btn btn-copper">儲存項目</button>
+            <button type="button" class="btn btn-ghost cancel-edit hidden">取消修改</button>
+          </div>
+        </form>
+        <div class="list rows" style="padding-bottom:0;margin-top:18px;"></div>
+      </section>
+
+      <section class="panel" data-list="products">
+        <h2>線上工具</h2>
+        <p class="lead">前台「線上工具」顯示這些產品。</p>
+        <form class="admin-grid item-form">
+          <input type="hidden" name="id" />
+          <div class="admin-2">
+            <div>
+              <label class="field">名稱</label>
+              <input name="name" class="form-input" required />
+            </div>
+            <div>
+              <label class="field">狀態</label>
+              <input name="status" class="form-input" placeholder="已上線" />
+            </div>
+          </div>
+          <div>
+            <label class="field">連結</label>
+            <input name="href" class="form-input" placeholder="https://" />
+          </div>
+          <div>
+            <label class="field">說明</label>
+            <textarea name="summary" class="form-input" rows="3"></textarea>
+          </div>
+          <div class="admin-actions">
+            <button type="submit" class="btn btn-copper">儲存工具</button>
+            <button type="button" class="btn btn-ghost cancel-edit hidden">取消修改</button>
+          </div>
+        </form>
+        <div class="list rows" style="padding-bottom:0;margin-top:18px;"></div>
+      </section>
+      <section class="panel" data-list="faqs">
+        <h2>常見問題</h2>
+        <p class="lead">前台委託頁的問答。</p>
+        <form class="admin-grid item-form">
+          <input type="hidden" name="id" />
+          <div>
+            <label class="field">問題</label>
+            <input name="q" class="form-input" required />
+          </div>
+          <div>
+            <label class="field">回答</label>
+            <textarea name="a" class="form-input" rows="3" required></textarea>
+          </div>
+          <div class="admin-actions">
+            <button type="submit" class="btn btn-copper">儲存問答</button>
+            <button type="button" class="btn btn-ghost cancel-edit hidden">取消修改</button>
+          </div>
+        </form>
+        <div class="list rows" style="padding-bottom:0;margin-top:18px;"></div>
+      </section>
+
+      <section class="panel">
+        <h2>諮詢來信</h2>
+        <p class="lead">前台表單送出後會寄到 lydia3530@gmail.com，同時列在這裡。</p>
+        <div id="inquiryList" class="list" style="padding-bottom:0;"></div>
+      </section>
+    </section>
+
+  <script>
+    const TOKEN_KEY = 'moose_admin_token';
+    const $ = (id) => document.getElementById(id);
+    let content = {};
+
+    function token() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() };
+    }
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function api(url, opts = {}) {
+      const res = await fetch(url, opts);
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        sessionStorage.removeItem(TOKEN_KEY);
+        showLogin();
+        throw new Error(data.error || '請重新登入');
+      }
+      if (!res.ok) throw new Error(data.error || '操作失敗');
+      return data;
+    }
+
+    function showLogin() {
+      $('loginBox').classList.remove('hidden');
+      $('appBox').classList.add('hidden');
+      $('logoutBtn').classList.add('hidden');
+    }
+
+    function showApp() {
+      $('loginBox').classList.add('hidden');
+      $('appBox').classList.remove('hidden');
+      $('logoutBtn').classList.remove('hidden');
+      loadContent();
+    }
+
+    function fillSettings() {
+      $('tagline').value = content.tagline || '';
+      $('email').value = content.email || '';
+      $('lineUrl').value = content.lineUrl || '';
+      $('heroTitle').value = content.heroTitle || '';
+      $('heroLead').value = content.heroLead || '';
+      $('workKinds').value = (content.workKinds || []).join('、');
+    }
+
+    function titleOf(list, row) {
+      return row.title || row.name || row.q || row.id;
+    }
+
+    function metaOf(list, row) {
+      if (list === 'courses') return [row.wave, row.status, row.audience].filter(Boolean).join(' · ');
+      if (list === 'works') return [row.kind, row.href].filter(Boolean).join(' · ');
+      if (list === 'products') return [row.status, row.href].filter(Boolean).join(' · ');
+      return '';
+    }
+
+    function renderList(list) {
+      const section = document.querySelector('[data-list="' + list + '"]');
+      const box = section.querySelector('.rows');
+      const rows = content[list] || [];
+      if (!rows.length) {
+        box.innerHTML = '<p class="lead">尚無資料，請由上方表單新增。</p>';
+        return;
+      }
+      box.innerHTML = rows.map((row) => `
+        <article class="item">
+          <div>
+            <p class="meta">${escapeHtml(metaOf(list, row))}</p>
+            <h3>${escapeHtml(titleOf(list, row))}</h3>
+            <p>${escapeHtml(row.summary || row.a || '')}</p>
+            ${row.notes ? `<p class="meta">後台備註：${escapeHtml(row.notes)}</p>` : ''}
+          </div>
+          <div class="admin-actions">
+            <button type="button" class="btn btn-ghost" data-edit="${escapeHtml(row.id)}">修改</button>
+            <button type="button" class="btn btn-ghost" data-remove="${escapeHtml(row.id)}">刪除</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function renderAll() {
+      fillSettings();
+      ['courses', 'works', 'hire', 'products', 'faqs'].forEach(renderList);
+      loadInquiries();
+    }
+
+    async function loadContent() {
+      const data = await api('/api/admin/content', { headers: authHeaders() });
+      content = data;
+      renderAll();
+    }
+
+    function formToItem(form) {
+      const item = {};
+      [...form.elements].forEach((el) => {
+        if (!el.name) return;
+        item[el.name] = String(el.value || '').trim();
+      });
+      if (!item.id) delete item.id;
+      return item;
+    }
+
+    function fillForm(form, row) {
+      [...form.elements].forEach((el) => {
+        if (!el.name) return;
+        if (el.name === 'features' && Array.isArray(row.features)) {
+          el.value = row.features.join('\n');
+          return;
+        }
+        el.value = row[el.name] || '';
+      });
+      form.querySelector('.cancel-edit').classList.remove('hidden');
+    }
+
+    function resetForm(form) {
+      form.reset();
+      const id = form.querySelector('[name="id"]');
+      if (id) id.value = '';
+      form.querySelector('.cancel-edit').classList.add('hidden');
+    }
+
+    async function loadInquiries() {
+      const data = await api('/api/admin/inquiries', { headers: authHeaders() });
+      const rows = data.inquiries || [];
+      const box = $('inquiryList');
+      if (!rows.length) {
+        box.innerHTML = '<p class="lead">尚無諮詢。</p>';
+        return;
+      }
+      box.innerHTML = rows.map((row) => `
+        <article class="item">
+          <div>
+            <p class="meta">${escapeHtml((row.createdAt || '').replace('T', ' ').slice(0, 16))} · ${escapeHtml(row.service || '')}</p>
+            <h3>${escapeHtml(row.name)} · ${escapeHtml(row.phone || row.email || '')}</h3>
+            <p>${escapeHtml(row.message || '')}</p>
+          </div>
+          <button type="button" class="btn btn-ghost" data-del-inq="${escapeHtml(row.id)}">移除</button>
+        </article>
+      `).join('');
+    }
+
+    $('inquiryList').addEventListener('click', async (e) => {
+      const id = e.target.getAttribute('data-del-inq');
+      if (!id) return;
+      if (!window.confirm('確定移除此則諮詢？')) return;
+      await api('/api/admin/inquiries/' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      await loadInquiries();
+    });
+    async function login() {
+      $('loginError').classList.add('hidden');
+      try {
+        const data = await api('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: $('password').value }),
+        });
+        sessionStorage.setItem(TOKEN_KEY, data.token);
+        showApp();
+      } catch (e) {
+        $('loginError').textContent = e.message;
+        $('loginError').classList.remove('hidden');
+      }
+    }
+
+    $('loginForm').addEventListener('submit', (e) => { e.preventDefault(); login(); });
+    $('logoutBtn').addEventListener('click', () => {
+      sessionStorage.removeItem(TOKEN_KEY);
+      showLogin();
+    });
+
+    $('settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('settingsStatus').classList.add('hidden');
+      await api('/api/admin/settings', {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          tagline: $('tagline').value,
+          email: $('email').value,
+          lineUrl: $('lineUrl').value,
+          heroTitle: $('heroTitle').value,
+          heroLead: $('heroLead').value,
+          workKinds: $('workKinds').value,
+        }),
+      });
+      await loadContent();
+      $('settingsStatus').textContent = '已更新前台文案';
+      $('settingsStatus').classList.remove('hidden');
+    });
+
+    document.querySelectorAll('[data-list]').forEach((section) => {
+      const list = section.getAttribute('data-list');
+      const form = section.querySelector('.item-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const item = formToItem(form);
+        const url = item.id ? '/api/admin/' + list + '/' + encodeURIComponent(item.id) : '/api/admin/' + list;
+        await api(url, {
+          method: item.id ? 'PATCH' : 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify(item),
+        });
+        resetForm(form);
+        await loadContent();
+      });
+      form.querySelector('.cancel-edit').addEventListener('click', () => resetForm(form));
+      section.querySelector('.rows').addEventListener('click', async (e) => {
+        const editId = e.target.getAttribute('data-edit');
+        const removeId = e.target.getAttribute('data-remove');
+        if (editId) {
+          const row = (content[list] || []).find((r) => r.id === editId);
+          if (row) fillForm(form, row);
+          form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        if (removeId) {
+          if (!window.confirm('確定刪除此筆？前台會立刻拿掉。')) return;
+          await api('/api/admin/' + list + '/' + encodeURIComponent(removeId), {
+            method: 'DELETE',
+            headers: authHeaders(),
+          });
+          resetForm(form);
+          await loadContent();
+        }
+      });
+    });
+
+    if (token()) showApp();
+    else showLogin();
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+node_modules/
+.env
+data/inquiries.json
+data/content.json
+cloudflared.exe
+data/_recovered/

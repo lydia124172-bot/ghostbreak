@@ -1,0 +1,20 @@
+{
+  "name": "mooseweb",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MooseWeb — AI SaaS, agents, and courses",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "nodemailer": "^7.0.3",
+    "resend": "^4.5.1"
+  }
+}

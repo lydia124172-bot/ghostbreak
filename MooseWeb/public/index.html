@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>麋鹿網 — 看作品、上課、找人做網站</title>
+  <meta name="description" content="看作品、報名上課、委託做網站，或直接使用線上工具。" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=linefab" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>MooseWeb</small></span>
+      </a>
+      <button class="menu-btn" id="menuBtn" type="button">選單</button>
+      <nav class="nav" id="nav">
+        <a href="/" class="active">首頁</a>
+        <a href="/works">看作品</a>
+        <a href="/courses">我要上課</a>
+        <a href="/hire">找我做網站</a>
+        <a href="/match">找人幫忙</a>
+        <a href="/saas">線上工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <p class="kicker">麋鹿網</p>
+      <h1 id="heroTitle">網站作品、專業課程與專案委託。<br>直播、剪輯與視覺設計一併呈現。</h1>
+      <p class="lead" id="heroLead">從可上線的品牌官網、AI 工具，到教學與影像設計，皆可在此查看與洽詢。</p>
+      <div class="actions">
+        <a class="btn btn-copper" href="/courses">我要上課</a>
+        <a class="btn btn-cream" href="/hire">找我做網站</a>
+        <a class="btn btn-line hidden" data-line href="#">透過 LINE 諮詢</a>
+      </div>
+    </section>
+
+    <section class="grid-4">
+      <a class="card" href="/works">
+        <p class="meta">先看案例</p>
+        <h3>看作品</h3>
+        <p>看我做過的官網、線上工具與設計。</p>
+      </a>
+      <a class="card" href="/courses">
+        <p class="meta">學著做</p>
+        <h3>我要上課</h3>
+        <p>報名 AI 架站、直播剪輯與設計課。</p>
+      </a>
+      <a class="card" href="/hire">
+        <p class="meta">請人做</p>
+        <h3>找我做網站</h3>
+        <p>店家官網、線上工具、視覺設計，直接委託。</p>
+      </a>
+      <a class="card" href="/saas">
+        <p class="meta">直接用</p>
+        <h3>線上工具</h3>
+        <p>已經上線的產品，打開就能使用。</p>
+      </a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© 麋鹿網</span>
+      <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
+    </div>
+  </footer>
+  <script src="/js/site.js?v=linefab"></script>
+  <script>
+    fetch('/api/config').then((r) => r.json()).then((data) => {
+      const title = document.getElementById('heroTitle');
+      const lead = document.getElementById('heroLead');
+      if (data.heroTitle && title) {
+        title.innerHTML = data.heroTitle
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
+      }
+      if (data.heroLead && lead) lead.textContent = data.heroLead;
+    }).catch(() => {});
+  </script>
+</body>
+</html>
