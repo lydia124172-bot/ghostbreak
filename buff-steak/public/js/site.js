@@ -27,3 +27,33 @@ async function postJson(url, body) {
 document.getElementById('navToggle')?.addEventListener('click', () => {
   document.getElementById('buffNav')?.classList.toggle('open');
 });
+
+async function loadSiteNotice() {
+  if (/\/admin(?:\.html)?$/.test(location.pathname)) return;
+  try {
+    const res = await fetch('/api/config');
+    if (!res.ok) return;
+    const data = await res.json();
+    const text = String(data.homepageNotice || '').trim();
+    const existing = document.getElementById('siteNotice');
+    if (!text) {
+      existing?.remove();
+      return;
+    }
+    let el = existing;
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'siteNotice';
+      el.className = 'site-notice';
+      el.setAttribute('role', 'status');
+      const header = document.querySelector('.buff-header');
+      if (header) header.insertAdjacentElement('afterend', el);
+      else document.body.prepend(el);
+    }
+    el.textContent = text;
+  } catch {
+    /* ignore */
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadSiteNotice);

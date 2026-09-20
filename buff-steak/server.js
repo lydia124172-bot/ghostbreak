@@ -30,9 +30,10 @@ const {
 } = require('./services/capacity');
 const { getLocationClosedInfo } = require('./services/store-hours');
 const { isValidTimeSlot, getAllPossibleTimeSlots } = require('./services/time-slots');
-const { loadSettings, setOnlineFull, isOnlineFull, getOnlineFullMessage } = require('./services/store-settings');
+const { loadSettings, setOnlineFull, isOnlineFull, getOnlineFullMessage, setHomepageNotice } = require('./services/store-settings');
 const { formatDateWithWeekday } = require('./services/dates');
 const { loadGallery, addVideo, removeVideo } = require('./services/gallery');
+const { loadNews, addNews, updateNews, removeNews } = require('./services/news');
 
 const PORT = process.env.PORT || 3001;
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
@@ -112,6 +113,7 @@ app.get('/api/config', (_req, res) => {
     minAdvanceHours: site.minAdvanceHours || 6,
     maxOnlineGuests: site.maxOnlineGuests || 9,
     reservationNotices: site.reservationNotices || [],
+    homepageNotice: settings.homepageNotice || '',
     mailConfigured: mailConfigured(),
     smsConfigured: smsConfigured(),
   });
@@ -603,6 +605,7 @@ app.post('/api/admin/reservations/:id/cancel', requireAdmin, async (req, res) =>
 app.get('/api/admin/settings', requireAdmin, (_req, res) => {
   const settings = loadSettings();
   res.json({
+    homepageNotice: settings.homepageNotice || '',
     locations: site.locations.map((loc) => ({
       id: loc.id,
       name: loc.name,
@@ -613,6 +616,10 @@ app.get('/api/admin/settings', requireAdmin, (_req, res) => {
 });
 
 app.patch('/api/admin/settings', requireAdmin, (req, res) => {
+  if (Object.prototype.hasOwnProperty.call(req.body || {}, 'homepageNotice')) {
+    const settings = setHomepageNotice(req.body.homepageNotice);
+    return res.json({ success: true, settings });
+  }
   const locationId = String(req.body?.locationId || '').trim();
   if (!locationById(locationId)) return res.status(400).json({ error: '請選擇分店' });
   const settings = setOnlineFull(locationId, Boolean(req.body?.onlineFull));
@@ -643,8 +650,45 @@ app.delete('/api/admin/gallery/videos/:id', requireAdmin, (req, res) => {
   res.json({ success: true, gallery: result.gallery });
 });
 
+app.get('/api/news', (_req, res) => {
+  res.json(loadNews());
+});
+
+app.get('/api/admin/news', requireAdmin, (_req, res) => {
+  res.json(loadNews());
+});
+
+app.post('/api/admin/news', requireAdmin, (req, res) => {
+  const result = addNews({
+    title: req.body?.title,
+    body: req.body?.body,
+    date: req.body?.date,
+  });
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ success: true, item: result.item, news: result.news });
+});
+
+app.patch('/api/admin/news/:id', requireAdmin, (req, res) => {
+  const result = updateNews(req.params.id, {
+    title: req.body?.title,
+    body: req.body?.body,
+    date: req.body?.date,
+  });
+  if (!result.ok) {
+    const code = result.error === '找不到這則消息' ? 404 : 400;
+    return res.status(code).json({ error: result.error });
+  }
+  res.json({ success: true, item: result.item, news: result.news });
+});
+
+app.delete('/api/admin/news/:id', requireAdmin, (req, res) => {
+  const result = removeNews(req.params.id);
+  if (!result.ok) return res.status(404).json({ error: result.error });
+  res.json({ success: true, news: result.news });
+});
+
 const PUBLIC = path.join(__dirname, 'public');
-const HTML_PAGES = ['menu', 'locations', 'reserve', 'franchise', 'gallery', 'story'];
+const HTML_PAGES = ['menu', 'locations', 'reserve', 'franchise', 'gallery', 'story', 'news'];
 const HTML_SKIP_GA = new Set(['404.html', 'admin.html']);
 
 function injectGaSnippet(html) {
@@ -682,9 +726,9 @@ function sendPublicText(res, file, contentType) {
 }
 
 function buildSitemapXml() {
-  const lastmod = '2026-08-20';
-  const paths = ['/', '/menu', '/reserve', '/locations', '/gallery', '/story', '/franchise'];
-  const priorities = { '/': '1.0', '/menu': '0.9', '/reserve': '0.95', '/locations': '0.9', '/gallery': '0.7', '/story': '0.7', '/franchise': '0.6' };
+  const lastmod = '2026-09-20';
+  const paths = ['/', '/menu', '/reserve', '/locations', '/news', '/gallery', '/story', '/franchise'];
+  const priorities = { '/': '1.0', '/menu': '0.9', '/reserve': '0.95', '/locations': '0.9', '/news': '0.8', '/gallery': '0.7', '/story': '0.7', '/franchise': '0.6' };
   const urls = paths.map((p) => {
     const loc = p === '/' ? `${BASE_URL}/` : `${BASE_URL}${p}`;
     return `<url><loc>${loc}</loc><lastmod>${lastmod}</lastmod><priority>${priorities[p] || '0.5'}</priority></url>`;

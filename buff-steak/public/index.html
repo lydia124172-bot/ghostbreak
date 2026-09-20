@@ -34,6 +34,7 @@
       <nav id="buffNav" class="buff-nav hidden sm:flex items-center gap-6">
         <a href="/menu" class="nav-link">菜單</a>
         <a href="/locations" class="nav-link">分店</a>
+        <a href="/news" class="nav-link">最新消息</a>
         <a href="/gallery" class="nav-link">影像</a>
         <a href="/story" class="nav-link">故事</a>
         <a href="/franchise" class="nav-link">加盟</a>
@@ -42,7 +43,7 @@
     </div>
   </header>
 
-  <section class="hero-bg min-h-[70vh] flex items-center justify-center text-center px-6">
+  <section class="hero-bg min-h-[48vh] md:min-h-[58vh] flex items-center justify-center text-center px-6 py-14">
     <div class="max-w-2xl">
       <div class="hero-emblem" aria-hidden="true">
         <img src="/images/logo-circle-dark.png" alt="" width="104" height="104" />
@@ -54,6 +55,19 @@
       <div class="flex flex-wrap justify-center gap-3">
         <a href="/reserve" class="btn-gold px-8 py-3 text-sm">線上訂位</a>
         <a href="/menu" class="btn-outline px-8 py-3 text-sm">查看菜單</a>
+      </div>
+      <p id="heroNews" class="mt-6 text-sm text-gold"></p>
+    </div>
+  </section>
+
+  <section id="news" class="py-10 md:py-14 px-6 border-t border-line">
+    <div class="max-w-5xl mx-auto">
+      <p class="text-gold text-xs tracking-[0.3em] text-center mb-2">NEWS</p>
+      <h2 class="font-['Playfair_Display'] text-2xl text-center mb-2">最新消息</h2>
+      <p class="text-center text-mist text-sm mb-10">營業公告、公休與訂位提醒</p>
+      <div id="newsList" class="grid md:grid-cols-3 gap-5" data-news-limit="3"></div>
+      <div class="text-center mt-8">
+        <a href="/news" class="text-gold text-sm tracking-wider hover:text-white transition">全部最新消息 →</a>
       </div>
     </div>
   </section>
@@ -139,5 +153,6 @@
 
   <div id="toast"></div>
   <script src="/js/site.js"></script>
+  <script src="/js/news-page.js"></script>
 </body>
 </html>

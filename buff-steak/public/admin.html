@@ -27,7 +27,7 @@
   <main class="max-w-6xl mx-auto px-5 py-10">
     <section id="loginBox" class="max-w-sm mx-auto bg-panel border border-line rounded-2xl p-6">
       <h1 class="font-['Playfair_Display'] text-2xl mb-2 text-center">員工登入</h1>
-      <p class="text-mist text-sm text-center mb-6">訂位管理、分店滿位設定、影像影片</p>
+      <p class="text-mist text-sm text-center mb-6">訂位管理、分店滿位設定、最新消息、影像影片</p>
       <label class="block text-xs text-mist mb-2">後台密碼</label>
       <input id="password" type="password" class="form-input mb-4" autocomplete="current-password" />
       <p id="loginError" class="text-red-400 text-sm mb-3 hidden"></p>
@@ -35,6 +35,44 @@
     </section>
 
     <section id="appBox" class="hidden space-y-6">
+      <section class="bg-panel border border-gold/40 rounded-2xl p-4 space-y-4">
+        <div>
+          <h2 class="text-lg font-medium">即時公告</h2>
+          <p class="text-sm text-mist mt-1">寫了按儲存，官網最上方立刻出現；清空再儲存就會關掉。適合臨時公休、活動、滿位提醒。</p>
+        </div>
+        <form id="noticeForm" class="grid gap-3">
+          <textarea id="noticeText" class="form-input" rows="3" maxlength="300" placeholder="例如：本週三深坑店公休；中秋連假採電話訂位"></textarea>
+          <div class="flex flex-wrap gap-3 items-center">
+            <button type="submit" class="btn-gold font-medium rounded-xl py-3 px-6">儲存到官網</button>
+            <button type="button" id="noticeClear" class="border border-line rounded-xl py-3 px-6 text-sm">清除公告</button>
+            <a href="/" target="_blank" rel="noopener" class="text-gold text-sm">查看官網 →</a>
+          </div>
+        </form>
+        <p id="noticeStatus" class="text-sm hidden"></p>
+      </section>
+
+      <section class="bg-panel border border-line rounded-2xl p-4 space-y-4">
+        <div>
+          <h2 class="text-lg font-medium">最新消息</h2>
+          <p class="text-sm text-mist mt-1">這裡發的每一則都會出現在首頁「最新消息」區塊與 <a href="/news" target="_blank" rel="noopener" class="text-gold">最新消息頁</a>。可隨時修改或刪除。</p>
+        </div>
+        <form id="newsForm" class="grid gap-3">
+          <input type="hidden" id="newsId" />
+          <div class="grid gap-3 md:grid-cols-3">
+            <input id="newsDate" type="date" class="form-input" required />
+            <input id="newsTitle" class="form-input md:col-span-2" placeholder="標題" maxlength="80" required />
+          </div>
+          <textarea id="newsBody" class="form-input" rows="3" placeholder="內容（最多 1200 字）" maxlength="1200" required></textarea>
+          <div class="flex flex-wrap gap-3">
+            <button type="submit" id="newsSubmit" class="btn-gold font-medium rounded-xl py-3 px-6">發布消息</button>
+            <button type="button" id="newsCancelEdit" class="border border-line rounded-xl py-3 px-6 text-sm hidden">取消修改</button>
+          </div>
+        </form>
+        <p id="newsError" class="text-red-400 text-sm hidden"></p>
+        <p id="newsOk" class="text-green-400 text-sm hidden"></p>
+        <div id="newsAdminList" class="space-y-3"></div>
+      </section>
+
       <div class="bg-panel border border-line rounded-2xl p-4 grid gap-3 md:grid-cols-5">
         <select id="filterLocation" class="form-input">
           <option value="">全部分店</option>
@@ -172,9 +210,11 @@
       $('loginBox').classList.add('hidden');
       $('appBox').classList.remove('hidden');
       $('logoutBtn').classList.remove('hidden');
+      resetNewsForm();
       loadList();
       loadStoreToggles();
       loadVideos();
+      loadNewsAdmin();
     }
 
     async function login() {
@@ -195,6 +235,7 @@
 
     async function loadStoreToggles() {
       const data = await api('/api/admin/settings', { headers: authHeaders() });
+      $('noticeText').value = data.homepageNotice || '';
       const locs = data.locations || [];
       $('storeToggles').innerHTML = locs.map((loc) => `
         <label class="flex items-start gap-3 cursor-pointer">
@@ -221,6 +262,95 @@
             <p class="text-xs text-mist break-all mt-1">${v.url}</p>
           </div>
           <button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm shrink-0" data-remove-video="${v.id}">移除</button>
+        </article>
+      `).join('');
+    }
+
+    function todayYmd() {
+      const d = new Date();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}-${m}-${day}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function setNewsOk(msg) {
+      $('newsError').classList.add('hidden');
+      if (!msg) {
+        $('newsOk').classList.add('hidden');
+        $('newsOk').textContent = '';
+        return;
+      }
+      $('newsOk').textContent = msg;
+      $('newsOk').classList.remove('hidden');
+    }
+
+    function setNoticeStatus(msg, ok = true) {
+      const el = $('noticeStatus');
+      el.textContent = msg || '';
+      el.classList.toggle('hidden', !msg);
+      el.classList.toggle('text-green-400', Boolean(ok));
+      el.classList.toggle('text-red-400', !ok);
+    }
+
+    async function saveNotice(text) {
+      setNoticeStatus('');
+      await api('/api/admin/settings', {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ homepageNotice: text }),
+      });
+      $('noticeText').value = text;
+      setNoticeStatus(text ? '已顯示在官網最上方' : '已關閉即時公告', true);
+    }
+
+    function resetNewsForm() {
+      $('newsId').value = '';
+      $('newsDate').value = todayYmd();
+      $('newsTitle').value = '';
+      $('newsBody').value = '';
+      $('newsSubmit').textContent = '發布消息';
+      $('newsCancelEdit').classList.add('hidden');
+      $('newsError').classList.add('hidden');
+    }
+
+    function fillNewsForm(item) {
+      $('newsId').value = item.id;
+      $('newsDate').value = item.date || '';
+      $('newsTitle').value = item.title || '';
+      $('newsBody').value = item.body || '';
+      $('newsSubmit').textContent = '儲存修改';
+      $('newsCancelEdit').classList.remove('hidden');
+      $('newsError').classList.add('hidden');
+      setNewsOk('');
+      $('newsTitle').focus();
+    }
+
+    async function loadNewsAdmin() {
+      const data = await api('/api/admin/news', { headers: authHeaders() });
+      const items = data.items || [];
+      window.__newsItems = items;
+      if (!items.length) {
+        $('newsAdminList').innerHTML = '<p class="text-mist text-sm">尚未發布最新消息</p>';
+        return;
+      }
+      $('newsAdminList').innerHTML = items.map((n) => `
+        <article class="border border-line rounded-xl p-3 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="font-medium">${escapeHtml(n.date)} · ${escapeHtml(n.title || '')}</p>
+            <p class="text-xs text-mist mt-1 whitespace-pre-wrap">${escapeHtml(n.body || '')}</p>
+          </div>
+          <div class="flex gap-2 shrink-0">
+            <button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-edit-news="${escapeHtml(n.id)}">修改</button>
+            <button type="button" class="border border-gold text-gold px-3 py-2 rounded-lg text-sm" data-remove-news="${escapeHtml(n.id)}">刪除</button>
+          </div>
         </article>
       `).join('');
     }
@@ -329,6 +459,21 @@
         fillTimes($('editTime'), $('editLocation').value, $('editDate').value, $('editTime').value);
       });
     });
+    $('noticeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await saveNotice($('noticeText').value);
+      } catch (err) {
+        setNoticeStatus(err.message, false);
+      }
+    });
+    $('noticeClear').addEventListener('click', async () => {
+      try {
+        await saveNotice('');
+      } catch (err) {
+        setNoticeStatus(err.message, false);
+      }
+    });
     $('storeToggles').addEventListener('change', async (e) => {
       const id = e.target.getAttribute('data-online-full');
       if (!id) return;
@@ -373,6 +518,61 @@
           headers: authHeaders(),
         });
         await loadVideos();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+    $('newsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('newsError').classList.add('hidden');
+      setNewsOk('');
+      const editingId = $('newsId').value.trim();
+      const body = {
+        date: $('newsDate').value,
+        title: $('newsTitle').value.trim(),
+        body: $('newsBody').value.trim(),
+      };
+      try {
+        if (editingId) {
+          await api('/api/admin/news/' + encodeURIComponent(editingId), {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify(body),
+          });
+          setNewsOk('已更新，官網立刻看得到');
+        } else {
+          await api('/api/admin/news', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify(body),
+          });
+          setNewsOk('已發布，官網首頁與最新消息頁立刻看得到');
+        }
+        resetNewsForm();
+        await loadNewsAdmin();
+      } catch (err) {
+        $('newsError').textContent = err.message;
+        $('newsError').classList.remove('hidden');
+      }
+    });
+    $('newsCancelEdit').addEventListener('click', resetNewsForm);
+    $('newsAdminList').addEventListener('click', async (e) => {
+      const editId = e.target.getAttribute('data-edit-news');
+      const removeId = e.target.getAttribute('data-remove-news');
+      if (editId) {
+        const item = (window.__newsItems || []).find((n) => n.id === editId);
+        if (item) fillNewsForm(item);
+        return;
+      }
+      if (!removeId) return;
+      if (!window.confirm('確定刪除這則最新消息？')) return;
+      try {
+        await api('/api/admin/news/' + encodeURIComponent(removeId), {
+          method: 'DELETE',
+          headers: authHeaders(),
+        });
+        if ($('newsId').value === removeId) resetNewsForm();
+        await loadNewsAdmin();
       } catch (err) {
         alert(err.message);
       }

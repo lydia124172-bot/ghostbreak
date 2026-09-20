@@ -15,10 +15,16 @@ function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+const NOTICE_MAX = 300;
+
 function defaultSettings() {
   const onlineFull = {};
   for (const loc of site.locations) onlineFull[loc.id] = false;
-  return { onlineFull };
+  return { onlineFull, homepageNotice: '' };
+}
+
+function cleanNotice(value) {
+  return String(value || '').trim().slice(0, NOTICE_MAX);
 }
 
 function loadSettings() {
@@ -29,6 +35,7 @@ function loadSettings() {
     const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
     return {
       onlineFull: { ...base.onlineFull, ...(raw.onlineFull || {}) },
+      homepageNotice: cleanNotice(raw.homepageNotice),
     };
   } catch {
     return base;
@@ -57,10 +64,19 @@ function getOnlineFullMessage(loc) {
   return `${ONLINE_FULL_MESSAGE}（${loc.name} ${loc.phone}）`;
 }
 
+function setHomepageNotice(text) {
+  const settings = loadSettings();
+  settings.homepageNotice = cleanNotice(text);
+  saveSettings(settings);
+  return settings;
+}
+
 module.exports = {
   ONLINE_FULL_MESSAGE,
+  NOTICE_MAX,
   loadSettings,
   isOnlineFull,
   setOnlineFull,
   getOnlineFullMessage,
+  setHomepageNotice,
 };
