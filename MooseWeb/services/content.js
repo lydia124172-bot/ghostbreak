@@ -35,6 +35,13 @@ function emptyContent() {
   };
 }
 
+function mergeListsById(baseList, savedList) {
+  if (!Array.isArray(savedList)) return clone(baseList);
+  const have = new Set(savedList.map((row) => row && row.id).filter(Boolean));
+  const extra = (baseList || []).filter((row) => row && row.id && !have.has(row.id));
+  return savedList.concat(extra);
+}
+
 function mergeContent(saved) {
   const base = emptyContent();
   if (!saved || typeof saved !== 'object') return base;
@@ -45,7 +52,7 @@ function mergeContent(saved) {
     workKinds: Array.isArray(saved.workKinds) ? saved.workKinds : base.workKinds,
     products: Array.isArray(saved.products) ? saved.products : base.products,
     works: Array.isArray(saved.works) ? saved.works : base.works,
-    courses: Array.isArray(saved.courses) ? saved.courses : base.courses,
+    courses: mergeListsById(base.courses, saved.courses),
     hire: Array.isArray(saved.hire) ? saved.hire : base.hire,
     faqs: Array.isArray(saved.faqs) ? saved.faqs : base.faqs,
   };
