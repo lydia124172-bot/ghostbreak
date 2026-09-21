@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>後台 — 瑄品集選</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=15" />
+</head>
+<body>
+  <header class="site-header admin-header">
+    <div class="goldbar"></div>
+    <div class="wrap header-inner">
+      <a class="brand" href="/admin">
+        <img src="/logo.png" alt="">
+        <span><strong>瑄品集選</strong><small>內容後台</small></span>
+      </a>
+      <div class="admin-actions">
+        <a href="/issue" target="_blank" rel="noopener">本月專區</a>
+        <a href="/qr" target="_blank" rel="noopener">直播 QR</a>
+        <button id="logoutBtn" class="btn btn-ghost hidden" type="button">登出</button>
+      </div>
+    </div>
+  </header>
+  <main class="wrap" style="padding:40px 0 80px;">
+    <section id="loginBox" class="panel" style="max-width:420px;margin:40px auto;">
+      <h1>後台登入</h1>
+      <p class="lead">上傳照片與說明，即可換成這個月的集選。</p>
+      <form id="loginForm">
+        <label class="field" for="password">後台密碼</label>
+        <input id="password" type="password" class="form-input" autocomplete="current-password" />
+        <p id="loginError" class="status-err hidden" style="margin:12px 0 0;"></p>
+        <button type="submit" class="btn btn-copper" style="width:100%;margin-top:16px;">進入後台</button>
+      </form>
+    </section>
+    <section id="appBox" class="hidden" style="display:grid;gap:22px;">
+      <section class="panel">
+        <h2>本月集選</h2>
+        <p class="lead">換月請用「封存本期」。說明第一行寫【紫瑄老闆親測推薦】與商品名，可貼 YouTube 實測短片連結。</p>
+        <form id="productForm" class="admin-grid">
+          <input type="hidden" id="productId" />
+          <div>
+            <label class="field">商品照片</label>
+            <div class="dropzone" id="dropzone" tabindex="0">
+              <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
+              <b>拖曳、點擊或貼上照片</b>
+              <span>可一次多張，第一張為封面。jpg／png／webp，單張 8MB 內。</span>
+            </div>
+            <div class="photo-row" id="photoRow"></div>
+          </div>
+          <div>
+            <label class="field" for="listingText">商品說明</label>
+            <textarea id="listingText" class="form-input listing-text" rows="8" placeholder="【紫瑄老闆親測推薦】台灣鑄鐵鍋（附私房煎牛排時間表）&#10;台灣&#10;NT$ 1680&#10;https://youtu.be/xxxxxxxx&#10;自己用了很久，這個月想推薦給你。"></textarea>
+          </div>
+          <div class="parse-chips" id="parseChips"></div>
+          <div class="admin-actions">
+            <button class="btn btn-copper" type="submit" id="publishBtn">放到本月集選</button>
+            <button class="btn btn-ghost hidden" type="button" id="cancelEdit">取消</button>
+            <span id="productStatus" class="status-ok hidden"></span>
+            <span id="productError" class="status-err hidden"></span>
+          </div>
+        </form>
+        <div class="list" id="productList"></div>
+      </section>
+      <section class="panel">
+        <h2>訂單與申請</h2>
+        <p class="lead">前台下單與帶貨申請會列在這裡，同時寄到信箱。</p>
+        <div class="list" id="orderList"></div>
+      </section>
+      <section class="panel">
+        <h2>月刊設定</h2>
+        <form id="settingsForm" class="admin-grid">
+          <div>
+            <label class="field" for="monthLabel">本期名稱</label>
+            <input id="monthLabel" class="form-input" maxlength="40" placeholder="例如：2026年9月號" />
+          </div>
+          <div>
+            <label class="field" for="themeTitle">本月主題／國家</label>
+            <input id="themeTitle" class="form-input" maxlength="40" placeholder="例如：台灣好物月、日本精選月" />
+          </div>
+          <div>
+            <label class="field" for="themeOrigin">焦點國家</label>
+            <select id="themeOrigin" class="form-input">
+              <option value="">不指定</option>
+              <option>日本</option>
+              <option>韓國</option>
+              <option>中國</option>
+              <option>泰國</option>
+              <option>台灣</option>
+            </select>
+          </div>
+          <div>
+            <label class="field" for="themeVisual">封面圖網址</label>
+            <input id="themeVisual" class="form-input" maxlength="200" placeholder="/images/hero-tea.jpg" />
+          </div>
+          <div>
+            <label class="field" for="nextTitle">下期預告</label>
+            <input id="nextTitle" class="form-input" maxlength="80" placeholder="例如：下期：日本精選月" />
+          </div>
+          <div>
+            <label class="field" for="nextNote">下期說明</label>
+            <textarea id="nextNote" class="form-input" rows="2" maxlength="200"></textarea>
+          </div>
+          <div>
+            <label class="field" for="liveWhen">客廳直播頻率</label>
+            <input id="liveWhen" class="form-input" maxlength="80" />
+          </div>
+          <div>
+            <label class="field" for="liveNote">直播說明</label>
+            <textarea id="liveNote" class="form-input" rows="3" maxlength="300"></textarea>
+          </div>
+          <div>
+            <label class="field" for="tagline">副標</label>
+            <input id="tagline" class="form-input" maxlength="80" />
+          </div>
+          <div>
+            <label class="field" for="email">聯絡 Email</label>
+            <input id="email" class="form-input" maxlength="120" />
+          </div>
+          <div>
+            <label class="field" for="lineUrl">LINE 連結</label>
+            <input id="lineUrl" class="form-input" maxlength="200" />
+          </div>
+          <div>
+            <label class="field" for="heroTitle">主編標題</label>
+            <textarea id="heroTitle" class="form-input" rows="2" maxlength="160"></textarea>
+          </div>
+          <div>
+            <label class="field" for="heroLead">主編的話</label>
+            <textarea id="heroLead" class="form-input" rows="3" maxlength="300"></textarea>
+          </div>
+          <div>
+            <label class="field" for="pullQuote">主編引句</label>
+            <textarea id="pullQuote" class="form-input" rows="2" maxlength="120"></textarea>
+          </div>
+          <div>
+            <label class="field" for="coverLabel">封面小標</label>
+            <input id="coverLabel" class="form-input" maxlength="40" />
+          </div>
+          <div>
+            <label class="field" for="coverEnglish">封面英文句</label>
+            <input id="coverEnglish" class="form-input" maxlength="80" />
+          </div>
+          <div>
+            <label class="field" for="countryHead">本月國家標題</label>
+            <input id="countryHead" class="form-input" maxlength="40" />
+          </div>
+          <div>
+            <label class="field" for="countryLead">本月國家說明</label>
+            <textarea id="countryLead" class="form-input" rows="3" maxlength="300"></textarea>
+          </div>
+          <div>
+            <label class="field" for="shopLead">本月開箱說明</label>
+            <textarea id="shopLead" class="form-input" rows="2" maxlength="200" placeholder="這個月只賣這些。下個月再換。依國家挑選，不依類別。"></textarea>
+          </div>
+          <div>
+            <label class="field" for="shopEmpty">開箱空白提示</label>
+            <input id="shopEmpty" class="form-input" maxlength="120" />
+          </div>
+          <div>
+            <label class="field" for="col1Title">欄一標題</label>
+            <input id="col1Title" class="form-input" maxlength="20" />
+          </div>
+          <div>
+            <label class="field" for="col1Body">欄一說明</label>
+            <textarea id="col1Body" class="form-input" rows="2" maxlength="200"></textarea>
+          </div>
+          <div>
+            <label class="field" for="col2Title">欄二標題</label>
+            <input id="col2Title" class="form-input" maxlength="20" />
+          </div>
+          <div>
+            <label class="field" for="col2Body">欄二說明</label>
+            <textarea id="col2Body" class="form-input" rows="2" maxlength="200"></textarea>
+          </div>
+          <div>
+            <label class="field" for="col3Title">欄三標題</label>
+            <input id="col3Title" class="form-input" maxlength="20" />
+          </div>
+          <div>
+            <label class="field" for="col3Body">欄三說明</label>
+            <textarea id="col3Body" class="form-input" rows="2" maxlength="200"></textarea>
+          </div>
+          <div>
+            <label class="field" for="liveTitle">客廳直播標題</label>
+            <input id="liveTitle" class="form-input" maxlength="40" />
+          </div>
+          <div>
+            <label class="field" for="archiveNote">過往回顧說明</label>
+            <textarea id="archiveNote" class="form-input" rows="2" maxlength="200"></textarea>
+          </div>
+          <div>
+            <label class="field" for="wishLead">許願池說明</label>
+            <textarea id="wishLead" class="form-input" rows="2" maxlength="200"></textarea>
+          </div>
+          <div class="admin-actions">
+            <button class="btn btn-copper" type="submit">儲存月刊設定</button>
+            <button class="btn btn-ghost" type="button" id="rolloverBtn">封存本期、換下月封面</button>
+            <span id="settingsStatus" class="status-ok hidden"></span>
+            <span id="settingsError" class="status-err hidden"></span>
+          </div>
+        </form>
+        <div class="list" id="archiveAdmin"></div>
+      </section>
+    </section>
+  </main>
+  <script>
+    const tokenKey = 'shine-piece-admin';
+    const ORIGINS = ['日本', '韓國', '中國', '泰國', '台灣'];
+    const $ = (id) => document.getElementById(id);
+    let savedPhotos = [];
+    let pending = [];
+
+    function token() { return localStorage.getItem(tokenKey) || ''; }
+    function headers() {
+      return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() };
+    }
+    async function api(url, opts = {}) {
+      const res = await fetch(url, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) throw new Error('unauthorized');
+      if (!res.ok) throw new Error(data.error || '失敗');
+      return data;
+    }
+    function showApp(on) {
+      $('loginBox').classList.toggle('hidden', on);
+      $('appBox').classList.toggle('hidden', !on);
+      $('logoutBtn').classList.toggle('hidden', !on);
+    }
+    function escapeHtml(v) {
+      return String(v || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+    function parseLocal(text, filename) {
+      const raw = String(text || '').trim();
+      const lines = raw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+      const origin = ORIGINS.find((o) => raw.includes(o)) || '';
+      const priceM = raw.match(/(?:NT\$?|TWD|售價[:：\s]*|價格[:：\s]*|＄|\$)\s*[\d,]+/i) || raw.match(/[\d,]{2,}\s*元/);
+      const skip = (line) => ORIGINS.includes(line) || /^(有貨|缺貨|售完)$/.test(line) || (priceM && line.includes(priceM[0])) || /youtube|youtu\.be|vimeo|\.mp4/i.test(line);
+      let name = lines.find((line) => !skip(line)) || '';
+      name = name.replace(/^[【\[]\s*(日本|韓國|中國|泰國|台灣)\s*[】\]]\s*/, '').replace(/(?:NT\$?|＄|\$)\s*[\d,]+/i, '').trim();
+      if (!name && filename) name = filename.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+      const badgeM = name.match(/^【([^】]+)】/) || raw.match(/【(紫瑄[^】]*)】/);
+      return {
+        name,
+        badge: badgeM ? badgeM[1] : '紫瑄老闆親測推薦',
+        origin,
+        price: priceM ? priceM[0] : '',
+        stock: /缺貨|售完|完售/.test(raw) ? '缺貨' : '有貨',
+        video: /youtu|vimeo|\.mp4/i.test(raw) ? '已讀取短片' : '',
+      };
+    }
+    function firstFilename() {
+      return pending[0]?.file?.name || '';
+    }
+    function renderChips() {
+      const parsed = parseLocal($('listingText').value, firstFilename());
+      const bits = [
+        ['名稱', parsed.name],
+        ['標籤', parsed.badge],
+        ['國家', parsed.origin],
+        ['價格', parsed.price],
+        ['短片', parsed.video],
+        ['庫存', parsed.stock],
+      ].filter((row) => row[1]);
+      $('parseChips').innerHTML = bits.map(([k, v]) => `<span><em>${k}</em>${escapeHtml(v)}</span>`).join('');
+    }
+    function renderPhotos() {
+      const chips = savedPhotos.map((url, i) => `
+        <div class="photo-chip">
+          <img src="${escapeHtml(url)}" alt="">
+          <button type="button" data-saved="${i}" aria-label="移除">×</button>
+        </div>`).join('') + pending.map((row, i) => `
+        <div class="photo-chip">
+          <img src="${escapeHtml(row.url)}" alt="">
+          <button type="button" data-pending="${i}" aria-label="移除">×</button>
+        </div>`).join('');
+      $('photoRow').innerHTML = chips;
+      $('photoRow').querySelectorAll('[data-saved]').forEach((btn) => {
+        btn.onclick = () => {
+          savedPhotos.splice(Number(btn.dataset.saved), 1);
+          renderPhotos();
+        };
+      });
+      $('photoRow').querySelectorAll('[data-pending]').forEach((btn) => {
+        btn.onclick = () => {
+          const row = pending[Number(btn.dataset.pending)];
+          if (row) URL.revokeObjectURL(row.url);
+          pending.splice(Number(btn.dataset.pending), 1);
+          renderPhotos();
+          renderChips();
+        };
+      });
+    }
+    function addFiles(list) {
+      const files = Array.from(list || []).filter((file) => /^image\//.test(file.type));
+      const room = 12 - savedPhotos.length - pending.length;
+      files.slice(0, Math.max(0, room)).forEach((file) => {
+        pending.push({ file, url: URL.createObjectURL(file) });
+      });
+      renderPhotos();
+      renderChips();
+    }
+    function resetListing() {
+      pending.forEach((row) => URL.revokeObjectURL(row.url));
+      pending = [];
+      savedPhotos = [];
+      $('productId').value = '';
+      $('listingText').value = '';
+      $('publishBtn').textContent = '放到本月集選';
+      $('cancelEdit').classList.add('hidden');
+      renderPhotos();
+      renderChips();
+    }
+    function setStatus(ok, text) {
+      $('productStatus').classList.toggle('hidden', !ok || !text);
+      $('productError').classList.toggle('hidden', ok || !text);
+      if (ok) $('productStatus').textContent = text || '';
+      else $('productError').textContent = text || '';
+    }
+    async function uploadPending() {
+      if (!pending.length) return [];
+      const body = new FormData();
+      pending.forEach((row) => body.append('photos', row.file));
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token() },
+        body,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '圖片上傳失敗');
+      return (data.files || []).map((file) => file.url);
+    }
+    async function loadAll() {
+      const content = await api('/api/admin/content');
+      $('tagline').value = content.tagline || '';
+      $('email').value = content.email || '';
+      $('lineUrl').value = content.lineUrl || '';
+      $('heroTitle').value = content.heroTitle || '';
+      $('heroLead').value = content.heroLead || '';
+      $('monthLabel').value = content.monthLabel || '';
+      $('liveWhen').value = content.liveWhen || '';
+      $('liveNote').value = content.liveNote || '';
+      $('themeTitle').value = content.themeTitle || '';
+      $('themeOrigin').value = content.themeOrigin || '';
+      $('themeVisual').value = content.themeVisual || '';
+      $('nextTitle').value = content.nextTitle || '';
+      $('nextNote').value = content.nextNote || '';
+      $('coverLabel').value = content.coverLabel || '';
+      $('coverEnglish').value = content.coverEnglish || '';
+      $('pullQuote').value = content.pullQuote || '';
+      $('countryHead').value = content.countryHead || '';
+      $('countryLead').value = content.countryLead || '';
+      $('shopLead').value = content.shopLead || '';
+      $('shopEmpty').value = content.shopEmpty || '';
+      $('col1Title').value = content.col1Title || '';
+      $('col1Body').value = content.col1Body || '';
+      $('col2Title').value = content.col2Title || '';
+      $('col2Body').value = content.col2Body || '';
+      $('col3Title').value = content.col3Title || '';
+      $('col3Body').value = content.col3Body || '';
+      $('liveTitle').value = content.liveTitle || '';
+      $('archiveNote').value = content.archiveNote || '';
+      $('wishLead').value = content.wishLead || '';
+      $('productList').innerHTML = (content.products || []).map((p) => `
+        <article class="item">
+          ${p.image ? `<img class="item-thumb" src="${escapeHtml(p.image)}" alt="">` : ''}
+          <div>
+            <p class="meta">${escapeHtml([p.origin, p.price, p.stock].filter(Boolean).join(' · '))}</p>
+            <h3>${escapeHtml(p.name)}</h3>
+            <p>${escapeHtml(p.summary)}</p>
+          </div>
+          <div class="admin-actions">
+            <button class="btn btn-ghost" type="button" data-edit="${p.id}">編輯</button>
+            <button class="btn btn-ghost" type="button" data-archive="${p.id}">封存</button>
+            <button class="btn btn-ghost" type="button" data-del="${p.id}">刪除</button>
+          </div>
+        </article>
+      `).join('') || '<p class="lead">尚未上架商品。</p>';
+      $('productList').querySelectorAll('[data-edit]').forEach((btn) => {
+        btn.onclick = () => {
+          const row = content.products.find((p) => p.id === btn.dataset.edit);
+          if (!row) return;
+          pending.forEach((item) => URL.revokeObjectURL(item.url));
+          pending = [];
+          savedPhotos = (row.images && row.images.length) ? row.images.slice() : (row.image ? [row.image] : []);
+          $('productId').value = row.id;
+          $('listingText').value = row.summary || [row.name, row.origin, row.price].filter(Boolean).join('\n');
+          $('publishBtn').textContent = '更新上架';
+          $('cancelEdit').classList.remove('hidden');
+          setStatus(true, '');
+          $('productStatus').classList.add('hidden');
+          renderPhotos();
+          renderChips();
+          $('listingText').focus();
+        };
+      });
+      $('productList').querySelectorAll('[data-archive]').forEach((btn) => {
+        btn.onclick = async () => {
+          await api('/api/admin/products/' + btn.dataset.archive + '/archive', { method: 'POST' });
+          if ($('productId').value === btn.dataset.archive) resetListing();
+          loadAll();
+        };
+      });
+      $('productList').querySelectorAll('[data-del]').forEach((btn) => {
+        btn.onclick = async () => {
+          await api('/api/admin/products/' + btn.dataset.del, { method: 'DELETE' });
+          if ($('productId').value === btn.dataset.del) resetListing();
+          loadAll();
+        };
+      });
+      const archived = (content.archive || []).flatMap((month) => (month.products || []).map((p) => ({ ...p, label: month.label })));
+      $('archiveAdmin').innerHTML = archived.map((p) => `
+        <article class="item">
+          ${p.image ? `<img class="item-thumb" src="${escapeHtml(p.image)}" alt="">` : ''}
+          <div>
+            <p class="meta">${escapeHtml(p.label || '')} · ${escapeHtml(p.origin || '')} · ${Number(p.wishCount) || 0} 人許願</p>
+            <h3>${escapeHtml(p.name)}</h3>
+          </div>
+          <button class="btn btn-ghost" type="button" data-flash="${p.id}">回鍋快閃</button>
+        </article>
+      `).join('') || '<p class="lead">尚無過刊。封存本期後會列在這裡。</p>';
+      $('archiveAdmin').querySelectorAll('[data-flash]').forEach((btn) => {
+        btn.onclick = async () => {
+          await api('/api/admin/archive/' + btn.dataset.flash + '/flash', { method: 'POST' });
+          loadAll();
+        };
+      });
+      const { orders } = await api('/api/admin/orders');
+      $('orderList').innerHTML = (orders || []).map((o) => `
+        <article class="item">
+          <div>
+            <p class="meta">${escapeHtml([o.kind, o.status, o.payment, o.shipping].filter(Boolean).join(' · '))}</p>
+            <h3>${escapeHtml(o.name)}　${escapeHtml(o.id || '')}</h3>
+            <p>${escapeHtml(o.phone || o.email)}</p>
+            <p>${escapeHtml(o.city || '')} ${escapeHtml(o.address || '')} ${escapeHtml(o.storeBrand || '')} ${escapeHtml(o.store || '')}</p>
+            <p>${escapeHtml((o.items || []).map((i) => i.name + ' × ' + i.qty).join('、'))}</p>
+            <p>${escapeHtml(o.message || '')}</p>
+          </div>
+          <button class="btn btn-ghost" type="button" data-odel="${o.id}">刪除</button>
+        </article>
+      `).join('') || '<p>尚無訂單。</p>';
+      $('orderList').querySelectorAll('[data-odel]').forEach((btn) => {
+        btn.onclick = async () => {
+          await api('/api/admin/orders/' + btn.dataset.odel, { method: 'DELETE' });
+          loadAll();
+        };
+      });
+    }
+
+    $('dropzone').addEventListener('click', () => $('photoInput').click());
+    $('dropzone').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('photoInput').click(); }
+    });
+    ['dragenter', 'dragover'].forEach((name) => {
+      $('dropzone').addEventListener(name, (e) => { e.preventDefault(); $('dropzone').classList.add('is-on'); });
+    });
+    ['dragleave', 'drop'].forEach((name) => {
+      $('dropzone').addEventListener(name, (e) => { e.preventDefault(); $('dropzone').classList.remove('is-on'); });
+    });
+    $('dropzone').addEventListener('drop', (e) => addFiles(e.dataTransfer.files));
+    $('photoInput').addEventListener('change', (e) => {
+      addFiles(e.target.files);
+      e.target.value = '';
+    });
+    document.addEventListener('paste', (e) => {
+      if ($('appBox').classList.contains('hidden')) return;
+      const files = [...(e.clipboardData?.files || [])].filter((file) => file.type.startsWith('image/'));
+      if (files.length) addFiles(files);
+    });
+    $('listingText').addEventListener('input', renderChips);
+    $('cancelEdit').onclick = () => resetListing();
+    $('productForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setStatus(true, '');
+      $('productStatus').classList.add('hidden');
+      try {
+        const uploaded = await uploadPending();
+        const images = savedPhotos.concat(uploaded);
+        const description = $('listingText').value.trim();
+        const id = $('productId').value;
+        await api(id ? '/api/admin/products/' + id : '/api/admin/products', {
+          method: id ? 'PATCH' : 'POST',
+          body: JSON.stringify({
+            images,
+            description,
+            filename: firstFilename(),
+          }),
+        });
+        resetListing();
+        setStatus(true, '已放到本月集選');
+        await loadAll();
+      } catch (err) {
+        setStatus(false, err.message);
+      }
+    });
+    $('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('loginError').classList.add('hidden');
+      try {
+        const data = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: $('password').value }),
+        }).then((r) => r.json());
+        if (!data.token) throw new Error(data.error || '登入失敗');
+        localStorage.setItem(tokenKey, data.token);
+        showApp(true);
+        await loadAll();
+      } catch (err) {
+        $('loginError').textContent = err.message;
+        $('loginError').classList.remove('hidden');
+      }
+    });
+    $('logoutBtn').onclick = () => { localStorage.removeItem(tokenKey); showApp(false); };
+    $('settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await api('/api/admin/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          tagline: $('tagline').value,
+          email: $('email').value,
+          lineUrl: $('lineUrl').value,
+          heroTitle: $('heroTitle').value,
+          heroLead: $('heroLead').value,
+          monthLabel: $('monthLabel').value,
+          liveWhen: $('liveWhen').value,
+          liveNote: $('liveNote').value,
+          themeTitle: $('themeTitle').value,
+          themeOrigin: $('themeOrigin').value,
+          themeVisual: $('themeVisual').value,
+          nextTitle: $('nextTitle').value,
+          nextNote: $('nextNote').value,
+          coverLabel: $('coverLabel').value,
+          coverEnglish: $('coverEnglish').value,
+          pullQuote: $('pullQuote').value,
+          countryHead: $('countryHead').value,
+          countryLead: $('countryLead').value,
+          shopLead: $('shopLead').value,
+          shopEmpty: $('shopEmpty').value,
+          col1Title: $('col1Title').value,
+          col1Body: $('col1Body').value,
+          col2Title: $('col2Title').value,
+          col2Body: $('col2Body').value,
+          col3Title: $('col3Title').value,
+          col3Body: $('col3Body').value,
+          liveTitle: $('liveTitle').value,
+          archiveNote: $('archiveNote').value,
+          wishLead: $('wishLead').value,
+        }),
+      });
+      $('settingsStatus').textContent = '已儲存';
+      $('settingsStatus').classList.remove('hidden');
+    });
+    $('rolloverBtn').onclick = async () => {
+      if (!confirm('確定封存本期並換下月封面？本期商品會進入許願池。')) return;
+      $('settingsError').classList.add('hidden');
+      try {
+        await api('/api/admin/rollover', { method: 'POST' });
+        $('settingsStatus').textContent = '已封存本期';
+        $('settingsStatus').classList.remove('hidden');
+        await loadAll();
+      } catch (err) {
+        $('settingsError').textContent = err.message;
+        $('settingsError').classList.remove('hidden');
+      }
+    };
+    if (token()) {
+      showApp(true);
+      loadAll().catch(() => showApp(false));
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>結帳 — 瑄品集選</title>
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=15" />
+</head>
+<body data-page="order">
+  <div data-shell="header"></div>
+  <main class="wrap">
+    <section class="page-head">
+      <p class="issue-folio"><span>CHECKOUT</span><span>本月櫃檯</span></p>
+      <p class="kicker">Checkout</p>
+      <h1>結帳</h1>
+      <p class="lead">只留收件與付款。刷卡、超商代碼、ATM 虛擬帳號可選；手機可走 Apple Pay／Google Pay。</p>
+    </section>
+    <p id="doneBox" class="panel hidden" style="margin-bottom:24px;"></p>
+    <form id="orderForm" class="check-grid">
+      <div class="admin-grid">
+        <section class="panel check-block">
+          <h2>收件</h2>
+          <div class="admin-2">
+            <div>
+              <label class="field" for="name">姓名</label>
+              <input id="name" class="form-input" required maxlength="40" autocomplete="name" />
+            </div>
+            <div>
+              <label class="field" for="phone">電話</label>
+              <input id="phone" class="form-input" required maxlength="30" inputmode="tel" autocomplete="tel" />
+            </div>
+          </div>
+          <div class="choices" style="margin-top:14px;">
+            <label class="choice">
+              <input type="radio" name="shipping" value="宅配" checked />
+              <span><b>宅配到府</b></span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="shipping" value="超商取貨" />
+              <span><b>超商門市</b></span>
+            </label>
+          </div>
+          <div id="homeFields" style="margin-top:14px;">
+            <label class="field" for="address">地址</label>
+            <input id="address" class="form-input" maxlength="200" placeholder="縣市＋街道門牌" autocomplete="street-address" />
+          </div>
+          <div id="storeFields" class="admin-grid hidden" style="margin-top:14px;">
+            <div class="admin-2">
+              <div>
+                <label class="field" for="storeBrand">超商</label>
+                <select id="storeBrand" class="form-input">
+                  <option value="">請選擇</option>
+                  <option>7-ELEVEN</option>
+                  <option>全家</option>
+                  <option>萊爾富</option>
+                  <option>OK</option>
+                </select>
+              </div>
+              <div>
+                <label class="field" for="store">門市</label>
+                <input id="store" class="form-input" maxlength="80" placeholder="門市名稱" />
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="panel check-block">
+          <h2>付款</h2>
+          <div class="choices" id="payChoices"></div>
+        </section>
+      </div>
+      <aside>
+        <section class="panel check-block">
+          <h2>這一期</h2>
+          <div id="summary" class="list" style="padding:0;"></div>
+          <p id="err" class="status-err hidden"></p>
+          <p id="ok" class="status-ok hidden"></p>
+          <div class="admin-actions" style="margin-top:16px;">
+            <button class="btn btn-ink" type="submit">立即付款</button>
+            <a class="btn btn-ghost" href="/issue">回本月專區</a>
+          </div>
+        </section>
+      </aside>
+    </form>
+  </main>
+  <div data-shell="footer"></div>
+  <script src="/js/site.js?v=13"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    function shippingValue() {
+      return document.querySelector('input[name="shipping"]:checked')?.value || '宅配';
+    }
+    function paymentValue() {
+      return document.querySelector('input[name="payment"]:checked')?.value || '刷卡';
+    }
+    function toggleShip() {
+      const home = shippingValue() === '宅配';
+      document.getElementById('homeFields').classList.toggle('hidden', !home);
+      document.getElementById('storeFields').classList.toggle('hidden', home);
+    }
+    document.querySelectorAll('input[name="shipping"]').forEach((el) => el.addEventListener('change', toggleShip));
+    toggleShip();
+
+    const done = params.get('done');
+    if (done) {
+      const paid = params.get('paid') === '1';
+      document.getElementById('doneBox').classList.remove('hidden');
+      document.getElementById('doneBox').innerHTML = paid
+        ? `<h2>已付款</h2><p>單號 ${escapeHtml(done)}。我們會安排出貨。</p>`
+        : `<h2>訂單已成立</h2><p>單號 ${escapeHtml(done)}。若尚未完成付款，可用原方式再試一次，或等我們傳連結。</p>`;
+      document.getElementById('orderForm').classList.add('hidden');
+    }
+
+    fetch('/api/config').then((r) => r.json()).then((data) => {
+      const methods = (data.pay && data.pay.methods) || [
+        { id: '刷卡', label: '刷卡（信用卡／Apple Pay／Google Pay）', note: '' },
+        { id: '超商代碼', label: '超商代碼／條碼', note: '' },
+        { id: 'ATM虛擬帳號', label: 'ATM 虛擬帳號', note: '' },
+      ];
+      document.getElementById('payChoices').innerHTML = methods.map((row, i) => `
+        <label class="choice">
+          <input type="radio" name="payment" value="${escapeHtml(row.id)}" ${i === 0 ? 'checked' : ''} />
+          <span><b>${escapeHtml(row.label)}</b><span>${escapeHtml(row.note || '')}</span></span>
+        </label>`).join('');
+    });
+
+    const cart = loadCart();
+    document.getElementById('summary').innerHTML = cart.length
+      ? cart.map((row) => `<article class="item" style="padding:10px 0;border:0;background:transparent;border-radius:0;"><div><h3>${escapeHtml(row.name)}</h3><p class="product-cat">× ${row.qty}</p></div><span class="price">${escapeHtml(row.price || '')}</span></article>`).join('')
+      : '<p class="empty-note" style="padding:8px 0 0;">還沒有商品。請先回本月專區。</p>';
+
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('err');
+      const ok = document.getElementById('ok');
+      err.classList.add('hidden');
+      ok.classList.add('hidden');
+      const items = loadCart();
+      if (!items.length) {
+        err.textContent = '請先加入本期商品';
+        err.classList.remove('hidden');
+        return;
+      }
+      const res = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: document.getElementById('name').value.trim(),
+          phone: document.getElementById('phone').value.trim(),
+          shipping: shippingValue(),
+          payment: paymentValue(),
+          address: document.getElementById('address').value.trim(),
+          storeBrand: document.getElementById('storeBrand').value.trim(),
+          store: document.getElementById('store').value.trim(),
+          items,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        err.textContent = data.error || '送出失敗';
+        err.classList.remove('hidden');
+        return;
+      }
+      saveCart([]);
+      if (data.pay && data.pay.action && data.pay.fields) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = data.pay.action;
+        Object.entries(data.pay.fields).forEach(([key, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      }
+      const hint = data.hint || {};
+      ok.innerHTML = `${escapeHtml(hint.title || '訂單已成立')}（${escapeHtml(data.id)}）<br>${escapeHtml((hint.lines || []).join(' '))}`;
+      ok.classList.remove('hidden');
+    });
+  </script>
+</body>
+</html>

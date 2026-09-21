@@ -1,0 +1,41 @@
+# 瑄品集選 — Render 部署（shine.bafuholdings.com）
+# 與麋鹿網、八斧牛排同一 GitHub repo，Root Directory 填 ShinePiece
+
+services:
+  - type: web
+    name: shine-piece
+    runtime: node
+    rootDir: ShinePiece
+    plan: starter
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: shine-piece-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BASE_URL
+        value: https://shine.bafuholdings.com
+      - key: DATA_DIR
+        value: /var/data
+      - key: INQUIRE_EMAIL
+        value: lydia3530@gmail.com
+      - key: RESEND_FROM
+        value: "Shine Piece <noreply@bafuholdings.com>"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ECPAY_MERCHANT_ID
+        sync: false
+      - key: ECPAY_HASH_KEY
+        sync: false
+      - key: ECPAY_HASH_IV
+        sync: false
+      - key: ECPAY_MODE
+        value: stage

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>商品 — 瑄品集選</title>
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=15" />
+</head>
+<body data-page="item">
+  <div data-shell="header"></div>
+  <main class="wrap item-page" id="page">
+    <p class="empty-note">載入中。</p>
+  </main>
+  <div data-shell="footer"></div>
+  <script src="/js/site.js?v=13"></script>
+  <script>
+    const id = decodeURIComponent(location.pathname.split('/').pop() || '');
+    fetch('/api/config').then((r) => r.json()).then((data) => {
+      const p = (data.products || []).find((row) => row.id === id);
+      const box = document.getElementById('page');
+      if (!p) {
+        box.innerHTML = '<p class="empty-note">這件不在本期。請回本月專區。</p><p><a class="more" href="/issue">本月專區</a></p>';
+        return;
+      }
+      document.title = shownName(p) + ' — 瑄品集選';
+      const payload = cartPayload(p);
+      const note = String(p.summary || '').split('\n').filter((line) => line && !/youtube|youtu\.be|vimeo|\.mp4/i.test(line)).slice(-2).join(' ');
+      box.innerHTML = `
+        <p class="issue-folio"><span>${escapeHtml(p.origin || 'THIS ISSUE')}</span><span>親測短片</span></p>
+        <p class="kicker">紫瑄老闆親測</p>
+        <h1>${escapeHtml(shownName(p))}</h1>
+        <p class="lead">${escapeHtml(note)}</p>
+        <div class="item-layout">
+          <div>
+            ${p.image ? `<img class="item-hero" src="${escapeHtml(p.image)}" alt="">` : ''}
+            ${videoFrame(p.video)}
+          </div>
+          <aside class="item-buy">
+            <p class="price" style="font-size:20px;">${escapeHtml(p.price || '')}</p>
+            <p class="lead">直播裡實測的那一段，放在上面。看完可直接結帳，不必再搜商品名。</p>
+            <div class="admin-actions">
+              <button class="btn btn-ink" type="button" data-buy="${payload}">立即結帳</button>
+              <button class="btn btn-ghost" type="button" data-add="${payload}">放入購物</button>
+            </div>
+            <a class="more" href="/issue">回本月專區</a>
+          </aside>
+        </div>`;
+      bindAddButtons(box);
+      bindBuyButtons(box);
+    });
+  </script>
+</body>
+</html>

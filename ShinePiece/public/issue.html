@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>本月專區 — 瑄品集選</title>
+  <meta name="description" content="紫瑄老闆私房清單。一頁看完本月 3–5 款，直接結帳。" />
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=15" />
+</head>
+<body data-page="issue">
+  <div data-shell="header"></div>
+  <main class="wrap mag">
+    <section class="page-head">
+      <p class="issue-folio"><span>LIVE DESK</span><span>本月快閃</span></p>
+      <p class="kicker">This Issue</p>
+      <h1 id="issueTitle">紫瑄老闆私房清單</h1>
+      <p class="lead" id="issueLead">一頁看齊本月選物。介紹、價格、短片都在這裡，看完就能結帳。</p>
+    </section>
+    <section class="feature-list" id="products"></section>
+  </main>
+  <div data-shell="footer"></div>
+  <script src="/js/site.js?v=13"></script>
+  <script>
+    let shopEmpty = '本期開箱準備中。封面確定後，直播連結會直達這一頁。';
+    fetch('/api/config').then((r) => r.json()).then((data) => {
+      if (data.shopEmpty) shopEmpty = data.shopEmpty;
+      const month = data.monthLabel || '';
+      const theme = data.themeTitle || (data.themeOrigin ? `${data.themeOrigin}嚴選` : '');
+      document.getElementById('issueTitle').textContent = data.themeTitle || [month, theme, '紫瑄老闆私房清單'].filter(Boolean).join('：') || '紫瑄老闆私房清單';
+      if (data.shopLead) document.getElementById('issueLead').textContent = data.shopLead;
+      const rows = (data.products || []).slice(0, 5);
+      document.getElementById('products').innerHTML = rows.map((p, i) => featureRow(p, i)).join('') || `<p class="empty-note">${escapeHtml(shopEmpty)}</p>`;
+      bindAddButtons(document.getElementById('products'));
+      bindBuyButtons(document.getElementById('products'));
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>直播 QR — 瑄品集選</title>
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Noto+Sans+TC:wght@400;500&family=Noto+Serif+TC:wght@600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=15" />
+</head>
+<body data-page="qr">
+  <div data-shell="header"></div>
+  <main class="wrap qr-sheet">
+    <p class="kicker">Livestream</p>
+    <h1>本月主題專區</h1>
+    <p class="lead">畫面放這張 QR，留言區置頂下方連結。點進去就是私房清單，不是分類選單。</p>
+    <img id="qrImg" alt="本月專區 QR Code" />
+    <p class="qr-link" id="qrLink"></p>
+    <div class="admin-actions">
+      <button class="btn btn-ink" type="button" id="copyBtn">複製直達連結</button>
+      <button class="btn btn-ghost" type="button" onclick="window.print()">列印給直播</button>
+    </div>
+  </main>
+  <div data-shell="footer"></div>
+  <script src="/js/site.js?v=13"></script>
+  <script>
+    const url = location.origin + '/issue';
+    document.getElementById('qrLink').textContent = url;
+    document.getElementById('qrImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=420x420&margin=12&data=' + encodeURIComponent(url);
+    document.getElementById('copyBtn').onclick = async () => {
+      await navigator.clipboard.writeText(url);
+      document.getElementById('copyBtn').textContent = '已複製';
+    };
+  </script>
+</body>
+</html>

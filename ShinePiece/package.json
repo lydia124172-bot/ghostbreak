@@ -1,0 +1,21 @@
+{
+  "name": "shine-piece",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shine Piece — 日韓中泰跨境選品",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "multer": "^2.4.0",
+    "nodemailer": "^7.0.3",
+    "resend": "^4.5.1"
+  }
+}

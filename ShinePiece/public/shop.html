@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>本月集選 — 瑄品集選</title>
+  <meta name="description" content="瑄品集選本月推薦。依國家挑選，不依類別。下個月再換。" />
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=14" />
+</head>
+<body data-page="shop">
+  <div data-shell="header"></div>
+  <main class="wrap mag">
+    <section class="page-head">
+      <p class="issue-folio"><span>SHINE PIECE</span><span>THIS ISSUE</span></p>
+      <p class="kicker">This Issue</p>
+      <h1 id="shopMonth">本月開箱</h1>
+      <p class="lead" id="shopLead">這個月只賣這些。下個月再換。依國家挑選，不依類別。</p>
+      <div class="filters" id="filters"></div>
+    </section>
+    <section class="feature-list" id="products"></section>
+  </main>
+  <div data-shell="footer"></div>
+  <script src="/js/site.js?v=12"></script>
+  <script>
+    let all = [];
+    let origin = new URLSearchParams(location.search).get('origin') || '';
+    let shopEmpty = '本期開箱準備中。封面與國家確定後，會寫進這一期。';
+    function draw() {
+      const rows = origin ? all.filter((p) => p.origin === origin) : all;
+      document.getElementById('products').innerHTML = rows.map((p, i) => featureRow(p, i)).join('') || `<p class="empty-note">${escapeHtml(shopEmpty)}</p>`;
+      bindAddButtons(document.getElementById('products'));
+    }
+    fetch('/api/config').then((r) => r.json()).then((data) => {
+      all = data.products || [];
+      if (data.shopEmpty) shopEmpty = data.shopEmpty;
+      const cats = ['全部'].concat(data.origins || []);
+      document.getElementById('filters').innerHTML = cats.map((c) => {
+        const value = c === '全部' ? '' : c;
+        const active = origin === value ? ' active' : '';
+        return `<button class="filter-btn${active}" type="button" data-origin="${value}">${c}</button>`;
+      }).join('');
+      document.querySelectorAll('[data-origin]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          origin = btn.getAttribute('data-origin') || '';
+          const url = origin ? `/shop?origin=${encodeURIComponent(origin)}` : '/shop';
+          history.replaceState({}, '', url);
+          document.querySelectorAll('.filter-btn').forEach((el) => el.classList.remove('active'));
+          btn.classList.add('active');
+          draw();
+        });
+      });
+      draw();
+    });
+  </script>
+</body>
+</html>

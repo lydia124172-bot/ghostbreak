@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>購物車 — Shine Piece</title>
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=15" />
+</head>
+<body data-page="cart">
+  <div data-shell="header"></div>
+  <main class="wrap">
+    <section class="page-head">
+      <p class="kicker" style="color:var(--gold)">Cart</p>
+      <h1>購物車</h1>
+      <p class="lead">確認數量後前往下單。出貨前會再與你確認品項。</p>
+    </section>
+    <section class="list" id="cartList"></section>
+    <p id="empty" class="lead hidden">購物車是空的，請先到本月集選加入商品。</p>
+    <div class="actions" id="cartActions" style="padding-bottom:80px;">
+      <a class="btn btn-ghost" href="/issue">回本月專區</a>
+      <a class="btn btn-ink" href="/order">前往結帳</a>
+    </div>
+  </main>
+  <div data-shell="footer"></div>
+  <script src="/js/site.js?v=13"></script>
+  <script>
+    function draw() {
+      const list = loadCart();
+      const box = document.getElementById('cartList');
+      const empty = document.getElementById('empty');
+      const actions = document.getElementById('cartActions');
+      if (!list.length) {
+        box.innerHTML = '';
+        empty.classList.remove('hidden');
+        actions.classList.add('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      actions.classList.remove('hidden');
+      box.innerHTML = list.map((row, i) => `
+        <article class="item cart-row">
+          ${row.image ? `<img class="item-thumb" src="${escapeHtml(row.image)}" alt="">` : '<div class="item-thumb"></div>'}
+          <div>
+            <p class="product-cat">${escapeHtml(row.origin || '')}</p>
+            <h3>${escapeHtml(row.name)}</h3>
+            <p class="price">${escapeHtml(row.price || '')}</p>
+            <div class="admin-actions" style="margin-top:10px;">
+              <input class="form-input qty" type="number" min="1" max="99" value="${row.qty || 1}" data-i="${i}" />
+              <button class="btn btn-ghost" type="button" data-del="${i}">移除</button>
+            </div>
+          </div>
+        </article>
+      `).join('');
+      box.querySelectorAll('[data-i]').forEach((input) => {
+        input.addEventListener('change', () => {
+          const next = loadCart();
+          const idx = Number(input.getAttribute('data-i'));
+          next[idx].qty = Math.max(1, Math.min(99, Number(input.value) || 1));
+          saveCart(next);
+        });
+      });
+      box.querySelectorAll('[data-del]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const next = loadCart();
+          next.splice(Number(btn.getAttribute('data-del')), 1);
+          saveCart(next);
+          draw();
+        });
+      });
+    }
+    draw();
+  </script>
+</body>
+</html>
