@@ -161,13 +161,18 @@ body.buff-page {
 .btn-gold:hover { opacity: 0.92; transform: translateY(-1px); }
 
 .btn-outline {
-  border: 1px solid var(--line);
+  border: 2px solid var(--gold-light);
   color: var(--cream);
   border-radius: 9999px;
-  transition: border-color 0.2s, color 0.2s;
+  box-shadow: 0 0 0 1px rgba(232, 197, 71, 0.35);
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
 }
 
-.btn-outline:hover { border-color: var(--gold); color: var(--gold-light); }
+.btn-outline:hover {
+  border-color: #f3dc7a;
+  color: var(--gold-light);
+  box-shadow: 0 0 12px rgba(232, 197, 71, 0.45);
+}
 
 .btn-line {
   display: inline-flex;
