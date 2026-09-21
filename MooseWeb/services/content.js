@@ -86,7 +86,7 @@ function publicConfig() {
     workKinds: data.workKinds,
     products: data.products,
     works: data.works,
-    courses: (data.courses || []).map(({ notes, ...row }) => row),
+    courses: (data.courses || []).map(({ notes, wave, status, ...row }) => row),
     hire: data.hire,
     faqs: data.faqs,
   };

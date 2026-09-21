@@ -33,7 +33,7 @@
     <section class="page-head">
       <p class="kicker">課程</p>
       <h1>我要上課</h1>
-      <p class="lead">提供品牌官網、自媒體、短影音電商、帶貨實戰、SaaS 與接案交付等課程。目前開放籌備招生。</p>
+      <p class="lead">提供品牌官網、自媒體、短影音電商、帶貨實戰、SaaS 與接案交付等課程。</p>
     </section>
     <section class="list" id="courses"></section>
   </main>
@@ -50,7 +50,6 @@
       document.getElementById('courses').innerHTML = (data.courses || []).map((c) => `
         <article class="item">
           <div>
-            <p class="meta">${c.wave || ''} · ${c.status || ''}</p>
             <h3>${c.title}</h3>
             <p class="audience">${c.audience ? `適合對象：${c.audience}` : ''}</p>
             <p>${c.summary}</p>
