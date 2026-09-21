@@ -118,6 +118,7 @@ app.get('/api/config', (_req, res) => {
     maxOnlineGuests: site.maxOnlineGuests || 9,
     reservationNotices: site.reservationNotices || [],
     homepageNotice: settings.homepageNotice || '',
+    lineUrl: site.lineUrl || '',
     schedule: settings.schedule,
     mailConfigured: mailConfigured(),
     smsConfigured: smsConfigured(),

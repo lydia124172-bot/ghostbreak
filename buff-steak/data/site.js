@@ -1,5 +1,6 @@
 module.exports = {
   brand: { name: '八斧牛排', en: 'BUFF STEAK' },
+  lineUrl: 'https://line.me/R/ti/p/@155tgdul',
   policies: [
     '所有主餐皆為原肉，不使用組合肉或注脂肉',
     '排餐皆含沙拉吧',
