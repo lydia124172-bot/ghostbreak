@@ -69,7 +69,7 @@ function pickCopy(saved, key) {
   const fallback = defaults[key] || '';
   const max = COPY_MAX[key] || 300;
   const raw = saved && saved[key] !== undefined ? saved[key] : fallback;
-  return String(raw || '').trim().slice(0, max) || fallback;
+  return String(raw || '').trim().slice(0, max);
 }
 
 function mergeOrigins(saved) {
@@ -188,7 +188,7 @@ function mergeContent(saved) {
     lineUrl: normalizeLineUrl(saved.lineUrl !== undefined ? saved.lineUrl : base.lineUrl),
     monthLabel: String(saved.monthLabel !== undefined ? saved.monthLabel : base.monthLabel).trim(),
     liveWhen: String(saved.liveWhen !== undefined ? saved.liveWhen : base.liveWhen).trim() || base.liveWhen,
-    liveNote: String(saved.liveNote !== undefined ? saved.liveNote : base.liveNote).trim() || base.liveNote,
+    liveNote: String(saved.liveNote !== undefined ? saved.liveNote : base.liveNote).trim(),
     themeTitle: String(saved.themeTitle !== undefined ? saved.themeTitle : base.themeTitle).trim(),
     themeOrigin: String(saved.themeOrigin !== undefined ? saved.themeOrigin : base.themeOrigin).trim(),
     themeVisual: safeThemeVisual(saved.themeVisual, base.themeVisual),

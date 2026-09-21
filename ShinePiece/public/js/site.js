@@ -186,8 +186,8 @@ function renderChrome() {
         <div class="wrap header-inner">
           <button class="menu-btn" id="menuBtn" type="button" aria-label="開啟選單"><span></span><span></span><span></span></button>
           <a class="brand" href="/">
-            <img src="/logo.png" alt="瑄品集選">
-            <span><strong>瑄品集選</strong><small>Monthly Guide</small></span>
+            <img src="/logo.png" alt="Shine Piece 瑄品集選">
+            <span><strong>瑄品集選</strong><small>Shine Piece</small></span>
           </a>
           <nav class="nav" id="nav">
             ${navLink('/', 'home', '月刊')}
@@ -247,8 +247,23 @@ fetch('/api/config').then((r) => r.json()).then((data) => {
     'liveNote', 'archiveNote', 'wishLead', 'nextTitle', 'nextNote',
   ].forEach((id) => {
     const el = document.getElementById(id);
-    if (el && data[id]) el.textContent = data[id];
+    if (!el) return;
+    const value = String(data[id] || '').trim();
+    if (value) el.textContent = value;
+    if (['countryLead', 'liveNote', 'col1Title', 'col1Body', 'col2Title', 'col2Body', 'col3Title', 'col3Body', 'coverEnglish', 'pullQuote', 'archiveNote', 'shopLead', 'wishLead'].includes(id)) {
+      el.classList.toggle('hidden', !value);
+    }
   });
+  [1, 2, 3].forEach((n) => {
+    const block = document.getElementById(`col${n}Block`);
+    if (!block) return;
+    block.classList.toggle('hidden', !String(data[`col${n}Title`] || data[`col${n}Body`] || '').trim());
+  });
+  const notesTile = document.getElementById('notesTile');
+  if (notesTile) {
+    const on = [1, 2, 3].some((n) => String(data[`col${n}Title`] || data[`col${n}Body`] || '').trim());
+    notesTile.classList.toggle('hidden', !on);
+  }
   const month = document.getElementById('monthLabel');
   const themeTitle = document.getElementById('themeTitle');
   const themeVisual = document.getElementById('themeVisual');

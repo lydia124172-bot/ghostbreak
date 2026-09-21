@@ -7,7 +7,7 @@
   <meta name="description" content="瑄品集選月刊生活指南。教了二十六年英文的牛排館老闆，每個月開箱一個國家的生活好物。" />
   <link rel="icon" href="/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=15" />
+  <link rel="stylesheet" href="/css/site.css?v=17" />
 </head>
 <body data-page="home">
   <div data-shell="header"></div>
@@ -44,7 +44,7 @@
     <article class="ed-tile is-olive" id="country">
       <p class="month-mark" id="monthLabel">本月國家</p>
       <h2 id="countryHead">每一期，只深讀一個地方。</h2>
-      <p class="lead" id="countryLead">日本、韓國、中國、泰國、台灣。不依類別分櫃，而以國家為期。這個月用過的，才寫進這一期。</p>
+      <p class="lead hidden" id="countryLead"></p>
       <a class="more" href="/issue">本月開箱</a>
     </article>
     <a class="ed-tile is-photo is-mid" href="/issue">
@@ -56,30 +56,30 @@
       <p class="news-title">LIVING ROOM</p>
       <h2 id="liveTitle">客廳裡的兩場閒聊</h2>
       <p class="live-times" id="liveWhen">每週兩場，每場一次</p>
-      <p class="lead" id="liveNote">像在客廳跟朋友聊天。開箱分享，偶爾夾雜生活英文、異國文化故事，或餐飲美味祕訣。不催促、不喊限量。</p>
+      <p class="lead hidden" id="liveNote"></p>
       <a class="more hidden" data-line href="#">LINE 詢問本月場次</a>
     </article>
-    <article class="ed-tile is-cream is-notes">
+    <article class="ed-tile is-cream is-notes hidden" id="notesTile">
       <p class="news-title">NOTES</p>
       <div class="note-stack">
-        <div>
-          <h3 id="col1Title">挑剔的眼光</h3>
-          <p id="col1Body">牛排館裡習慣看火候與出餐。東西好不好，先自己用過、吃過、放進生活裡。</p>
+        <div id="col1Block" class="hidden">
+          <h3 id="col1Title"></h3>
+          <p id="col1Body"></p>
         </div>
-        <div>
-          <h3 id="col2Title">國際視野</h3>
-          <p id="col2Body">教了二十六年英文，習慣聽故事、看文化怎麼長在日常用品上。開箱時也談那一國的生活。</p>
+        <div id="col2Block" class="hidden">
+          <h3 id="col2Title"></h3>
+          <p id="col2Body"></p>
         </div>
-        <div>
-          <h3 id="col3Title">客廳開箱</h3>
-          <p id="col3Body">直播像跟朋友坐在客廳。偶爾夾一句生活英文，或把餐飲裡學到的祕訣說給你聽。</p>
+        <div id="col3Block" class="hidden">
+          <h3 id="col3Title"></h3>
+          <p id="col3Body"></p>
         </div>
       </div>
     </article>
 
     <article class="ed-tile is-olive is-back">
       <h2>過往回顧</h2>
-      <p class="lead" id="archiveNote">錯過的月份可到許願池登記。人數夠了，再考慮回鍋快閃。</p>
+      <p class="lead hidden" id="archiveNote"></p>
       <ul class="archive-list" id="archiveList"></ul>
       <a class="more" href="/wish">許願池</a>
     </article>
@@ -102,7 +102,7 @@
   </section>
 
   <div data-shell="footer"></div>
-  <script src="/js/site.js?v=13"></script>
+  <script src="/js/site.js?v=15"></script>
   <script>
     const notes = { 日本: 'Japan', 韓國: 'Korea', 中國: 'China', 泰國: 'Thailand', 台灣: 'Taiwan' };
     fetch('/api/config').then((r) => r.json()).then((data) => {

@@ -1,5 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <path fill="#d4a017" d="M32 6c6 8 8 14 8 18 0 4-2 8-8 8s-8-4-8-8c0-4 2-10 8-18zm0 52c-6-8-8-14-8-18 0-4 2-8 8-8s8 4 8 8c0 4-2 10-8 18zM6 32c8-6 14-8 18-8 4 0 8 2 8 8s-4 8-8 8c-4 0-10-2-18-8zm52 0c-8 6-14 8-18 8-4 0-8-2-8-8s4-8 8-8c4 0 10 2 18 8z"/>
-  <circle cx="32" cy="32" r="5" fill="#fff"/>
-  <circle cx="32" cy="32" r="2.2" fill="#d4a017"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80">
+  <path fill="#3f3824" d="M32 4c6 8 8 14 8 18 0 4-2 8-8 8s-8-4-8-8c0-4 2-10 8-18zm0 52c-6-8-8-14-8-18 0-4 2-8 8-8s8 4 8 8c0 4-2 10-8 18zM6 30c8-6 14-8 18-8 4 0 8 2 8 8s-4 8-8 8c-4 0-10-2-18-8zm52 0c-8 6-14 8-18 8-4 0-8-2-8-8s4-8 8-8c4 0 10 2 18 8z"/>
+  <circle cx="32" cy="30" r="5" fill="#fff"/>
+  <circle cx="32" cy="30" r="2.2" fill="#3f3824"/>
+  <text x="32" y="74" text-anchor="middle" fill="#3f3824" font-family="Times New Roman, serif" font-size="7.2" letter-spacing="1.6">SHINE PIECE</text>
 </svg>

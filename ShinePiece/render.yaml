@@ -1,4 +1,4 @@
-# 瑄品集選 — Render 部署（shine.bafuholdings.com）
+# 瑄品集選 — Render 部署（https://shine.bafuholdings.com）
 # 與麋鹿網、八斧牛排同一 GitHub repo，Root Directory 填 ShinePiece
 
 services:

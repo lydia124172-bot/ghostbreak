@@ -47,33 +47,34 @@ body[data-page] .goldbar { display: none; }
   display: grid;
   grid-template-columns: 44px 1fr 88px;
   align-items: center;
-  min-height: 72px;
+  min-height: 84px;
   gap: 8px;
 }
 .brand {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
 }
-.brand img { width: 44px; height: 44px; object-fit: contain; }
+.brand img { width: 58px; height: 58px; object-fit: contain; }
 .brand strong {
   display: block;
   font-family: "Noto Serif TC", serif;
   font-style: normal;
   font-weight: 600;
-  font-size: 18px;
-  letter-spacing: 0.18em;
-  color: var(--olive-deep);
-  line-height: 1.2;
+  font-size: 22px;
+  letter-spacing: 0.16em;
+  color: var(--char);
+  line-height: 1.15;
 }
 .brand small {
   display: block;
   font-family: "Cormorant Garamond", "Noto Serif TC", serif;
-  font-style: italic;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  color: var(--olive);
+  font-style: normal;
+  font-size: 16px;
+  letter-spacing: 0.22em;
+  color: var(--olive-deep);
+  text-transform: uppercase;
 }
 .menu-btn, .cart-btn {
   width: 40px;
@@ -939,6 +940,7 @@ label.field { display: block; font-size: 12px; color: var(--muted); margin-botto
   opacity: 0.86;
   font-size: 14px;
   line-height: 1.9;
+  overflow-wrap: anywhere;
 }
 .ed-tile.is-cream .letter-body { color: #555; opacity: 1; }
 .ed-tile .news-title { color: inherit; opacity: 0.55; }
@@ -1079,13 +1081,14 @@ body[data-page="home"] .site-footer {
 @media (min-width: 900px) {
   .header-inner {
     display: flex;
-    min-height: 88px;
+    min-height: 104px;
     gap: 24px;
   }
   .menu-btn { display: none; }
   .brand { justify-content: flex-start; }
-  .brand img { width: 52px; height: 52px; }
-  .brand strong { font-size: 22px; }
+  .brand img { width: 76px; height: 76px; }
+  .brand strong { font-size: 26px; }
+  .brand small { font-size: 18px; }
   .nav {
     display: flex;
     position: static;

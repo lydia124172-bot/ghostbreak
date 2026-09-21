@@ -117,7 +117,7 @@ app.patch('/api/admin/settings', requireAdmin, (req, res) => {
     heroLead: String(req.body.heroLead || '').trim() || current.heroLead,
     monthLabel: String(req.body.monthLabel || '').trim(),
     liveWhen: String(req.body.liveWhen || '').trim() || current.liveWhen,
-    liveNote: String(req.body.liveNote || '').trim() || current.liveNote,
+    liveNote: String(req.body.liveNote || '').trim(),
     themeTitle: String(req.body.themeTitle || '').trim(),
     themeOrigin: String(req.body.themeOrigin || '').trim(),
     themeVisual: String(req.body.themeVisual || '').trim() || current.themeVisual,
@@ -335,19 +335,58 @@ app.post('/api/partner', async (req, res) => {
   res.json({ success: true, mailed: mail.via !== 'error' && mail.via !== 'dry-run', id: entry.id });
 });
 
-function sendPage(res, file, status = 200) {
+function requestOrigin(req) {
+  const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
+  const proto = String(req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+  if (host && !/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host)) {
+    return `${proto === 'http' ? 'https' : proto}://${host}`.replace(/\/$/, '');
+  }
+  return BASE_URL;
+}
+
+function escapeAttr(value) {
+  return String(value || '').replace(/[&<>"]/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+  }[c]));
+}
+
+function withSocialMeta(html, origin, pagePath, imagePath) {
+  if (/property=["']og:image["']/.test(html)) return html;
+  const title = (html.match(/<title>([^<]*)<\/title>/i) || [])[1] || '';
+  const desc = (html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i)
+    || html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']description["']/i)
+    || [])[1] || '';
+  const image = `${origin}${imagePath}`;
+  const url = `${origin}${pagePath === '/' ? '/' : pagePath}`;
+  const tags = [
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:title" content="${escapeAttr(title)}" />`,
+    `<meta property="og:description" content="${escapeAttr(desc)}" />`,
+    `<meta property="og:url" content="${escapeAttr(url)}" />`,
+    `<meta property="og:image" content="${escapeAttr(image)}" />`,
+    `<meta property="og:image:secure_url" content="${escapeAttr(image)}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:image" content="${escapeAttr(image)}" />`,
+    `<link rel="image_src" href="${escapeAttr(image)}" />`,
+  ].join('\n    ');
+  return html.replace(/<\/title>/i, `</title>\n    ${tags}`);
+}
+
+function sendPage(req, res, file, status = 200) {
   const full = path.join(PUBLIC, file);
   if (!fs.existsSync(full)) {
     res.status(404).type('html').send('<h1>Not found</h1>');
     return;
   }
-  res.status(status).type('html').send(fs.readFileSync(full, 'utf8'));
+  const origin = requestOrigin(req);
+  const html = withSocialMeta(fs.readFileSync(full, 'utf8'), origin, req.path || '/', '/images/hero-tea.jpg');
+  res.status(status).type('html').send(html);
 }
 
 Object.entries(pages).forEach(([route, file]) => {
-  app.get(route, (_req, res) => sendPage(res, file));
+  app.get(route, (req, res) => sendPage(req, res, file));
 });
-app.get('/item/:id', (_req, res) => sendPage(res, 'item.html'));
+app.get('/item/:id', (req, res) => sendPage(req, res, 'item.html'));
 
 app.get('/robots.txt', (_req, res) => {
   res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin.html\n');
@@ -358,7 +397,7 @@ app.use(express.static(PUBLIC, { index: false }));
 
 app.use((req, res) => {
   if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not found' });
-  sendPage(res, '404.html', 404);
+  sendPage(req, res, '404.html', 404);
 });
 
 app.listen(PORT, async () => {
