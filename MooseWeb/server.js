@@ -150,6 +150,8 @@ function withSocialMeta(html, origin, pagePath, imagePath) {
     `<meta property="og:description" content="${escapeAttr(desc)}" />`,
     `<meta property="og:url" content="${escapeAttr(url)}" />`,
     `<meta property="og:image" content="${escapeAttr(image)}" />`,
+    `<meta property="og:image:width" content="1200" />`,
+    `<meta property="og:image:height" content="630" />`,
     `<meta property="og:image:secure_url" content="${escapeAttr(image)}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:image" content="${escapeAttr(image)}" />`,
@@ -165,7 +167,7 @@ function sendPage(req, res, file, status = 200) {
     return;
   }
   const origin = requestOrigin(req);
-  const html = withSocialMeta(fs.readFileSync(full, 'utf8'), origin, req.path || '/', '/images/logo.png');
+  const html = withSocialMeta(fs.readFileSync(full, 'utf8'), origin, req.path || '/', '/og.jpg');
   res.status(status).type('html').send(html);
 }
 
@@ -174,7 +176,7 @@ Object.entries(pages).forEach(([route, file]) => {
 });
 
 app.get('/robots.txt', (_req, res) => {
-  res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin.html\n');
+  res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin.html\n\nUser-agent: Linespider\nAllow: /\n');
 });
 
 app.use(express.static(PUBLIC, { index: false }));
