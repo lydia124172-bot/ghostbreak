@@ -301,7 +301,8 @@ h3 { font-size: 22px; margin: 0 0 8px; }
   margin-bottom: 18px;
 }
 
-.filter-btn {
+.filter-btn,
+.example-btn {
   border: 1px solid var(--line);
   background: transparent;
   color: var(--mist);
@@ -312,7 +313,9 @@ h3 { font-size: 22px; margin: 0 0 8px; }
 }
 
 .filter-btn.active,
-.filter-btn:hover {
+.filter-btn:hover,
+.example-btn.active,
+.example-btn:hover {
   border-color: var(--copper);
   color: var(--cream);
   background: rgba(107, 58, 237, 0.2);

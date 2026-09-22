@@ -243,15 +243,27 @@ function toolCard(tool) {
   `;
 }
 
+let selectedCat = '全部';
+
+function syncButtons(raw, books) {
+  document.querySelectorAll('#examples [data-q]').forEach((el) => {
+    el.classList.toggle('active', el.dataset.q === raw);
+  });
+  document.querySelectorAll('#filters .filter-btn').forEach((el) => {
+    el.classList.toggle('active', !books.length && el.dataset.cat === selectedCat);
+  });
+}
+
 function render() {
   const raw = (document.getElementById('q').value || '').trim();
   const query = raw.toLowerCase();
-  const cat = document.querySelector('.filter-btn.active')?.dataset.cat || '全部';
-  const books = cat === '全部' ? matchPlaybooks(raw) : [];
-  const list = TOOLS.filter((tool) => matchesTool(tool, query, cat));
+  const books = selectedCat === '全部' ? matchPlaybooks(raw) : [];
+  const list = TOOLS.filter((tool) => matchesTool(tool, query, selectedCat));
   const count = document.getElementById('count');
   const combos = document.getElementById('combos');
   const results = document.getElementById('results');
+
+  syncButtons(raw, books);
 
   if (books.length) {
     count.textContent = `為「${raw}」配對 ${books.reduce((n, book) => n + book.combos.length, 0)} 種組合`;
@@ -269,22 +281,22 @@ function render() {
     : (raw ? '<p class="lead">沒有符合的項目。可改關鍵字，或透過 LINE 詢問適用情境。</p>' : '');
 }
 
-document.getElementById('filters').innerHTML = CATS.map((cat, i) => (
-  `<button class="filter-btn${i === 0 ? ' active' : ''}" type="button" data-cat="${cat}">${cat}</button>`
+document.getElementById('filters').innerHTML = CATS.map((cat) => (
+  `<button class="filter-btn" type="button" data-cat="${cat}">${cat}</button>`
 )).join('');
 
 document.getElementById('examples').addEventListener('click', (event) => {
   const btn = event.target.closest('[data-q]');
   if (!btn) return;
   document.getElementById('q').value = btn.dataset.q;
-  document.querySelectorAll('.filter-btn').forEach((el) => el.classList.toggle('active', el.dataset.cat === '全部'));
+  selectedCat = '全部';
   render();
 });
 
 document.getElementById('filters').addEventListener('click', (event) => {
   const btn = event.target.closest('.filter-btn');
   if (!btn) return;
-  document.querySelectorAll('.filter-btn').forEach((el) => el.classList.toggle('active', el === btn));
+  selectedCat = btn.dataset.cat;
   render();
 });
 
