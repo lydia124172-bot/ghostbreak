@@ -24,6 +24,8 @@ const pages = {
   '/courses': 'courses.html',
   '/hire': 'hire.html',
   '/match': 'match.html',
+  '/research': 'research.html',
+  '/ai': 'research.html',
   '/admin': 'admin.html',
 };
 

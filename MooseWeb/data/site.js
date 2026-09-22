@@ -31,6 +31,13 @@ module.exports = {
       status: '籌備中',
       summary: '在官網或 LINE 官方帳號自動詢問需求、留下名單，並通知業務跟進。適合希望全時段接待諮詢、穩定累積客戶的公司與品牌。',
     },
+    {
+      id: 'ai-research',
+      name: 'MooseWeb AI research engine',
+      status: '已上線',
+      summary: '依用途查常見 AI 工具。先對情境，再決定要用哪一款。入門地圖，不是全市場清單。',
+      href: '/research',
+    },
   ],
   works: [
     {
@@ -46,6 +53,13 @@ module.exports = {
       kind: '線上工具',
       summary: '可收費的通知與轉寄工具：落地頁、付款、Email 與簡訊寄送。',
       href: 'https://bafuholdings.com/',
+    },
+    {
+      id: 'ai-research',
+      name: 'MooseWeb AI research engine',
+      kind: '線上工具',
+      summary: '依用途查常見 AI 工具。先對情境，再決定要用哪一款。',
+      href: '/research',
     },
   ],
   courses: [

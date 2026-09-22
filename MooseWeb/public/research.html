@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MooseWeb AI research engine — 麋鹿網</title>
+  <meta name="description" content="MooseWeb AI research engine。依用途查常見 AI 工具，先對情境，再決定要用哪一款。" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=airesearch1" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>MooseWeb</small></span>
+      </a>
+      <button class="menu-btn" id="menuBtn" type="button">選單</button>
+      <nav class="nav" id="nav">
+        <a href="/">首頁</a>
+        <a href="/works">看作品</a>
+        <a href="/courses">我要上課</a>
+        <a href="/hire">找我做網站</a>
+        <a href="/match">找人幫忙</a>
+        <a href="/saas">線上工具</a>
+        <a href="/research" class="active">AI 研究</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <p class="kicker">MooseWeb AI research engine</p>
+      <h1>先說你要做什麼，<br>再對該用哪一種 AI。</h1>
+      <p class="lead">這是入門地圖，不是全市場清單。適合先縮小範圍；細節仍以各工具官網為準。</p>
+      <form id="researchForm" class="research-bar">
+        <label class="field-label" for="q">查詢用途或工具名稱</label>
+        <input id="q" class="form-input" type="search" placeholder="例如：寫程式、生圖、簡報、帶出處搜尋" autocomplete="off" />
+        <button class="btn btn-copper" type="submit">查詢</button>
+      </form>
+      <div class="filters" id="filters"></div>
+      <p class="research-count" id="count"></p>
+    </section>
+    <section class="grid research-grid" id="results"></section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© 麋鹿網　MooseWeb AI research engine</span>
+      <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
+    </div>
+  </footer>
+  <script src="/js/site.js?v=airesearch1"></script>
+  <script src="/js/research.js?v=1"></script>
+</body>
+</html>

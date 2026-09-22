@@ -210,10 +210,38 @@ h3 { font-size: 22px; margin: 0 0 8px; }
 
 .grid-4 {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   padding: 8px 0 72px;
 }
+
+.research-hero { padding-bottom: 24px; }
+.research-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  max-width: 720px;
+  margin: 0 0 18px;
+}
+.research-bar .field-label {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--mist);
+}
+.research-bar .form-input { margin: 0; }
+.research-count {
+  color: var(--mist);
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+.research-grid { padding-top: 0; }
+.research-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+}
+.research-card p { color: var(--mist); margin: 0 0 16px; }
+.research-card .btn { margin-top: auto; align-self: flex-start; }
 
 .filters {
   display: flex;
