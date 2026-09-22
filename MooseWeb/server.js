@@ -26,6 +26,8 @@ const pages = {
   '/match': 'match.html',
   '/research': 'research.html',
   '/ai': 'research.html',
+  '/privacy': 'privacy.html',
+  '/terms': 'terms.html',
   '/admin': 'admin.html',
 };
 

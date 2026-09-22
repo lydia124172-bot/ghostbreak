@@ -155,10 +155,23 @@ h3 { font-size: 22px; margin: 0 0 8px; }
   gap: 12px;
 }
 
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  align-items: center;
+}
+.footer-links a { color: var(--mist); }
+.footer-links a:hover { color: var(--cream); }
 .footer-line {
   color: var(--teal);
   font-weight: 600;
 }
+.legal { padding: 56px 0 80px; max-width: 760px; }
+.legal h2 { margin: 28px 0 10px; }
+.legal p, .legal li { color: var(--mist); }
+.legal ul { padding-left: 20px; }
+.legal a { color: var(--teal); }
 
 .line-float {
   position: fixed;
@@ -242,6 +255,44 @@ h3 { font-size: 22px; margin: 0 0 8px; }
 }
 .research-card p { color: var(--mist); margin: 0 0 16px; }
 .research-card .btn { margin-top: auto; align-self: flex-start; }
+.examples { margin-bottom: 10px; }
+.playbook { padding: 8px 0 28px; }
+.playbook h2 { margin-top: 8px; }
+.combo-list { display: grid; gap: 16px; }
+.combo-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 22px;
+}
+.combo-fit { color: var(--mist); margin: 0 0 16px; }
+.combo-stack {
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.combo-stack li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.combo-stack a { color: var(--cream); font-weight: 600; }
+.combo-stack span { color: var(--mist); }
+.combo-pros {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.combo-pros h4 { margin: 0 0 8px; font-size: 15px; }
+.combo-pros ul { margin: 0; padding-left: 18px; color: var(--mist); }
+@media (max-width: 800px) {
+  .combo-pros { grid-template-columns: 1fr; }
+}
 
 .filters {
   display: flex;
