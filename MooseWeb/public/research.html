@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=airesearch1" />
+  <link rel="stylesheet" href="/css/site.css?v=airesearch2" />
 </head>
 <body>
   <header class="site-header">
@@ -34,25 +34,33 @@
     <section class="hero research-hero">
       <p class="kicker">MooseWeb AI research engine</p>
       <h1>先說你要做什麼，<br>再對該用哪一種 AI。</h1>
-      <p class="lead">這是入門地圖，不是全市場清單。適合先縮小範圍；細節仍以各工具官網為準。</p>
+      <p class="lead">寫下你要做的事，例如「我想作短劇」。系統會配對工具組合，並寫出每組優缺點。這是入門地圖，細節仍以各工具官網為準。</p>
       <form id="researchForm" class="research-bar">
-        <label class="field-label" for="q">查詢用途或工具名稱</label>
-        <input id="q" class="form-input" type="search" placeholder="例如：寫程式、生圖、簡報、帶出處搜尋" autocomplete="off" />
-        <button class="btn btn-copper" type="submit">查詢</button>
+        <label class="field-label" for="q">你想做什麼</label>
+        <input id="q" class="form-input" type="search" placeholder="例如：我想作短劇" autocomplete="off" />
+        <button class="btn btn-copper" type="submit">配對組合</button>
       </form>
+      <div class="filters examples" id="examples">
+        <button class="filter-btn" type="button" data-q="我想作短劇">我想作短劇</button>
+        <button class="filter-btn" type="button" data-q="我想做網站">我想做網站</button>
+        <button class="filter-btn" type="button" data-q="我要做簡報">我要做簡報</button>
+        <button class="filter-btn" type="button" data-q="我要帶貨">我要帶貨</button>
+        <button class="filter-btn" type="button" data-q="我要寫文案">我要寫文案</button>
+      </div>
       <div class="filters" id="filters"></div>
       <p class="research-count" id="count"></p>
     </section>
+    <div id="combos"></div>
     <section class="grid research-grid" id="results"></section>
   </main>
 
   <footer class="site-footer">
     <div class="wrap">
-      <span>© 麋鹿網　MooseWeb AI research engine</span>
+      <span>© 麋鹿網　版權由 Lydia Global Company 所有</span>
       <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
     </div>
   </footer>
-  <script src="/js/site.js?v=airesearch1"></script>
-  <script src="/js/research.js?v=1"></script>
+  <script src="/js/site.js?v=airesearch2"></script>
+  <script src="/js/research.js?v=2"></script>
 </body>
 </html>
