@@ -66,4 +66,6 @@ module.exports = {
   adminConfigured,
   login,
   requireAdmin,
+  isValidToken,
+  readToken,
 };

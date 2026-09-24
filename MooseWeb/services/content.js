@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const defaults = require('../data/site');
+const accounts = require('./accounts');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const FILE = path.join(DATA_DIR, 'content.json');
@@ -24,8 +25,8 @@ function emptyContent() {
     tagline: defaults.tagline,
     email: defaults.email,
     lineUrl: defaults.lineUrl || '',
-    heroTitle: '網站作品、專業課程與專案委託。\n直播、剪輯與視覺設計一併呈現。',
-    heroLead: '從可上線的品牌官網、AI 工具，到教學與影像設計，皆可在此查看與洽詢。',
+    heroTitle: '店家官網、專業課程，\n與可直接使用的付費工具。',
+    heroLead: '歡迎委託製作官網、報名課程，或使用我做的付費工具。商品短片可直接用。劇本廣告與 AI短劇建置中。',
     workKinds: clone(defaults.workKinds || []),
     products: clone(defaults.products || []),
     works: clone(defaults.works || []),
@@ -37,9 +38,19 @@ function emptyContent() {
 
 function mergeListsById(baseList, savedList) {
   if (!Array.isArray(savedList)) return clone(baseList);
-  const have = new Set(savedList.map((row) => row && row.id).filter(Boolean));
-  const extra = (baseList || []).filter((row) => row && row.id && !have.has(row.id));
-  return savedList.concat(extra);
+  const baseById = new Map((baseList || []).filter((row) => row && row.id).map((row) => [row.id, row]));
+  const used = new Set();
+  const out = [];
+  for (const row of savedList) {
+    if (!row || !row.id) continue;
+    used.add(row.id);
+    const base = baseById.get(row.id);
+    out.push(base ? { ...row, ...base } : row);
+  }
+  for (const row of baseList || []) {
+    if (row && row.id && !used.has(row.id)) out.push(clone(row));
+  }
+  return out;
 }
 
 function mergeContent(saved) {
@@ -49,7 +60,7 @@ function mergeContent(saved) {
     ...base,
     ...saved,
     lineUrl: normalizeLineUrl(saved.lineUrl !== undefined ? saved.lineUrl : base.lineUrl),
-    workKinds: Array.isArray(saved.workKinds) ? saved.workKinds : base.workKinds,
+    workKinds: base.workKinds,
     products: mergeListsById(base.products, saved.products),
     works: mergeListsById(base.works, saved.works),
     courses: mergeListsById(base.courses, saved.courses),
@@ -89,6 +100,8 @@ function publicConfig() {
     courses: (data.courses || []).map(({ notes, wave, status, ...row }) => row),
     hire: data.hire,
     faqs: data.faqs,
+    tree: accounts.publicTree(),
+    pay: { ecpay: Boolean(process.env.ECPAY_MERCHANT_ID && process.env.ECPAY_HASH_KEY && process.env.ECPAY_HASH_IV) },
   };
 }
 

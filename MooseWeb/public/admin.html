@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=admin" />
+  <link rel="stylesheet" href="/css/site.css?v=admin2" />
 </head>
 <body>
   <header class="site-header">
@@ -36,9 +36,14 @@
     </section>
 
     <section id="appBox" class="hidden" style="display:grid;gap:22px;">
+      <section class="panel admin-remind">
+        <h2>給自己看的提醒（前台看不到）</h2>
+        <p class="lead">這些字只出現在後台，用來提醒金流、金鑰與產品結構。</p>
+        <ul id="adminReminders" class="tree-mods"></ul>
+      </section>
       <section class="panel">
         <h2>首頁文案</h2>
-        <p class="lead">對外顯示用，請用正式語氣。</p>
+        <p class="lead">對外顯示用。主標題與說明是給客人看的，不要寫提醒自己的話。</p>
         <form id="settingsForm" class="admin-grid">
           <div>
             <label class="field" for="tagline">品牌副標</label>
@@ -53,11 +58,11 @@
             <input id="lineUrl" class="form-input" maxlength="200" placeholder="https://lin.ee/xxxx 或 @帳號" />
           </div>
           <div>
-            <label class="field" for="heroTitle">首頁主標題（換行請按 Enter）</label>
+            <label class="field" for="heroTitle">首頁主標題（給客人看，換行請按 Enter）</label>
             <textarea id="heroTitle" class="form-input" rows="3" maxlength="160"></textarea>
           </div>
           <div>
-            <label class="field" for="heroLead">首頁說明</label>
+            <label class="field" for="heroLead">首頁說明（給客人看）</label>
             <textarea id="heroLead" class="form-input" rows="3" maxlength="300"></textarea>
           </div>
           <div>
@@ -179,8 +184,8 @@
       </section>
 
       <section class="panel" data-list="products">
-        <h2>線上工具</h2>
-        <p class="lead">前台「線上工具」顯示這些產品。</p>
+        <h2>其他產品</h2>
+        <p class="lead">GhostBreak 等獨立產品的後台名單，不會出現在「我做的付費工具」。</p>
         <form class="admin-grid item-form">
           <input type="hidden" name="id" />
           <div class="admin-2">
@@ -230,6 +235,37 @@
       </section>
 
       <section class="panel">
+        <h2>會員方案</h2>
+        <p class="lead">客人申請後，確認匯款或 LINE 再在此開通。尚未串接線上金流。</p>
+        <form id="grantForm" class="admin-grid">
+          <div class="admin-2">
+            <div>
+              <label class="field" for="grantEmail">會員 Email</label>
+              <input id="grantEmail" class="form-input" type="email" required />
+            </div>
+            <div>
+              <label class="field" for="grantPlan">方案</label>
+              <select id="grantPlan" class="form-input">
+                <option value="free">商品短片・免費</option>
+                <option value="starter">商品短片・開店 NT$499／20 點</option>
+                <option value="plus">商品短片・常用 NT$990／50 點</option>
+                <option value="pro">商品短片・店家 NT$1,980／120 點</option>
+                <option value="story-once">劇本廣告・單支 NT$199／1 次</option>
+                <option value="story-month">劇本廣告・月用 NT$990／5 次</option>
+                <option value="drama-once">AI短劇・單支 NT$199／1 次</option>
+                <option value="drama-month">AI短劇・月用 NT$990／5 次</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-actions">
+            <button type="submit" class="btn btn-copper">開通方案</button>
+            <span id="grantStatus" class="status-ok hidden"></span>
+          </div>
+        </form>
+        <div id="memberList" class="list" style="padding-bottom:0;margin-top:18px;"></div>
+      </section>
+
+      <section class="panel">
         <h2>諮詢來信</h2>
         <p class="lead">前台表單送出後會寄到 lydia3530@gmail.com，同時列在這裡。</p>
         <div id="inquiryList" class="list" style="padding-bottom:0;"></div>
@@ -273,6 +309,15 @@
       $('appBox').classList.remove('hidden');
       $('logoutBtn').classList.remove('hidden');
       loadContent();
+    }
+
+    function renderReminders() {
+      const box = $('adminReminders');
+      if (!box) return;
+      const notes = content.reminders || [];
+      box.innerHTML = notes.length
+        ? notes.map((line) => `<li><p>${escapeHtml(line)}</p></li>`).join('')
+        : '<li><p>尚無提醒。</p></li>';
     }
 
     function fillSettings() {
@@ -321,8 +366,10 @@
 
     function renderAll() {
       fillSettings();
+      renderReminders();
       ['courses', 'works', 'hire', 'products', 'faqs'].forEach(renderList);
       loadInquiries();
+      loadMembers();
     }
 
     async function loadContent() {
@@ -390,6 +437,60 @@
       });
       await loadInquiries();
     });
+
+    async function loadMembers() {
+      const data = await api('/api/admin/accounts', { headers: authHeaders() });
+      const rows = data.accounts || [];
+      const box = $('memberList');
+      if (!rows.length) {
+        box.innerHTML = '<p class="lead">尚無會員。</p>';
+        return;
+      }
+      box.innerHTML = rows.map((row) => `
+        <article class="item">
+          <div>
+            <p class="meta">${escapeHtml(row.planName || '')}${row.pendingPlan ? ' · 待開通 ' + escapeHtml(row.pendingPlan) : ''}${row.credits ? ' · 剩餘 ' + row.credits + ' 點' : ''}${row.storyPlanName ? ' · ' + escapeHtml(row.storyPlanName) : ''}${row.pendingStoryPlan ? ' · 劇本待開通 ' + escapeHtml(row.pendingStoryPlan) : ''}${row.storyCredits ? ' · 劇本 ' + row.storyCredits + ' 次' : ''}${row.dramaPlanName ? ' · ' + escapeHtml(row.dramaPlanName) : ''}${row.pendingDramaPlan ? ' · 短劇待開通 ' + escapeHtml(row.pendingDramaPlan) : ''}${row.dramaCredits ? ' · 短劇 ' + row.dramaCredits + ' 次' : ''}</p>
+            <h3>${escapeHtml(row.email)}</h3>
+            <p>${row.planExpires ? '商品短片至 ' + escapeHtml(String(row.planExpires).slice(0, 10)) : '商品短片免費'}${row.storyExpires ? '　劇本廣告至 ' + escapeHtml(String(row.storyExpires).slice(0, 10)) : ''}</p>
+          </div>
+          <div class="admin-actions">
+            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="starter">開店</button>
+            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="plus">常用</button>
+            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="pro">店家</button>
+            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="free">免費</button>
+            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="story-once">劇本單支</button>
+            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="story-month">劇本月用</button>
+            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="drama-once">短劇單支</button>
+            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="drama-month">短劇月用</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    async function grantPlan(email, plan) {
+      await api('/api/admin/accounts/plan', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ email, plan }),
+      });
+      $('grantStatus').textContent = '已開通 ' + email;
+      $('grantStatus').classList.remove('hidden');
+      await loadMembers();
+    }
+
+    $('grantForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('grantStatus').classList.add('hidden');
+      await grantPlan($('grantEmail').value, $('grantPlan').value);
+    });
+
+    $('memberList').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-grant]');
+      if (!btn) return;
+      $('grantEmail').value = btn.getAttribute('data-grant');
+      $('grantPlan').value = btn.getAttribute('data-plan');
+      await grantPlan(btn.getAttribute('data-grant'), btn.getAttribute('data-plan'));
+    });
     async function login() {
       $('loginError').classList.add('hidden');
       try {
@@ -407,8 +508,9 @@
     }
 
     $('loginForm').addEventListener('submit', (e) => { e.preventDefault(); login(); });
-    $('logoutBtn').addEventListener('click', () => {
+    $('logoutBtn').addEventListener('click', async () => {
       sessionStorage.removeItem(TOKEN_KEY);
+      await fetch('/api/admin/logout', { method: 'POST' }).catch(() => {});
       showLogin();
     });
 

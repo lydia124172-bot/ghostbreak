@@ -2,5 +2,15 @@ node_modules/
 .env
 data/inquiries.json
 data/content.json
+data/clip.json
+data/clip-video-jobs.json
+data/story-video-jobs.json
+data/drama-video-jobs.json
+data/clip-media/
+data/accounts.json
+data/pay-orders.json
 cloudflared.exe
 data/_recovered/
+public/clip-music/_raw/
+public/fal-recovered/
+data/clip-test/

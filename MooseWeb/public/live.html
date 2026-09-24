@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>直播稿 — 麋鹿網</title>
+  <meta name="description" content="免費智能體：選行業或填商品，一次產出十二則可開播唸的直播稿。" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=live1" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>MooseWeb</small></span>
+      </a>
+      <button class="menu-btn" id="menuBtn" type="button">選單</button>
+      <nav class="nav" id="nav">
+        <a href="/">首頁</a>
+        <a href="/works" class="active">看作品</a>
+        <a href="/courses">上課</a>
+        <a href="/hire">做網站</a>
+        <a href="/saas">我做的付費工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <p class="kicker">智能體　免費使用</p>
+      <h1>依行業或商品，寫出直播講稿。</h1>
+      <p class="lead">選行業，或填商品名稱。一次給十二則，欄位照直播講稿：內容類型、成交目的、開頭鉤子、完整口播、拍攝提醒、收尾CTA。每則約 45 到 60 秒，自己開播唸。這不是短影音對嘴腳本。</p>
+      <p class="clip-plan" id="livePlan">每日可免費產出 20 則。</p>
+    </section>
+
+    <section class="panel clip-panel">
+      <form id="liveForm" class="skill-form">
+        <div>
+          <label class="field" for="industry">行業別（可只選這個）</label>
+          <select id="industry" class="form-input">
+            <option value="">先選行業，或留空只填商品</option>
+            <option>保健食品</option>
+            <option>美妝保養</option>
+            <option>餐飲食品</option>
+            <option>服飾配件</option>
+            <option>家居生活</option>
+            <option>課程諮詢</option>
+            <option>軟體工具</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div>
+          <label class="field" for="product">商品或服務名稱（可只填這個）</label>
+          <input id="product" class="form-input" maxlength="80" placeholder="例如：蜂膠 12 條獨立包裝，或：多平台排程發文工具" />
+        </div>
+        <div>
+          <label class="field" for="notes">要講的重點（選填）</label>
+          <textarea id="notes" class="form-input" rows="4" maxlength="500" placeholder="例如：先搞懂成分再決定要不要買。不要講療效。"></textarea>
+        </div>
+        <div class="admin-actions">
+          <button class="btn btn-copper" type="submit" id="makeBtn">產出直播稿</button>
+          <button class="btn btn-cream" type="button" id="demoTradeBtn">用示範行業試</button>
+          <button class="btn btn-cream" type="button" id="demoProductBtn">用示範商品試</button>
+        </div>
+        <p id="liveMsg" class="combo-fit"></p>
+      </form>
+    </section>
+
+    <section class="panel clip-panel hidden" id="resultBox">
+      <p class="kicker">產出結果</p>
+      <h2 id="outHeadline">十二則直播稿</h2>
+      <p class="lead" id="outAngle"></p>
+      <article class="script-out" id="episodeList"></article>
+      <div class="admin-actions">
+        <button class="btn btn-copper" type="button" id="copyBtn">複製全部</button>
+        <a class="btn btn-cream" href="/script">我要的是 30 秒口播腳本</a>
+      </div>
+      <p id="copyMsg" class="combo-fit"></p>
+    </section>
+
+    <section class="panel clip-panel script-legal">
+      <p class="kicker">版權與法律聲明</p>
+      <h2>使用前請閱讀</h2>
+      <ol>
+        <li><strong>所有權歸屬</strong>：本智能體及其底層指令邏輯之所有權歸屬於「Lydia Global Company」（麋鹿網）。</li>
+        <li><strong>授權對象</strong>：僅限本站訪客個人使用。免費產出腳本；進一步使用付費工具須另依方案。嚴禁轉發、轉售、外流或授權給第三人作商業販售。</li>
+        <li><strong>法律責任</strong>：任何未經授權之盜用、抄襲或商業行為，本公司將保留法律追訴權，依相關法律追究法律責任。</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© 麋鹿網　版權由 Lydia Global Company 所有</span>
+      <nav class="footer-links">
+        <a href="/privacy">隱私權政策</a>
+        <a href="/terms">服務條款</a>
+        <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
+      </nav>
+    </div>
+  </footer>
+  <script src="/js/site.js?v=nav10"></script>
+  <script src="/js/live.js?v=3"></script>
+</body>
+</html>

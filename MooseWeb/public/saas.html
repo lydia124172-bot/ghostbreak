@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>線上工具 — 麋鹿網</title>
-  <meta name="description" content="麋鹿網線上工具：轉寄通知、店家留單回覆，以及企業獲客助理。" />
+  <title>我做的付費工具 — 麋鹿網</title>
+  <meta name="description" content="麋鹿網付費工具：商品短片、劇本廣告，以及依序推出的店家留單與獲客助理。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=legal1" />
+  <link rel="stylesheet" href="/css/site.css?v=story1" />
 </head>
 <body>
   <header class="site-header">
@@ -21,22 +21,43 @@
       <nav class="nav" id="nav">
         <a href="/">首頁</a>
         <a href="/works">看作品</a>
-        <a href="/courses">我要上課</a>
-        <a href="/hire">找我做網站</a>
-        <a href="/match">找人幫忙</a>
-        <a href="/saas" class="active">線上工具</a>
-        <a href="/research">AI 研究</a>
+        <a href="/courses">上課</a>
+        <a href="/hire">做網站</a>
+        <a href="/saas" class="active">我做的付費工具</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap">
     <section class="page-head">
-      <p class="kicker">產品</p>
-      <h1>線上工具</h1>
-      <p class="lead">已上線的工具可直接使用。籌備中的項目可先諮詢導入時程與適用範圍。</p>
+      <p class="kicker">我做的付費工具</p>
+      <h1>同一帳號，依序使用</h1>
+      <p class="lead">商品短片排版與識圖不必登入。劇本廣告與 AI短劇建置中。各工具方案分開。</p>
     </section>
-    <section class="list" id="products"></section>
+
+    <ol class="tool-list" id="toolList"></ol>
+
+    <section class="page-head">
+      <p class="kicker">只賣這一項</p>
+      <h2>商品短片專用方案</h2>
+      <p class="lead">這四個方案只買商品短片的進階生圖，不是全站通用通行證。登入後可線上付款。真人口播另外收費。劇本廣告與 AI短劇建置中。</p>
+    </section>
+    <section class="plan-grid" id="planGrid"></section>
+
+    <section class="page-head">
+      <p class="kicker">另一項　建置中</p>
+      <h2>劇本廣告專用方案</h2>
+      <p class="lead">劇本廣告尚未開放，現在不能申請或購買。</p>
+    </section>
+    <section class="plan-grid plan-grid-2" id="storyPlanGrid"></section>
+
+    <section class="page-head">
+      <p class="kicker">再一項　建置中</p>
+      <h2>AI短劇專用方案</h2>
+      <p class="lead">AI短劇尚未開放，現在不能申請或購買。</p>
+    </section>
+    <section class="plan-grid plan-grid-2" id="dramaPlanGrid"></section>
+    <p class="lead" id="billingNote"></p>
   </main>
 
   <footer class="site-footer">
@@ -49,21 +70,74 @@
       </nav>
     </div>
   </footer>
-  <script src="/js/site.js?v=linefab"></script>
+  <script src="/js/site.js?v=nav9"></script>
   <script>
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function statusRank(status) {
+      if (status === '已上線' || status === '付費方案') return 0;
+      if (status === '建置中') return 1;
+      if (status === '籌備中') return 2;
+      return 3;
+    }
+
     fetch('/api/config').then((r) => r.json()).then((data) => {
-      document.getElementById('products').innerHTML = (data.products || []).map((p) => `
-        <article class="item">
-          <div>
-            <p class="meta">${p.status || ''}</p>
-            <h3>${p.name}</h3>
-            <p>${p.summary}</p>
-          </div>
-          ${p.href
-            ? `<a class="btn btn-cream" href="${p.href}" ${/^https?:\/\//i.test(p.href) ? 'target="_blank" rel="noopener"' : ''}>${/^https?:\/\//i.test(p.href) ? '打開使用' : '前往填寫'}</a>`
-            : `<a class="btn btn-ghost" href="/hire">提出諮詢</a>`}
-        </article>
-      `).join('');
+      const tree = data.tree || {};
+      const tools = (tree.products || []).slice().sort((a, b) => {
+        const byStatus = statusRank(a.status) - statusRank(b.status);
+        if (byStatus) return byStatus;
+        return Number(a.order || 99) - Number(b.order || 99);
+      });
+      document.getElementById('toolList').innerHTML = tools.map((p, i) => {
+        const live = p.status === '已上線';
+        const soon = p.status === '建置中' || p.status === '試用中';
+        const label = live ? '已上線' : (soon ? p.status : '等著做');
+        const href = live || soon ? (p.href || '/saas') : (p.href || '/hire');
+        const btn = live ? '開始使用' : (soon ? '查看說明' : '了解委託');
+        return `
+          <li class="${live ? 'live' : ''}">
+            <p class="meta">${i + 1}　${label}</p>
+            <h3>${escapeHtml(p.name)}</h3>
+            <p>${escapeHtml(p.summary || '')}</p>
+            <a class="btn ${live ? 'btn-copper' : 'btn-cream'}" href="${escapeHtml(href)}">${btn}</a>
+          </li>`;
+      }).join('');
+      function planCard(plan, href, label) {
+        return `
+        <article class="plan-card">
+          <p class="meta">${escapeHtml(plan.period)}</p>
+          <h3>${escapeHtml(plan.name)}</h3>
+          <p class="plan-scope">${escapeHtml(plan.scope || '')}</p>
+          <p class="plan-price">${escapeHtml(plan.priceLabel)}</p>
+          <p class="plan-quota">${escapeHtml(plan.quota || '')}</p>
+          <ul>${(plan.features || []).map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>
+          <a class="btn btn-copper" href="${href}">${label}</a>
+        </article>`;
+      }
+      const clipPlans = (tree.plans || []).filter((plan) => (plan.product || 'mooseclip') === 'mooseclip');
+      document.getElementById('planGrid').innerHTML = clipPlans.map((plan) => planCard(
+        plan,
+        plan.id === 'free' ? '/clip' : '/account',
+        plan.id === 'free' ? '直接使用' : '選擇方案'
+      )).join('');
+      document.getElementById('storyPlanGrid').innerHTML = `
+        <article class="plan-card">
+          <p class="meta">建置中</p>
+          <h3>劇本廣告</h3>
+          <p class="plan-scope">寫稿與出片尚未開放，方案暫不販售。</p>
+          <a class="btn btn-cream" href="/story">查看說明</a>
+        </article>`;
+      document.getElementById('dramaPlanGrid').innerHTML = `
+        <article class="plan-card">
+          <p class="meta">建置中</p>
+          <h3>AI短劇</h3>
+          <p class="plan-scope">寫三鏡與出片尚未開放，方案暫不販售。</p>
+          <a class="btn btn-cream" href="/drama">查看說明</a>
+        </article>`;
+      document.getElementById('billingNote').textContent = tree.billingNote || '';
     });
   </script>
 </body>

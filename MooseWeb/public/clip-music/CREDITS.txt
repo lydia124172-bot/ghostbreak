@@ -1,0 +1,13 @@
+Built-in beds are 10-second excerpts of Mixkit free stock music.
+License: https://mixkit.co/license/  (commercial use in videos; do not resell the audio files).
+
+bright.mp3 — Feeling Happy — Eugenio Mininni — https://assets.mixkit.co/music/5/5.mp3
+soft.mp3 — Sweet September — Arulo — https://assets.mixkit.co/music/282/282.mp3
+warm.mp3 — Owies Ukulele — Eugenio Mininni — https://assets.mixkit.co/music/1072/1072.mp3
+beat.mp3 — C.B.P.D — Arulo — https://assets.mixkit.co/music/400/400.mp3
+play.mp3 — Smile — Michael Ramir C. — https://assets.mixkit.co/music/1076/1076.mp3
+luxe.mp3 — Cat Walk — Arulo — https://assets.mixkit.co/music/371/371.mp3
+clear.mp3 — Serene View — Arulo — https://assets.mixkit.co/music/443/443.mp3
+night.mp3 — Hazy After Hours — Arulo — https://assets.mixkit.co/music/132/132.mp3
+film.mp3 — Vastness — Alejandro Magaña (A. M.) — https://assets.mixkit.co/music/184/184.mp3
+quiet.mp3 — Sleepy Cat — Alejandro Magaña (A. M.) — https://assets.mixkit.co/music/135/135.mp3

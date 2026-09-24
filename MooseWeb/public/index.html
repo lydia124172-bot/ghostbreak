@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>麋鹿網 — 看作品、上課、找人做網站</title>
-  <meta name="description" content="看作品、報名上課、委託做網站，或直接使用線上工具。" />
+  <title>麋鹿網 — 店家官網、課程與付費工具</title>
+  <meta name="description" content="為店家做網站，也提供課程與可直接使用的付費工具。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=legal1" />
+  <link rel="stylesheet" href="/css/site.css?v=nav3" />
 </head>
 <body>
   <header class="site-header">
@@ -21,11 +21,9 @@
       <nav class="nav" id="nav">
         <a href="/" class="active">首頁</a>
         <a href="/works">看作品</a>
-        <a href="/courses">我要上課</a>
-        <a href="/hire">找我做網站</a>
-        <a href="/match">找人幫忙</a>
-        <a href="/saas">線上工具</a>
-        <a href="/research">AI 研究</a>
+        <a href="/courses">上課</a>
+        <a href="/hire">做網站</a>
+        <a href="/saas">我做的付費工具</a>
       </nav>
     </div>
   </header>
@@ -33,40 +31,68 @@
   <main class="wrap">
     <section class="hero">
       <p class="kicker">麋鹿網</p>
-      <h1 id="heroTitle">網站作品、專業課程與專案委託。<br>直播、剪輯與視覺設計一併呈現。</h1>
-      <p class="lead" id="heroLead">從可上線的品牌官網、AI 工具，到教學與影像設計，皆可在此查看與洽詢。</p>
+      <h1 id="heroTitle">店家官網、專業課程，<br>與可直接使用的商品短片。</h1>
+      <p class="lead" id="heroLead">歡迎委託製作官網、報名課程，或直接使用商品短片。</p>
       <div class="actions">
-        <a class="btn btn-copper" href="/courses">我要上課</a>
-        <a class="btn btn-cream" href="/hire">找我做網站</a>
+        <a class="btn btn-copper" href="/hire">找我做網站</a>
+        <a class="btn btn-cream" href="/courses">我要上課</a>
+        <a class="btn btn-cream" href="/saas">看付費工具</a>
         <a class="btn btn-line hidden" data-line href="#">透過 LINE 諮詢</a>
       </div>
     </section>
 
-    <section class="grid-4">
-      <a class="card" href="/works">
-        <p class="meta">先看案例</p>
-        <h3>看作品</h3>
-        <p>看我做過的官網、線上工具與設計。</p>
-      </a>
-      <a class="card" href="/courses">
-        <p class="meta">學著做</p>
-        <h3>我要上課</h3>
-        <p>報名 AI 架站、短影音電商、帶貨與設計課。</p>
-      </a>
+    <section class="path-grid">
       <a class="card" href="/hire">
         <p class="meta">請人做</p>
-        <h3>找我做網站</h3>
-        <p>店家官網、線上工具、視覺設計，直接委託。</p>
+        <h3>做網站</h3>
+        <p>店家官網、留單工具、視覺設計。說明需求後再報價。</p>
+      </a>
+      <a class="card" href="/courses">
+        <p class="meta">自己學</p>
+        <h3>上課</h3>
+        <p>AI 架站、短影音電商、帶貨與設計課。</p>
       </a>
       <a class="card" href="/saas">
-        <p class="meta">直接用</p>
-        <h3>線上工具</h3>
-        <p>已經上線的產品，打開就能使用。</p>
+        <p class="meta">自己用</p>
+        <h3>付費工具</h3>
+        <p>商品圖排版與真人口播都可使用。劇本廣告與 AI短劇建置中。</p>
+      </a>
+    </section>
+
+    <section class="page-head">
+      <p class="kicker">也可以</p>
+      <h2>免費查詢與媒合</h2>
+    </section>
+    <section class="grid-4 more-grid">
+      <a class="card" href="/works">
+        <p class="meta">案例</p>
+        <h3>看作品</h3>
+        <p>官網、SaaS 與設計。</p>
+      </a>
+      <a class="card" href="/skills">
+        <p class="meta">免費查</p>
+        <h3>獲客地圖</h3>
+        <p>這個行業通常賣什麼、要用哪些方式找客人。不是付費軟體。</p>
       </a>
       <a class="card" href="/research">
-        <p class="meta">先對工具</p>
+        <p class="meta">免費查</p>
         <h3>AI 研究</h3>
-        <p>MooseWeb AI research engine。依用途查常見 AI 工具。</p>
+        <p>查外面該用哪一種 AI。不是我做來賣的工具。</p>
+      </a>
+      <a class="card" href="/match">
+        <p class="meta">媒合</p>
+        <h3>找人幫忙</h3>
+        <p>找打掃、造型、維修的人。填單後由專人聯繫，不是線上軟體。</p>
+      </a>
+      <a class="card" href="/script">
+        <p class="meta">免費用</p>
+        <h3>真人口播腳本</h3>
+        <p>可加商品帶貨，或只填主題純說話。做成對嘴再到真人口播短片。</p>
+      </a>
+      <a class="card" href="/live">
+        <p class="meta">免費用</p>
+        <h3>直播稿</h3>
+        <p>選行業或填商品，一次產出十二則可開播唸的講稿。</p>
       </a>
     </section>
   </main>
@@ -81,7 +107,7 @@
       </nav>
     </div>
   </footer>
-  <script src="/js/site.js?v=linefab"></script>
+  <script src="/js/site.js?v=nav6"></script>
   <script>
     fetch('/api/config').then((r) => r.json()).then((data) => {
       const title = document.getElementById('heroTitle');

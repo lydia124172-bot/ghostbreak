@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>看作品 — 麋鹿網</title>
-  <meta name="description" content="看麋鹿網做過的官網、線上工具與設計案例。" />
+  <meta name="description" content="看麋鹿網做過的官網、SaaS 與設計案例。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
@@ -21,11 +21,9 @@
       <nav class="nav" id="nav">
         <a href="/">首頁</a>
         <a href="/works" class="active">看作品</a>
-        <a href="/courses">我要上課</a>
-        <a href="/hire">找我做網站</a>
-        <a href="/match">找人幫忙</a>
-        <a href="/saas">線上工具</a>
-        <a href="/research">AI 研究</a>
+        <a href="/courses">上課</a>
+        <a href="/hire">做網站</a>
+        <a href="/saas">我做的付費工具</a>
       </nav>
     </div>
   </header>
@@ -50,7 +48,7 @@
       </nav>
     </div>
   </footer>
-  <script src="/js/site.js?v=linefab"></script>
+  <script src="/js/site.js?v=nav6"></script>
   <script>
     let allWorks = [];
     let kinds = [];
@@ -65,7 +63,7 @@
             <h3>${w.name}</h3>
             <p>${w.summary}</p>
           </div>
-          ${w.href ? `<a class="btn btn-ghost" href="${w.href}" target="_blank" rel="noopener">打開看看</a>` : ''}
+          ${w.href ? `<a class="btn btn-ghost" href="${w.href}" ${/^https?:\/\//i.test(w.href) ? 'target="_blank" rel="noopener"' : ''}>${/^https?:\/\//i.test(w.href) ? '打開看看' : '前往使用'}</a>` : ''}
         </article>
       `).join('') || '<p class="lead">這個分類之後會補作品。</p>';
     }

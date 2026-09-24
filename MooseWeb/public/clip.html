@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MooseClip 小廣告 — 麋鹿網</title>
+  <meta name="description" content="上傳商品圖，做成會動的小廣告或靜態圖與文案，下載後自己發。" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=clip5" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>MooseWeb</small></span>
+      </a>
+      <button class="menu-btn" id="menuBtn" type="button">選單</button>
+      <nav class="nav" id="nav">
+        <a href="/">首頁</a>
+        <a href="/works">看作品</a>
+        <a href="/courses">上課</a>
+        <a href="/hire">做網站</a>
+        <a href="/saas" class="active">我做的付費工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <p class="kicker">MooseClip</p>
+      <h1>上傳商品圖，做成小廣告與文案，<br>下載後自己發。</h1>
+      <p class="lead">選商品圖，再按「產出小廣告」。預設 5 秒較快。配樂已預設，口播選填。圖太小會自動放大。請不要連續重按。</p>
+      <p class="clip-plan" id="clipPlan">排版與識圖不必登入。進階生圖需方案點數。</p>
+    </section>
+
+    <section class="panel clip-panel">
+      <p class="kicker">01 上傳　02 文案或靜態圖　03 產出小廣告</p>
+      <h2>上傳商品圖，做成小廣告或圖文</h2>
+      <form id="clipForm" class="skill-form">
+        <div>
+          <p class="field">選擇作品類型</p>
+          <div class="clip-types" id="styleBtns">
+            <button class="clip-type active" type="button" data-style="ugc">
+              <strong>小廣告</strong>
+              <span>圖生視頻，可選 5 或 10 秒，可加配樂與旁白</span>
+            </button>
+            <button class="clip-type" type="button" data-style="life">
+              <strong>靜態圖</strong>
+              <span>情境圖＋文案，畫面不會動</span>
+            </button>
+            <button class="clip-type" type="button" data-style="grid">
+              <strong>賣點拼圖</strong>
+              <span>多圖重點＋文案</span>
+            </button>
+          </div>
+        </div>
+        <div>
+          <p class="field">片長（愈短愈快、愈省。已送出的請等它做完，不要重按）</p>
+          <div class="clip-types" id="durationPicks">
+            <button class="clip-type active" type="button" data-duration="5">
+              <strong>5 秒</strong>
+              <span>較快，約半分鐘到 1 分鐘</span>
+            </button>
+            <button class="clip-type" type="button" data-duration="10">
+              <strong>10 秒</strong>
+              <span>較長，常要 1 到 2 分鐘</span>
+            </button>
+          </div>
+        </div>
+        <div>
+          <p class="field">內建配樂（可商用短曲，點選試聽，產出時會疊上）</p>
+          <div class="clip-types clip-music" id="musicPicks">
+            <button class="clip-type" type="button" data-music="none"><strong>無配樂</strong><span>不加音樂</span></button>
+            <button class="clip-type active" type="button" data-music="bright"><strong>明亮</strong><span>帶貨</span></button>
+            <button class="clip-type" type="button" data-music="soft"><strong>柔和</strong><span>生活感</span></button>
+            <button class="clip-type" type="button" data-music="warm"><strong>溫暖</strong><span>餐飲、手作</span></button>
+            <button class="clip-type" type="button" data-music="beat"><strong>節奏</strong><span>較有拍點</span></button>
+            <button class="clip-type" type="button" data-music="play"><strong>活潑</strong><span>輕快</span></button>
+            <button class="clip-type" type="button" data-music="luxe"><strong>高級</strong><span>保養、飾品</span></button>
+            <button class="clip-type" type="button" data-music="clear"><strong>清透</strong><span>清潔、保養</span></button>
+            <button class="clip-type" type="button" data-music="night"><strong>夜感</strong><span>潮流、穿搭</span></button>
+            <button class="clip-type" type="button" data-music="film"><strong>電影</strong><span>較有畫面感</span></button>
+            <button class="clip-type" type="button" data-music="quiet"><strong>極簡</strong><span>只墊底</span></button>
+          </div>
+          <audio id="musicPreview" class="music-preview" controls preload="auto" playsinline></audio>
+        </div>
+        <div class="skill-fields">
+          <div>
+            <label class="field" for="product">作品／商品名稱</label>
+            <input id="product" class="form-input" maxlength="40" placeholder="例如：手沖咖啡豆 200g" />
+          </div>
+          <div>
+            <label class="field" for="price">價格或賣點</label>
+            <input id="price" class="form-input" maxlength="40" placeholder="例如：特價 380 元" />
+          </div>
+          <div>
+            <label class="field" for="hook">封面句（選填）</label>
+            <input id="hook" class="form-input" maxlength="24" placeholder="例如：今天下單今晚烘" />
+          </div>
+        </div>
+        <div>
+          <label class="field" for="photos">商品圖（1 至 5 張。太小會自動放大，換圖會重寫文案）</label>
+          <input id="photos" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" multiple required />
+        </div>
+        <div>
+          <label class="field" for="music">自己的配樂（只接受 .mp3 或 .wav，小於 8MB）</label>
+          <input id="music" class="form-input" type="file" accept=".mp3,.wav,audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/wave" />
+          <p class="combo-fit" id="musicFileHint">尚未選自己的檔。上面內建曲目已可直接用。自選只接受副檔名 .mp3 或 .wav；.m4a、.aac、.ogg、Suno 分享頁都不能用。</p>
+        </div>
+        <div>
+          <label class="field" for="narration">旁白口播（選填，最多 280 字，約 10 秒；就在本頁唸出來）</label>
+          <textarea id="narration" class="form-input" rows="3" maxlength="280" placeholder="例如：牙齦容易紅腫？這支藥用牙膏，今晚就用給自己看。"></textarea>
+        </div>
+        <div>
+          <label class="field" for="voice">口播音檔（選填，有檔就不再用上面的文字轉語音）</label>
+          <input id="voice" class="form-input" type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,.mp3,.wav" />
+        </div>
+        <div>
+          <label class="field" for="ownCopy">自訂文案（選填，可請 AI 依圖撰寫）</label>
+          <textarea id="ownCopy" class="form-input" rows="6" maxlength="2000" placeholder="可貼上要發的全文，含標籤。也可按「AI 識圖寫文案」。空白則由系統依商品名稱撰寫。"></textarea>
+        </div>
+        <div>
+          <label class="field" for="musicPrompt">Suno 配樂風格（可複製後貼上編輯）</label>
+          <textarea id="musicPrompt" class="form-input" rows="4" maxlength="800" placeholder="按「寫配樂風格」後會出現可貼進 Suno 的英文提示。"></textarea>
+        </div>
+        <div>
+          <label class="field" for="musicUrl">或貼公開音檔網址（網址結尾須為 .mp3 或 .wav；Suno 分享頁不能用）</label>
+          <input id="musicUrl" class="form-input" maxlength="400" placeholder="https://…/song.mp3" />
+        </div>
+        <div class="admin-actions">
+          <button class="btn btn-cream" type="button" id="demoBtn">用示範圖試效果</button>
+          <button class="btn btn-cream" type="button" id="visionBtn">AI 識圖寫文案</button>
+          <button class="btn btn-cream" type="button" id="enhanceBtn">換靜態圖（扣 1 點）</button>
+          <button class="btn btn-cream" type="button" id="musicStyleBtn">寫配樂風格</button>
+          <button class="btn btn-cream" type="button" id="copyMusicBtn">複製風格</button>
+          <a class="btn btn-cream" href="https://suno.com" target="_blank" rel="noopener">打開 Suno</a>
+          <button class="btn btn-cream" type="button" id="musicBtn">選自己的 MP3／WAV</button>
+          <button class="btn btn-copper" type="submit" id="makeBtn">產出小廣告（約 5 秒）</button>
+          <button class="btn btn-cream" type="button" id="recoverVideoBtn">取回剛才的小廣告（不新扣）</button>
+        </div>
+        <p class="combo-fit">人臉對嘴是另一支片子，不能跟小廣告合成。要口播配樂請留在本頁。</p>
+        <p id="visionMsg" class="combo-fit"></p>
+        <p id="publishMsg" class="combo-fit"></p>
+      </form>
+      <section class="clip-soon">
+        <p class="meta">建置中</p>
+        <h3>從商店拉商品</h3>
+        <p>Shopify、WooCommerce 一鍵安裝須官方審核。通過前請直接上傳圖片。</p>
+      </section>
+    </section>
+
+    <section class="panel clip-panel hidden" id="previewBox">
+      <p class="kicker">02 預覽與下載</p>
+      <h2>下載畫面、短片與文案</h2>
+      <div class="clip-feed" id="clipFeed">
+        <p class="clip-feed-caption" id="feedCaption"></p>
+        <p class="clip-feed-more">查看更多</p>
+        <video id="preview" class="clip-video hidden" playsinline controls loop></video>
+        <img id="previewImg" class="clip-still hidden" alt="貼文預覽圖" />
+      </div>
+      <label class="field" for="caption">發文文案（可改）</label>
+      <textarea id="caption" class="form-input" rows="10" maxlength="2000"></textarea>
+      <p class="lead" id="saveHint">手機可按「傳送到社群」選 Instagram 或 TikTok。電腦請下載後上傳。發文時把文案貼上即可。</p>
+      <div class="clip-save admin-actions">
+        <button class="btn btn-copper hidden" type="button" id="shareBtn">傳送到社群</button>
+        <a class="btn btn-cream is-wait" id="downloadMp4Btn" href="#" download="mooseclip.mp4">短片準備中</a>
+        <a class="btn btn-cream" id="downloadJpgBtn" href="#" download="mooseclip.jpg">下載封面</a>
+        <button class="btn btn-cream" type="button" id="copyCapBtn">複製文案</button>
+      </div>
+      <p id="saveMsg" class="combo-fit"></p>
+    </section>
+
+    <section class="panel clip-panel clip-soon-panel">
+      <p class="kicker">建置中</p>
+      <h2>連接商店與自動發文</h2>
+      <p class="lead">Shopify、Instagram、Threads、Facebook、TikTok 須官方審核通過後才會開放。現在請下載短片與文案，到各平台自行上傳。</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© 麋鹿網　版權由 Lydia Global Company 所有</span>
+      <nav class="footer-links">
+        <a href="/privacy">隱私權政策</a>
+        <a href="/terms">服務條款</a>
+        <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
+      </nav>
+    </div>
+  </footer>
+  <script src="/js/site.js?v=nav5"></script>
+  <script src="/js/clip.js?v=51"></script>
+</body>
+</html>
