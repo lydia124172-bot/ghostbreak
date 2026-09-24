@@ -125,10 +125,30 @@ function inquiryMail(entry) {
   };
 }
 
+function resetMail({ email, link }) {
+  const subject = '[麋鹿網] 重設密碼';
+  const text = [
+    '你申請重設麋鹿網帳號密碼。',
+    '',
+    '請在一小時內開啟此連結，並設定新密碼：',
+    link,
+    '',
+    '若不是你本人操作，請忽略此信。密碼不會變更。',
+  ].join('\n');
+  const html = `
+    <p>你申請重設麋鹿網帳號密碼。</p>
+    <p>請在一小時內開啟此連結，並設定新密碼：</p>
+    <p><a href="${escapeHtml(link)}">${escapeHtml(link)}</a></p>
+    <p style="color:#666;font-size:13px;">若不是你本人操作，請忽略此信。密碼不會變更。</p>
+  `;
+  return { to: email, subject, text, html };
+}
+
 module.exports = {
   INQUIRE_EMAIL,
   initMail,
   sendMail,
   inquiryMail,
+  resetMail,
   mailConfigured: () => resendReady() || smtpReady(),
 };

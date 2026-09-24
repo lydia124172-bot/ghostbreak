@@ -7,8 +7,11 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const FILE = path.join(DATA_DIR, 'accounts.json');
 const PERIOD_MS = 30 * 24 * 60 * 60 * 1000;
 
+const RESET_MS = 60 * 60 * 1000;
+const FORGOT_WAIT_MS = 60 * 1000;
+
 function emptyStore() {
-  return { accounts: [], sessions: {} };
+  return { accounts: [], sessions: {}, resets: {} };
 }
 
 function loadStore() {
@@ -18,6 +21,7 @@ function loadStore() {
     return {
       accounts: Array.isArray(data.accounts) ? data.accounts : [],
       sessions: data.sessions && typeof data.sessions === 'object' ? data.sessions : {},
+      resets: data.resets && typeof data.resets === 'object' ? data.resets : {},
     };
   } catch {
     return emptyStore();
@@ -31,7 +35,56 @@ function saveStore(store) {
   Object.entries(store.sessions || {}).forEach(([sid, row]) => {
     if (row && row.exp > now) sessions[sid] = row;
   });
-  fs.writeFileSync(FILE, JSON.stringify({ accounts: store.accounts, sessions }, null, 2), 'utf8');
+  const resets = {};
+  Object.entries(store.resets || {}).forEach(([key, row]) => {
+    if (row && row.exp > now) resets[key] = row;
+  });
+  fs.writeFileSync(FILE, JSON.stringify({ accounts: store.accounts, sessions, resets }, null, 2), 'utf8');
+}
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function clearSessionsFor(store, accountId) {
+  Object.entries(store.sessions || {}).forEach(([sid, row]) => {
+    if (row && row.id === accountId) delete store.sessions[sid];
+  });
+}
+
+function requestReset(email) {
+  const key = normalizeEmail(email);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(key)) throw new Error('請填正確的 Email');
+  const store = loadStore();
+  const row = store.accounts.find((item) => item.email === key);
+  if (!row) return { found: false };
+  if (row.lastForgotAt && Date.now() - Number(row.lastForgotAt) < FORGOT_WAIT_MS) {
+    return { found: true, wait: true, email: row.email };
+  }
+  Object.entries(store.resets || {}).forEach(([hash, item]) => {
+    if (item && item.id === row.id) delete store.resets[hash];
+  });
+  const token = crypto.randomBytes(24).toString('hex');
+  store.resets[hashToken(token)] = { id: row.id, exp: Date.now() + RESET_MS };
+  row.lastForgotAt = Date.now();
+  saveStore(store);
+  return { found: true, token, email: row.email };
+}
+
+function resetPassword(token, password) {
+  if (String(password || '').length < 8) throw new Error('密碼至少 8 個字');
+  const store = loadStore();
+  const hash = hashToken(token);
+  const reset = store.resets[hash];
+  if (!reset || reset.exp < Date.now()) throw new Error('重設連結已失效。請再寄一次。');
+  const row = store.accounts.find((item) => item.id === reset.id);
+  if (!row) throw new Error('重設連結已失效。請再寄一次。');
+  row.pass = hashPass(password);
+  row.lastForgotAt = 0;
+  delete store.resets[hash];
+  clearSessionsFor(store, row.id);
+  saveStore(store);
+  return { account: publicAccount(row), sid: createSession(row.id) };
 }
 
 function normalizeEmail(email) {
@@ -308,6 +361,8 @@ module.exports = {
   getByEmail,
   register,
   login,
+  requestReset,
+  resetPassword,
   clearSession,
   requestPlan,
   grantPlan,

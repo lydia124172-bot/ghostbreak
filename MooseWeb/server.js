@@ -7,7 +7,7 @@ const express = require('express');
 const { adminConfigured, login: adminLogin, requireAdmin, isValidToken, readToken } = require('./services/admin-auth');
 const { publicConfig, loadContent, saveContent, upsertItem, removeItem } = require('./services/content');
 const { loadInquiries, addInquiry, removeInquiry } = require('./services/inquiries');
-const { INQUIRE_EMAIL, initMail, sendMail, inquiryMail, mailConfigured } = require('./services/mail');
+const { INQUIRE_EMAIL, initMail, sendMail, inquiryMail, resetMail, mailConfigured } = require('./services/mail');
 const clipStore = require('./services/clip-store');
 const clipPub = require('./services/clip-publish');
 const clipShop = require('./services/clip-shop');
@@ -304,6 +304,36 @@ app.post('/api/account/logout', (req, res) => {
   accounts.clearSession(parseCookies(req).moose_sid);
   clearAccountCookie(req, res);
   res.json({ ok: true });
+});
+
+app.post('/api/account/forgot', async (req, res) => {
+  const message = '若此 Email 已註冊，重設信將在幾分鐘內寄達。請查看收件匣與垃圾信件。';
+  try {
+    const result = accounts.requestReset(req.body?.email);
+    if (result.found && result.token) {
+      const origin = requestOrigin(req);
+      const link = `${origin}/account?reset=${result.token}`;
+      const mail = await safeSendMail(resetMail({ email: result.email, link }));
+      if (mail?.via === 'error') {
+        return res.status(503).json({ error: '重設信暫時寄不出。請稍後再試，或透過 LINE 聯繫。' });
+      }
+      if (/127\.0\.0\.1|localhost/i.test(origin)) {
+        console.log('重設密碼（僅本機）', result.email);
+      }
+    }
+    res.json({ ok: true, message });
+  } catch (err) {
+    res.status(400).json({ error: err.message || '無法寄出重設信' });
+  }
+});
+
+app.post('/api/account/reset', (req, res) => {
+  try {
+    const result = accounts.resetPassword(req.body?.token, req.body?.password);
+    sendAccount(req, res, result.account, result.sid);
+  } catch (err) {
+    res.status(400).json({ error: err.message || '無法重設密碼' });
+  }
 });
 
 app.post('/api/account/plan', async (req, res) => {

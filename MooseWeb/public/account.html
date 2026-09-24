@@ -45,8 +45,25 @@
         <label class="field" for="loginPass">密碼</label>
         <input id="loginPass" class="form-input" type="password" autocomplete="current-password" required />
         <button class="btn btn-copper" type="submit">登入</button>
+        <button class="btn btn-ghost" type="button" id="forgotOpen">忘記密碼</button>
         <p class="combo-fit">網站作者請走<a href="/admin">後台</a>，不必在此用後台密碼登入。</p>
         <p id="loginMsg" class="combo-fit"></p>
+      </form>
+      <form id="forgotForm" class="panel skill-form hidden">
+        <h2>重設密碼</h2>
+        <p class="lead">填註冊時的 Email，我們會寄一封信。一小時內有效。</p>
+        <label class="field" for="forgotEmail">Email</label>
+        <input id="forgotEmail" class="form-input" type="email" autocomplete="username" required />
+        <button class="btn btn-copper" type="submit">寄出重設信</button>
+        <button class="btn btn-ghost" type="button" id="forgotBack">回到登入</button>
+        <p id="forgotMsg" class="combo-fit"></p>
+      </form>
+      <form id="resetForm" class="panel skill-form hidden">
+        <h2>設定新密碼</h2>
+        <label class="field" for="resetPass">新密碼（至少 8 個字）</label>
+        <input id="resetPass" class="form-input" type="password" autocomplete="new-password" minlength="8" required />
+        <button class="btn btn-copper" type="submit">儲存並登入</button>
+        <p id="resetMsg" class="combo-fit"></p>
       </form>
       <form id="registerForm" class="panel skill-form">
         <h2>註冊</h2>
@@ -120,6 +137,11 @@
     function showGuest() {
       $('guestBox').classList.remove('hidden');
       $('memberBox').classList.add('hidden');
+      const token = new URLSearchParams(location.search).get('reset');
+      $('loginForm').classList.toggle('hidden', Boolean(token));
+      $('registerForm').classList.toggle('hidden', Boolean(token));
+      $('forgotForm').classList.add('hidden');
+      $('resetForm').classList.toggle('hidden', !token);
     }
 
     function showMember(me) {
@@ -180,6 +202,51 @@
         await refresh();
       } catch (err) {
         $('loginMsg').textContent = err.message;
+      }
+    });
+
+    $('forgotOpen').addEventListener('click', () => {
+      $('loginForm').classList.add('hidden');
+      $('registerForm').classList.add('hidden');
+      $('resetForm').classList.add('hidden');
+      $('forgotForm').classList.remove('hidden');
+      $('forgotEmail').value = $('loginEmail').value;
+      $('forgotMsg').textContent = '';
+    });
+
+    $('forgotBack').addEventListener('click', () => {
+      history.replaceState({}, '', '/account');
+      $('forgotForm').classList.add('hidden');
+      $('resetForm').classList.add('hidden');
+      $('loginForm').classList.remove('hidden');
+      $('registerForm').classList.remove('hidden');
+    });
+
+    $('forgotForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('forgotMsg').textContent = '';
+      try {
+        const data = await api('/api/account/forgot', { email: $('forgotEmail').value });
+        $('forgotMsg').textContent = data.message || '若此 Email 已註冊，重設信將寄達。';
+      } catch (err) {
+        $('forgotMsg').textContent = err.message;
+      }
+    });
+
+    $('resetForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('resetMsg').textContent = '';
+      const token = new URLSearchParams(location.search).get('reset');
+      if (!token) {
+        $('resetMsg').textContent = '重設連結已失效。請再寄一次。';
+        return;
+      }
+      try {
+        await api('/api/account/reset', { token, password: $('resetPass').value });
+        history.replaceState({}, '', '/account');
+        await refresh();
+      } catch (err) {
+        $('resetMsg').textContent = err.message;
       }
     });
 
