@@ -24,6 +24,7 @@ const dramaVideo = require('./services/drama-video');
 const dramaScript = require('./services/drama-script');
 const scriptAgent = require('./services/script-agent');
 const liveScript = require('./services/live-script');
+const personaAgent = require('./services/persona-agent');
 const accounts = require('./services/accounts');
 const ecpay = require('./services/ecpay');
 const payOrders = require('./services/pay-orders');
@@ -56,6 +57,7 @@ const pages = {
   '/talk': 'talk.html',
   '/script': 'script.html',
   '/live': 'live.html',
+  '/ip': 'ip.html',
   '/account': 'account.html',
   '/privacy': 'privacy.html',
   '/terms': 'terms.html',
@@ -504,6 +506,39 @@ app.post('/api/live', express.json({ limit: '200kb' }), async (req, res) => {
       industry: String(req.body?.industry || '').trim(),
       product: String(req.body?.product || '').trim(),
       notes: String(req.body?.notes || '').trim(),
+    });
+    const used = clipStore.consumeGuestScript(sid);
+    res.json({ ...result, left: used.left, limit: used.limit });
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? '產出逾時，請再試一次' : (err.message || '產出失敗');
+    res.status(400).json({ error: msg });
+  }
+});
+
+app.get('/api/ip/status', (req, res) => {
+  const sid = clipSid(req, res);
+  const guest = clipStore.guestScriptState(sid);
+  res.json({
+    ready: personaAgent.configured(),
+    left: guest.left,
+    limit: guest.limit,
+  });
+});
+
+app.post('/api/ip', express.json({ limit: '200kb' }), async (req, res) => {
+  const sid = clipSid(req, res);
+  const guest = clipStore.guestScriptState(sid);
+  if (!guest.left) {
+    return res.status(402).json({
+      error: `今日免費腳本已用完（${guest.limit} 則）。可明天再試。`,
+      left: 0,
+    });
+  }
+  try {
+    const result = await personaAgent.writePersona({
+      bio: String(req.body?.bio || '').trim(),
+      fans: String(req.body?.fans || '').trim(),
+      goal: String(req.body?.goal || '').trim(),
     });
     const used = clipStore.consumeGuestScript(sid);
     res.json({ ...result, left: used.left, limit: used.limit });

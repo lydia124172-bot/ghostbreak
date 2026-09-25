@@ -99,6 +99,13 @@ const TRADES = [
         href: '/live',
       },
       {
+        name: '個人IP與頻道',
+        need: '貼簡介，先定自己是誰，再寫四週每日攻略與各平台怎麼拍。',
+        saas: '個人IP智能體',
+        status: '已上線',
+        href: '/ip',
+      },
+      {
         name: '劇本質感廣告',
         need: '貼上分鏡或旁白，做成較有質感的廣告。目前建置中。',
         saas: 'StoryClip 劇本廣告（建置中）',

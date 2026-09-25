@@ -10,7 +10,7 @@ function applyPublicNav() {
   const path = pathOf();
   const items = [
     { href: '/', label: '首頁', on: path === '/' },
-    { href: '/works', label: '看作品', on: path === '/works' || path === '/agents' || path === '/script' || path === '/live' },
+    { href: '/works', label: '看作品', on: path === '/works' || path === '/agents' || path === '/script' || path === '/live' || path === '/ip' },
     { href: '/courses', label: '上課', on: path === '/courses' },
     { href: '/hire', label: '做網站', on: path === '/hire' },
     { href: '/saas', label: '我做的付費工具', on: path === '/saas' || path === '/clip' || path === '/story' || path === '/talk' || path === '/drama' },

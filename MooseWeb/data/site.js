@@ -118,6 +118,13 @@ module.exports = {
       href: '/live',
     },
     {
+      id: 'persona-ip',
+      name: '個人IP',
+      kind: '智能體',
+      summary: '貼上簡介與目標粉數，寫四週每日攻略，並分析臉書、IG、TikTok、YouTube、Threads 的經營與拍法。免費使用。',
+      href: '/ip',
+    },
+    {
       id: 'talkclip',
       name: '真人口播短片',
       kind: '付費工具',
