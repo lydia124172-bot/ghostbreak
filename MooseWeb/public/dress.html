@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=light1" />
+  <link rel="stylesheet" href="/css/site.css?v=light2" />
 </head>
 <body>
   <header class="site-header">
@@ -32,7 +32,7 @@
     <section class="hero research-hero">
       <p class="kicker">付費工具　扣 1 點</p>
       <h1>上傳兩張圖，換成這套衣服。</h1>
-      <p class="lead">第一張是模特兒，第二張是衣服。產出靜態圖，可下載。不是試衣間，也不保證與實穿一樣。成功一張扣 1 點，與商品短片進階圖共用。</p>
+      <p class="lead">第一張是模特兒，第二張是衣服。先出靜態圖，可再選場景換背景，也可選 5 或 10 秒讓圖動起來。質感走乾淨商業風。靜態圖與換背景各扣 1 點；動起來扣 3 點。</p>
       <p class="clip-plan" id="dressPlan">需登入並有方案點數。</p>
     </section>
 
@@ -67,9 +67,31 @@
       <h2>換裝圖</h2>
       <p class="lead" id="outLine"></p>
       <img id="outImage" class="clip-still" alt="換裝結果" />
+      <div id="bgBox" class="hidden" style="margin-top:18px;">
+        <p class="field">換背景（選一個場景，再扣 1 點）</p>
+        <div id="sceneGrid" class="clip-types clip-music"></div>
+        <div class="admin-actions" style="margin-top:12px;">
+          <input id="bgNote" class="form-input" type="text" maxlength="80" autocomplete="off" placeholder="補充選填，例如：偏暖色、背景再模糊一點" style="flex:1;min-width:12rem;" />
+          <button class="btn btn-cream" type="button" id="bgBtn">套用背景</button>
+        </div>
+        <p id="bgMsg" class="combo-fit"></p>
+      </div>
       <div class="admin-actions">
         <a class="btn btn-copper" id="saveBtn" href="#" download="換裝.jpg">下載圖片</a>
+        <label class="field" for="motionSec" style="margin:0;">時長</label>
+        <select id="motionSec" class="form-input" style="width:auto;min-width:7rem;">
+          <option value="5" selected>5 秒</option>
+          <option value="10">10 秒</option>
+        </select>
+        <button class="btn btn-cream" type="button" id="motionBtn">讓圖動起來</button>
         <a class="btn btn-cream" href="/clip">接著做成商品短片</a>
+      </div>
+      <p id="motionMsg" class="combo-fit"></p>
+      <div id="videoBox" class="hidden" style="margin-top:16px;">
+        <video id="outVideo" class="clip-video" controls playsinline></video>
+        <div class="admin-actions">
+          <a class="btn btn-copper" id="saveVideoBtn" href="#" download="換裝短片.mp4">下載短片</a>
+        </div>
       </div>
     </section>
 
@@ -96,6 +118,6 @@
     </div>
   </footer>
   <script src="/js/site.js?v=nav13"></script>
-  <script src="/js/dress.js?v=1"></script>
+  <script src="/js/dress.js?v=3"></script>
 </body>
 </html>

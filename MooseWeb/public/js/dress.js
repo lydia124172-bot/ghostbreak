@@ -1,4 +1,17 @@
-const state = { model: '', cloth: '' };
+const state = {
+  model: '',
+  cloth: '',
+  image: '',
+  videoCost: 3,
+  videoReady: false,
+  scenes: [],
+  scene: '',
+};
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 function readFile(file) {
   return new Promise((resolve, reject) => {
@@ -39,36 +52,66 @@ async function pick(inputId, key, prevId) {
   }
 }
 
+function paintScenes(rows) {
+  const grid = document.getElementById('sceneGrid');
+  if (!grid) return;
+  state.scenes = Array.isArray(rows) ? rows : [];
+  if (!state.scenes.length) {
+    grid.innerHTML = '<p class="combo-fit">場景稍後補上。</p>';
+    return;
+  }
+  if (!state.scene) state.scene = state.scenes[0].id;
+  grid.innerHTML = state.scenes.map((row) => `
+    <button class="clip-type${row.id === state.scene ? ' active' : ''}" type="button" data-scene="${escapeHtml(row.id)}">
+      <strong>${escapeHtml(row.name)}</strong>
+      <span>${escapeHtml(row.hint || '')}</span>
+    </button>
+  `).join('');
+}
+
 async function refreshPlan() {
   const bar = document.getElementById('dressPlan');
   if (!bar) return;
   try {
     const data = await fetch('/api/dress/status').then((r) => r.json());
+    state.videoReady = Boolean(data.videoReady);
+    state.videoCost = Number(data.videoCost || 3) || 3;
+    paintScenes(data.scenes || []);
     if (!data.ready) {
       bar.textContent = '換裝暫時無法使用，請稍後再試。';
       return;
     }
+    const motion = data.videoReady
+      ? `換裝／換背景各 1 點；動起來 ${state.videoCost} 點（5 或 10 秒）。`
+      : '換裝／換背景可用。讓圖動起來暫時無法使用。';
     if (data.owner) {
-      bar.textContent = '作者後台已登入，產出不扣點。';
+      bar.textContent = `作者後台已登入，產出不扣點。${motion}`;
       return;
     }
     if (!data.loggedIn) {
-      bar.textContent = '需先到方案頁登入。成功一張扣 1 點，與商品短片進階圖共用。';
+      bar.textContent = `需先到方案頁登入。${motion}`;
       return;
     }
-    bar.textContent = `目前剩餘 ${data.credits || 0} 點。成功一張扣 1 點，與商品短片進階圖共用。`;
+    bar.textContent = `目前剩餘 ${data.credits || 0} 點。${motion}`;
   } catch {
     bar.textContent = '需登入並有方案點數。';
   }
 }
 
 function paintResult(image, extra) {
+  state.image = image;
   const out = document.getElementById('outImage');
   const save = document.getElementById('saveBtn');
   out.src = image;
   save.href = image;
   document.getElementById('outLine').textContent = extra || '僅供試衣參考，不是實穿保證。';
   document.getElementById('resultBox').classList.remove('hidden');
+  document.getElementById('bgBox').classList.remove('hidden');
+  document.getElementById('videoBox').classList.add('hidden');
+  document.getElementById('motionMsg').textContent = '';
+  document.getElementById('bgMsg').textContent = '';
+  const motionBtn = document.getElementById('motionBtn');
+  if (motionBtn) motionBtn.disabled = !state.videoReady;
 }
 
 async function makeDress() {
@@ -103,9 +146,117 @@ async function makeDress() {
   }
 }
 
+async function makeBg() {
+  const note = document.getElementById('bgMsg');
+  const btn = document.getElementById('bgBtn');
+  if (!state.image) {
+    note.textContent = '請先產出換裝圖。';
+    return;
+  }
+  if (!state.scene) {
+    note.textContent = '請先選一個背景場景。';
+    return;
+  }
+  note.textContent = '正在換背景，約半分鐘，請不要重按。';
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/dress/bg', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: state.image,
+        scene: state.scene,
+        note: document.getElementById('bgNote').value.trim(),
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || '換背景失敗');
+    paintResult(body.image, body.owner ? '背景已換。作者後台已登入，這張不扣點。' : '背景已換。僅供試衣參考，不是實穿保證。');
+    note.textContent = '';
+    refreshPlan();
+  } catch (err) {
+    note.textContent = err.message || '換背景失敗';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function waitVideoJob(jobId) {
+  const note = document.getElementById('motionMsg');
+  for (let i = 0; i < 90; i += 1) {
+    await new Promise((r) => setTimeout(r, 2500));
+    const res = await fetch(`/api/clip/video/job/${encodeURIComponent(jobId)}`);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || '生片失敗');
+    if (body.status === 'done' && body.videoUrl) return body;
+    const phase = body.status === 'running' ? '正在生成短片' : '排隊中';
+    note.textContent = `${phase}（${body.duration || ''}秒），約一分鐘，請不要重按。`;
+  }
+  throw new Error('生片逾時，請稍後再試。');
+}
+
+function paintVideo(done) {
+  const box = document.getElementById('videoBox');
+  const video = document.getElementById('outVideo');
+  const save = document.getElementById('saveVideoBtn');
+  video.src = done.videoUrl;
+  save.href = done.videoUrl;
+  box.classList.remove('hidden');
+  document.getElementById('motionMsg').textContent = done.owner
+    ? '作者後台已登入，這支不扣點。'
+    : `短片已完成（${done.duration || ''}秒）。`;
+}
+
+async function makeMotion() {
+  const note = document.getElementById('motionMsg');
+  const btn = document.getElementById('motionBtn');
+  if (!state.image) {
+    note.textContent = '請先產出換裝圖。';
+    return;
+  }
+  if (!state.videoReady) {
+    note.textContent = '讓圖動起來暫時無法使用。';
+    return;
+  }
+  const duration = document.getElementById('motionSec').value === '10' ? '10' : '5';
+  note.textContent = `正在送出 ${duration} 秒短片，約扣 ${state.videoCost} 點，請不要重按。`;
+  btn.disabled = true;
+  document.getElementById('videoBox').classList.add('hidden');
+  try {
+    const res = await fetch('/api/dress/video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: state.image,
+        duration,
+        note: document.getElementById('bgNote').value.trim() || document.getElementById('note').value.trim(),
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || '生片失敗');
+    const done = body.videoUrl ? body : await waitVideoJob(body.jobId);
+    paintVideo(done);
+    refreshPlan();
+  } catch (err) {
+    note.textContent = err.message || '生片失敗';
+  } finally {
+    btn.disabled = !state.videoReady;
+  }
+}
+
 document.getElementById('modelFile').addEventListener('change', () => pick('modelFile', 'model', 'modelPrev'));
 document.getElementById('clothFile').addEventListener('change', () => pick('clothFile', 'cloth', 'clothPrev'));
 document.getElementById('makeBtn').addEventListener('click', makeDress);
+document.getElementById('bgBtn').addEventListener('click', makeBg);
+document.getElementById('motionBtn').addEventListener('click', makeMotion);
+document.getElementById('sceneGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-scene]');
+  if (!btn) return;
+  state.scene = btn.getAttribute('data-scene');
+  document.querySelectorAll('#sceneGrid .clip-type').forEach((el) => {
+    el.classList.toggle('active', el === btn);
+  });
+});
 document.getElementById('dressForm').addEventListener('submit', (e) => {
   e.preventDefault();
   makeDress();

@@ -588,8 +588,12 @@ app.get('/api/dress/status', (req, res) => {
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
+  const videoCost = clipVideo.creditCost();
   res.json({
     ready: dressAgent.configured(),
+    videoReady: clipVideo.configured(),
+    videoCost,
+    scenes: dressAgent.publicScenes(),
     owner,
     loggedIn: Boolean(paid && paid.ok),
     credits: paid ? Number(paid.credits || 0) : 0,
@@ -617,6 +621,92 @@ app.post('/api/dress', express.json({ limit: '8mb' }), async (req, res) => {
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請不要重按。' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
+  }
+});
+
+app.post('/api/dress/bg', express.json({ limit: '8mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  if (!owner && (!paid || !paid.credits)) {
+    return res.status(402).json({
+      error: '換背景需購買方案點數。作者請先到後台登入，即可直接使用。',
+    });
+  }
+  const image = String(req.body?.image || '');
+  if (!image.startsWith('data:image/')) {
+    return res.status(400).json({ error: '請先產出換裝圖，再換背景。' });
+  }
+  try {
+    const result = await dressAgent.changeBg({
+      image,
+      sceneId: String(req.body?.scene || '').trim(),
+      note: String(req.body?.note || '').trim(),
+    });
+    if (owner) return res.json({ image: result.image, owner: true });
+    const account = accounts.consumeCredit(row.id, 1);
+    res.json({ image: result.image, credits: account.credits });
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? '產出逾時，請不要重按。' : (err.message || '產出失敗');
+    res.status(400).json({ error: msg });
+  }
+});
+
+app.post('/api/dress/video', express.json({ limit: '8mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  const cost = clipVideo.creditCost();
+  if (!owner && (!paid || Number(paid.credits || 0) < cost)) {
+    return res.status(402).json({
+      error: `讓圖動起來需方案剩餘 ${cost} 點以上。作者請先到後台登入。`,
+    });
+  }
+  const image = String(req.body?.image || '');
+  if (!image.startsWith('data:image/')) {
+    return res.status(400).json({ error: '請先產出換裝圖，再讓圖動起來。' });
+  }
+  const wanted = String(req.body?.duration || '5').trim();
+  const duration = wanted === '10' ? '10' : '5';
+  const note = String(req.body?.note || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  try {
+    const prompt = [
+      `Animate this fashion try-on still into a ${duration}-second photoreal clip.`,
+      'Gentle camera move and natural fabric motion. Keep the same person: face, hair, body, skin tone, and pose.',
+      'Keep the outfit colors, cut, and details unchanged. Do not swap clothes or invent new brands.',
+      note ? `Guest note: ${note}` : '',
+      'No captions, subtitles, watermarks, or on-screen text. Single continuous shot.',
+    ].filter(Boolean).join(' ');
+    const submitted = await clipVideo.submit({
+      images: [image],
+      product: 'fashion try-on',
+      duration,
+      prompt,
+    });
+    pruneVideoJobs();
+    const job = {
+      id: crypto.randomUUID(),
+      kind: 'dress',
+      requestId: submitted.requestId,
+      model: submitted.model,
+      statusUrl: submitted.statusUrl,
+      responseUrl: submitted.responseUrl,
+      sid: clipSid(req, res),
+      owner,
+      accountId: row && row.id,
+      cost,
+      duration: submitted.duration,
+      created: Date.now(),
+      result: null,
+      error: '',
+    };
+    videoJobs.set(job.id, job);
+    saveVideoJobs();
+    console.log('[dress-video] queued', submitted.duration + 's');
+    res.json({ jobId: job.id, status: 'queued', duration: submitted.duration, cost });
+  } catch (err) {
+    console.log('[dress-video] submit failed', err && err.message);
+    res.status(400).json({ error: err.message || '生片失敗' });
   }
 });
 
