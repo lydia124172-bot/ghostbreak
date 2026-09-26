@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="icon" href="/images/logo-circle-dark.png" type="image/png" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/css/site.css" />
+  <link rel="stylesheet" href="/css/site.css?v=cal2" />
 </head>
 <body class="buff-page min-h-screen">
   <header class="buff-header sticky top-0 z-50">
@@ -62,9 +62,9 @@
           <div id="calWeekdays" class="cal-weekdays"></div>
           <div id="calendarGrid" class="cal-grid"></div>
           <div class="cal-legend">
-            <span>灰色＝固定公休（深坑週三／士林週一、二）</span>
-            <span>紅框＝臨時暫停</span>
-            <span>補開＝公休日臨時營業</span>
+            <span><i class="cal-swatch cal-swatch-closed" aria-hidden="true"></i>灰色格＋「公休」＝固定公休（先選分店才會出現）</span>
+            <span><i class="cal-swatch cal-swatch-stop" aria-hidden="true"></i>紅框＋「暫停」＝臨時暫停</span>
+            <span><i class="cal-swatch cal-swatch-open" aria-hidden="true"></i>黃框＋「補開」＝公休日臨時營業</span>
           </div>
         </div>
       </div>
