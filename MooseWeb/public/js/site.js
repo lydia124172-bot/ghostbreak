@@ -13,7 +13,7 @@ function applyPublicNav() {
     { href: '/works', label: '看作品', on: path === '/works' || path === '/agents' || path === '/script' || path === '/live' || path === '/ip' || path === '/hot' },
     { href: '/courses', label: '上課', on: path === '/courses' },
     { href: '/hire', label: '做網站', on: path === '/hire' },
-    { href: '/saas', label: '我做的付費工具', on: path === '/saas' || path === '/clip' || path === '/story' || path === '/talk' || path === '/drama' },
+    { href: '/saas', label: '我做的付費工具', on: path === '/saas' || path === '/clip' || path === '/story' || path === '/talk' || path === '/drama' || path === '/dress' },
   ];
   nav.innerHTML = items.map((item) =>
     `<a href="${item.href}"${item.on ? ' class="active"' : ''}>${item.label}</a>`

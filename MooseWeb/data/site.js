@@ -53,6 +53,13 @@ module.exports = {
       href: '/clip',
     },
     {
+      id: 'dress-fit',
+      name: '模特兒換裝',
+      status: '已上線',
+      summary: '上傳模特兒照與衣服圖，做成換裝靜態圖。與商品短片進階圖共用點數。',
+      href: '/dress',
+    },
+    {
       id: 'storyclip',
       name: '劇本廣告',
       status: '建置中',
@@ -88,6 +95,13 @@ module.exports = {
       kind: '付費工具',
       summary: '把商品圖排成直式短片或圖片與文案。不是真人口播對嘴。',
       href: '/clip',
+    },
+    {
+      id: 'dress-fit',
+      name: '模特兒換裝',
+      kind: '付費工具',
+      summary: '上傳模特兒照與衣服圖，做成換裝靜態圖。成功一張扣 1 點，與商品短片進階圖共用。',
+      href: '/dress',
     },
     {
       id: 'storyclip',

@@ -26,6 +26,7 @@ const scriptAgent = require('./services/script-agent');
 const liveScript = require('./services/live-script');
 const personaAgent = require('./services/persona-agent');
 const hotAgent = require('./services/hot-agent');
+const dressAgent = require('./services/dress-agent');
 const accounts = require('./services/accounts');
 const ecpay = require('./services/ecpay');
 const payOrders = require('./services/pay-orders');
@@ -60,6 +61,7 @@ const pages = {
   '/live': 'live.html',
   '/ip': 'ip.html',
   '/hot': 'hot.html',
+  '/dress': 'dress.html',
   '/account': 'account.html',
   '/privacy': 'privacy.html',
   '/terms': 'terms.html',
@@ -578,6 +580,42 @@ app.post('/api/hot', express.json({ limit: '200kb' }), async (req, res) => {
     res.json({ ...result, left: used.left, limit: used.limit });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請再試一次' : (err.message || '產出失敗');
+    res.status(400).json({ error: msg });
+  }
+});
+
+app.get('/api/dress/status', (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  res.json({
+    ready: dressAgent.configured(),
+    owner,
+    loggedIn: Boolean(paid && paid.ok),
+    credits: paid ? Number(paid.credits || 0) : 0,
+  });
+});
+
+app.post('/api/dress', express.json({ limit: '8mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  if (!owner && (!paid || !paid.credits)) {
+    return res.status(402).json({
+      error: '換裝需購買方案點數。作者請先到後台登入，即可直接使用。',
+    });
+  }
+  try {
+    const result = await dressAgent.dress({
+      model: String(req.body?.model || ''),
+      cloth: String(req.body?.cloth || ''),
+      note: String(req.body?.note || '').trim(),
+    });
+    if (owner) return res.json({ image: result.image, owner: true });
+    const account = accounts.consumeCredit(row.id, 1);
+    res.json({ image: result.image, credits: account.credits });
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? '產出逾時，請不要重按。' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
   }
 });
