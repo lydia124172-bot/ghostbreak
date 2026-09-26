@@ -37,21 +37,21 @@
     </section>
 
     <section class="panel clip-panel">
-      <form id="hotForm" class="skill-form">
+      <form id="hotForm" class="skill-form" novalidate>
         <div>
           <label class="field" for="topic">行業或主題</label>
-          <input id="topic" class="form-input" maxlength="80" required placeholder="例如：餐廳、房仲、美甲老師" />
+          <input id="topic" class="form-input" type="text" name="industry" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="80" placeholder="例如：餐廳、房仲、美甲老師" />
         </div>
         <div>
           <label class="field" for="scope">要查哪一邊</label>
-          <select id="scope" class="form-input">
+          <select id="scope" class="form-input" name="hot-scope" autocomplete="off">
             <option value="both" selected>台灣熱問＋國外思維</option>
             <option value="tw">只要台灣熱問</option>
             <option value="foreign">只要國外思維</option>
           </select>
         </div>
         <div class="admin-actions">
-          <button class="btn btn-copper" type="submit" id="makeBtn">產出熱問</button>
+          <button class="btn btn-copper" type="button" id="makeBtn">產出熱問</button>
           <button class="btn btn-cream" type="button" id="demoBtn">用餐廳試</button>
         </div>
         <p id="hotMsg" class="combo-fit"></p>
@@ -95,6 +95,6 @@
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
   <script src="/js/site.js?v=nav12"></script>
-  <script src="/js/hot.js?v=1"></script>
+  <script src="/js/hot.js?v=2"></script>
 </body>
 </html>

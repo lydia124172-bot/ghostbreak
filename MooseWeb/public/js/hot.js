@@ -116,6 +116,11 @@ document.getElementById('hotForm').addEventListener('submit', (e) => {
   makeHot();
 });
 
+document.getElementById('makeBtn').addEventListener('click', (e) => {
+  e.preventDefault();
+  makeHot();
+});
+
 document.getElementById('topic').addEventListener('input', () => {
   document.getElementById('resultBox').classList.add('hidden');
 });
