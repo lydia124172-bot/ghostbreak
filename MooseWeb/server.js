@@ -25,6 +25,7 @@ const dramaScript = require('./services/drama-script');
 const scriptAgent = require('./services/script-agent');
 const liveScript = require('./services/live-script');
 const personaAgent = require('./services/persona-agent');
+const hotAgent = require('./services/hot-agent');
 const accounts = require('./services/accounts');
 const ecpay = require('./services/ecpay');
 const payOrders = require('./services/pay-orders');
@@ -58,6 +59,7 @@ const pages = {
   '/script': 'script.html',
   '/live': 'live.html',
   '/ip': 'ip.html',
+  '/hot': 'hot.html',
   '/account': 'account.html',
   '/privacy': 'privacy.html',
   '/terms': 'terms.html',
@@ -539,6 +541,38 @@ app.post('/api/ip', express.json({ limit: '200kb' }), async (req, res) => {
       bio: String(req.body?.bio || '').trim(),
       fans: String(req.body?.fans || '').trim(),
       goal: String(req.body?.goal || '').trim(),
+    });
+    const used = clipStore.consumeGuestScript(sid);
+    res.json({ ...result, left: used.left, limit: used.limit });
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? '產出逾時，請再試一次' : (err.message || '產出失敗');
+    res.status(400).json({ error: msg });
+  }
+});
+
+app.get('/api/hot/status', (req, res) => {
+  const sid = clipSid(req, res);
+  const guest = clipStore.guestScriptState(sid);
+  res.json({
+    ready: hotAgent.configured(),
+    left: guest.left,
+    limit: guest.limit,
+  });
+});
+
+app.post('/api/hot', express.json({ limit: '200kb' }), async (req, res) => {
+  const sid = clipSid(req, res);
+  const guest = clipStore.guestScriptState(sid);
+  if (!guest.left) {
+    return res.status(402).json({
+      error: `今日免費腳本已用完（${guest.limit} 則）。可明天再試。`,
+      left: 0,
+    });
+  }
+  try {
+    const result = await hotAgent.writeHot({
+      topic: String(req.body?.topic || '').trim(),
+      scope: String(req.body?.scope || 'both').trim(),
     });
     const used = clipStore.consumeGuestScript(sid);
     res.json({ ...result, left: used.left, limit: used.limit });

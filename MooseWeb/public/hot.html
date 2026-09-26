@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>熱問短片 — 麋鹿網</title>
+  <meta name="description" content="免費智能體：填行業，查台灣現在常問的題與國外近一年商業思維，整理成可拍短片的清單，可下載 PDF。" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=live1" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>MooseWeb</small></span>
+      </a>
+      <button class="menu-btn" id="menuBtn" type="button">選單</button>
+      <nav class="nav" id="nav">
+        <a href="/">首頁</a>
+        <a href="/works" class="active">看作品</a>
+        <a href="/courses">上課</a>
+        <a href="/hire">做網站</a>
+        <a href="/saas">我做的付費工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <p class="kicker">智能體　免費使用</p>
+      <h1>填行業，查出現在能拍的題。</h1>
+      <p class="lead">每次會去搜公開網頁。台灣熱問與國外近一年商業思維分開。不是全網排名，也不保證最新一則快訊。產出後可下載 PDF。</p>
+      <p class="clip-plan" id="hotPlan">每日可免費產出 20 則。</p>
+    </section>
+
+    <section class="panel clip-panel">
+      <form id="hotForm" class="skill-form">
+        <div>
+          <label class="field" for="topic">行業或主題</label>
+          <input id="topic" class="form-input" maxlength="80" required placeholder="例如：餐廳、房仲、美甲老師" />
+        </div>
+        <div>
+          <label class="field" for="scope">要查哪一邊</label>
+          <select id="scope" class="form-input">
+            <option value="both" selected>台灣熱問＋國外思維</option>
+            <option value="tw">只要台灣熱問</option>
+            <option value="foreign">只要國外思維</option>
+          </select>
+        </div>
+        <div class="admin-actions">
+          <button class="btn btn-copper" type="submit" id="makeBtn">產出熱問</button>
+          <button class="btn btn-cream" type="button" id="demoBtn">用餐廳試</button>
+        </div>
+        <p id="hotMsg" class="combo-fit"></p>
+      </form>
+    </section>
+
+    <section class="panel clip-panel hidden" id="resultBox">
+      <p class="kicker">產出結果</p>
+      <h2 id="outName">熱問短片</h2>
+      <p class="lead" id="outLine"></p>
+      <article class="script-out" id="hotOut"></article>
+      <div class="admin-actions">
+        <button class="btn btn-copper" type="button" id="copyBtn">複製全部</button>
+        <button class="btn btn-cream" type="button" id="downloadBtn">下載 PDF</button>
+        <a class="btn btn-cream" href="/script">接著寫口播腳本</a>
+        <a class="btn btn-cream" href="/ip">接著定個人IP</a>
+      </div>
+      <p id="copyMsg" class="combo-fit"></p>
+    </section>
+
+    <section class="panel clip-panel script-legal">
+      <p class="kicker">版權與法律聲明</p>
+      <h2>使用前請閱讀</h2>
+      <ol>
+        <li><strong>所有權歸屬</strong>：本智能體及其底層指令邏輯之所有權歸屬於「Lydia Global Company」（麋鹿網）。</li>
+        <li><strong>授權對象</strong>：僅限本站訪客個人使用。免費產出策略；進一步使用付費工具須另依方案。嚴禁轉發、轉售、外流或授權給第三人作商業販售。</li>
+        <li><strong>法律責任</strong>：任何未經授權之盜用、抄襲或商業行為，本公司將保留法律追訴權，依相關法律追究法律責任。</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© 麋鹿網　版權由 Lydia Global Company 所有</span>
+      <nav class="footer-links">
+        <a href="/privacy">隱私權政策</a>
+        <a href="/terms">服務條款</a>
+        <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
+      </nav>
+    </div>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
+  <script src="/js/site.js?v=nav12"></script>
+  <script src="/js/hot.js?v=1"></script>
+</body>
+</html>

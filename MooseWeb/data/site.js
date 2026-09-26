@@ -125,6 +125,13 @@ module.exports = {
       href: '/ip',
     },
     {
+      id: 'hot-ask',
+      name: '熱問短片',
+      kind: '智能體',
+      summary: '填行業，查台灣現在常問的題與國外近一年商業思維，整理成可拍短片的清單。免費使用，可下載 PDF。',
+      href: '/hot',
+    },
+    {
       id: 'talkclip',
       name: '真人口播短片',
       kind: '付費工具',
