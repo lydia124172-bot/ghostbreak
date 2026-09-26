@@ -589,6 +589,7 @@ app.get('/api/dress/status', (req, res) => {
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
   const videoCost = clipVideo.creditCost();
+  const last = clipStore.getLastDress(clipSid(req, res));
   res.json({
     ready: dressAgent.configured(),
     videoReady: clipVideo.configured(),
@@ -597,7 +598,39 @@ app.get('/api/dress/status', (req, res) => {
     owner,
     loggedIn: Boolean(paid && paid.ok),
     credits: paid ? Number(paid.credits || 0) : 0,
+    hasLast: Boolean(last),
   });
+});
+
+function stashDressImage(req, res, dataUrl) {
+  try {
+    const m = String(dataUrl || '').match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+=*)$/i);
+    if (!m) return '';
+    const buf = Buffer.from(m[2], 'base64');
+    if (!buf.length || buf.length > 6 * 1024 * 1024) return '';
+    const sid = clipSid(req, res);
+    const saved = clipStore.saveMedia(sid, 'dress', buf, m[1]);
+    clipStore.putLastDress(sid, saved.id);
+    return saved.id;
+  } catch {
+    return '';
+  }
+}
+
+app.get('/api/dress/last', (req, res) => {
+  const row = clipStore.getLastDress(clipSid(req, res));
+  if (!row) return res.status(404).json({ error: '沒有可取回的換裝圖。請先產出一張，之後跳出去再回來就能取回。' });
+  try {
+    const buf = fs.readFileSync(row.full);
+    const mime = row.mime || 'image/jpeg';
+    res.json({
+      image: `data:${mime};base64,${buf.toString('base64')}`,
+      imageUrl: `/api/clip/media/${row.id}`,
+      recovered: true,
+    });
+  } catch {
+    res.status(404).json({ error: '沒有可取回的換裝圖。' });
+  }
 });
 
 app.post('/api/dress', express.json({ limit: '8mb' }), async (req, res) => {
@@ -615,9 +648,10 @@ app.post('/api/dress', express.json({ limit: '8mb' }), async (req, res) => {
       cloth: String(req.body?.cloth || ''),
       note: String(req.body?.note || '').trim(),
     });
-    if (owner) return res.json({ image: result.image, owner: true });
+    const mediaId = stashDressImage(req, res, result.image);
+    if (owner) return res.json({ image: result.image, owner: true, mediaId });
     const account = accounts.consumeCredit(row.id, 1);
-    res.json({ image: result.image, credits: account.credits });
+    res.json({ image: result.image, credits: account.credits, mediaId });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請不要重按。' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
@@ -643,9 +677,10 @@ app.post('/api/dress/bg', express.json({ limit: '8mb' }), async (req, res) => {
       sceneId: String(req.body?.scene || '').trim(),
       note: String(req.body?.note || '').trim(),
     });
-    if (owner) return res.json({ image: result.image, owner: true });
+    const mediaId = stashDressImage(req, res, result.image);
+    if (owner) return res.json({ image: result.image, owner: true, mediaId });
     const account = accounts.consumeCredit(row.id, 1);
-    res.json({ image: result.image, credits: account.credits });
+    res.json({ image: result.image, credits: account.credits, mediaId });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請不要重按。' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });

@@ -69,6 +69,40 @@ function paintScenes(rows) {
   `).join('');
 }
 
+function paintResult(image, extra) {
+  state.image = image;
+  const out = document.getElementById('outImage');
+  const save = document.getElementById('saveBtn');
+  out.src = image;
+  save.href = image;
+  document.getElementById('outLine').textContent = extra || '僅供試衣參考，不是實穿保證。';
+  document.getElementById('resultBox').classList.remove('hidden');
+  document.getElementById('bgBox').classList.remove('hidden');
+  document.getElementById('videoBox').classList.add('hidden');
+  document.getElementById('motionMsg').textContent = '';
+  document.getElementById('bgMsg').textContent = '';
+  const motionBtn = document.getElementById('motionBtn');
+  if (motionBtn) motionBtn.disabled = !state.videoReady;
+}
+
+async function recoverLast(auto) {
+  const msg = document.getElementById('dressMsg');
+  try {
+    const res = await fetch('/api/dress/last');
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (!auto && msg) msg.textContent = body.error || '沒有可取回的換裝圖。';
+      return false;
+    }
+    paintResult(body.image, '已取回剛才的換裝圖。請先下載存檔，再離開頁面。');
+    if (msg) msg.textContent = '';
+    return true;
+  } catch {
+    if (!auto && msg) msg.textContent = '取回失敗，請稍後再試。';
+    return false;
+  }
+}
+
 async function refreshPlan() {
   const bar = document.getElementById('dressPlan');
   if (!bar) return;
@@ -77,6 +111,8 @@ async function refreshPlan() {
     state.videoReady = Boolean(data.videoReady);
     state.videoCost = Number(data.videoCost || 3) || 3;
     paintScenes(data.scenes || []);
+    const recoverBtn = document.getElementById('recoverBtn');
+    if (recoverBtn) recoverBtn.classList.toggle('hidden', !data.hasLast);
     if (!data.ready) {
       bar.textContent = '換裝暫時無法使用，請稍後再試。';
       return;
@@ -96,22 +132,6 @@ async function refreshPlan() {
   } catch {
     bar.textContent = '需登入並有方案點數。';
   }
-}
-
-function paintResult(image, extra) {
-  state.image = image;
-  const out = document.getElementById('outImage');
-  const save = document.getElementById('saveBtn');
-  out.src = image;
-  save.href = image;
-  document.getElementById('outLine').textContent = extra || '僅供試衣參考，不是實穿保證。';
-  document.getElementById('resultBox').classList.remove('hidden');
-  document.getElementById('bgBox').classList.remove('hidden');
-  document.getElementById('videoBox').classList.add('hidden');
-  document.getElementById('motionMsg').textContent = '';
-  document.getElementById('bgMsg').textContent = '';
-  const motionBtn = document.getElementById('motionBtn');
-  if (motionBtn) motionBtn.disabled = !state.videoReady;
 }
 
 async function makeDress() {
@@ -294,6 +314,7 @@ async function makeMotion() {
 document.getElementById('modelFile').addEventListener('change', () => pick('modelFile', 'model', 'modelPrev'));
 document.getElementById('clothFile').addEventListener('change', () => pick('clothFile', 'cloth', 'clothPrev'));
 document.getElementById('makeBtn').addEventListener('click', makeDress);
+document.getElementById('recoverBtn').addEventListener('click', () => recoverLast(false));
 document.getElementById('bgBtn').addEventListener('click', makeBg);
 document.getElementById('motionBtn').addEventListener('click', makeMotion);
 document.getElementById('saveVideoBtn').addEventListener('click', saveVideoFile);
@@ -310,4 +331,4 @@ document.getElementById('dressForm').addEventListener('submit', (e) => {
   makeDress();
 });
 
-refreshPlan();
+refreshPlan().then(() => recoverLast(true));

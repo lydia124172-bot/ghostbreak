@@ -125,6 +125,20 @@ function mediaOwned(id, sid) {
   return row && row.sid === sid ? row : null;
 }
 
+function putLastDress(sid, mediaId) {
+  const data = load();
+  if (!data.sessions[sid]) data.sessions[sid] = { accounts: {}, createdAt: new Date().toISOString() };
+  data.sessions[sid].lastDressId = mediaId || '';
+  save(data);
+}
+
+function getLastDress(sid) {
+  const data = load();
+  const id = data.sessions[sid] && data.sessions[sid].lastDressId;
+  if (!id) return null;
+  return getMedia(id);
+}
+
 function putLinks(sid, links) {
   const data = load();
   if (!data.sessions[sid]) data.sessions[sid] = { accounts: {}, createdAt: new Date().toISOString() };
@@ -246,6 +260,8 @@ module.exports = {
   saveMedia,
   getMedia,
   mediaOwned,
+  putLastDress,
+  getLastDress,
   putShop,
   getShop,
   putShopProducts,
