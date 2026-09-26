@@ -195,12 +195,59 @@ async function waitVideoJob(jobId) {
   throw new Error('生片逾時，請稍後再試。');
 }
 
+function mediaDownloadUrl(videoUrl) {
+  const base = String(videoUrl || '').split('?')[0];
+  return base ? `${base}?download=1` : '#';
+}
+
+async function saveVideoFile(event) {
+  if (event) event.preventDefault();
+  const save = document.getElementById('saveVideoBtn');
+  const note = document.getElementById('motionMsg');
+  const href = save && save.getAttribute('href');
+  if (!href || href === '#') {
+    if (note) note.textContent = '還沒有短片可下載。';
+    return;
+  }
+  const prev = save.textContent;
+  save.textContent = '下載中…';
+  save.setAttribute('aria-disabled', 'true');
+  try {
+    const res = await fetch(href);
+    if (!res.ok) throw new Error('下載失敗，請再試一次。');
+    const blob = await res.blob();
+    const name = /webm/i.test(blob.type || '') ? '換裝短片.webm' : '換裝短片.mp4';
+    const file = new File([blob], name, { type: blob.type || 'video/mp4' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: name });
+      if (note) note.textContent = '已開啟分享，請選「儲存到檔案」或傳到電腦。';
+      return;
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+    if (note) note.textContent = '已開始下載，請到下載資料夾或桌面查看。';
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+    if (note) note.textContent = err.message || '無法下載，請改用電腦瀏覽器開啟此頁再存。';
+  } finally {
+    save.textContent = prev || '下載短片';
+    save.setAttribute('aria-disabled', 'false');
+  }
+}
+
 function paintVideo(done) {
   const box = document.getElementById('videoBox');
   const video = document.getElementById('outVideo');
   const save = document.getElementById('saveVideoBtn');
   video.src = done.videoUrl;
-  save.href = done.videoUrl;
+  save.href = mediaDownloadUrl(done.videoUrl);
+  save.setAttribute('download', '換裝短片.mp4');
   box.classList.remove('hidden');
   document.getElementById('motionMsg').textContent = done.owner
     ? '作者後台已登入，這支不扣點。'
@@ -249,6 +296,7 @@ document.getElementById('clothFile').addEventListener('change', () => pick('clot
 document.getElementById('makeBtn').addEventListener('click', makeDress);
 document.getElementById('bgBtn').addEventListener('click', makeBg);
 document.getElementById('motionBtn').addEventListener('click', makeMotion);
+document.getElementById('saveVideoBtn').addEventListener('click', saveVideoFile);
 document.getElementById('sceneGrid').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-scene]');
   if (!btn) return;
