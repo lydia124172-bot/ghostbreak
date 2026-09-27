@@ -99,7 +99,13 @@ async function makeHot() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topic, scope }),
     });
-    const body = await res.json();
+    const text = await res.text();
+    let body;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      throw new Error('連線中斷或等太久，請再按一次；手機請保持在這個畫面不要切走。');
+    }
     if (!res.ok) throw new Error(body.error || '產出失敗');
     paintResult(body);
     msg.textContent = '';

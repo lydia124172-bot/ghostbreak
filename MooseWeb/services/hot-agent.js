@@ -118,9 +118,9 @@ async function withTimeout(ms, fn) {
   }
 }
 
-async function askGemini(model, userText, useSearch) {
+async function askGemini(model, userText, useSearch, ms = 50000) {
   const key = process.env.GEMINI_API_KEY;
-  const body = await withTimeout(50000, async (signal) => {
+  const body = await withTimeout(ms, async (signal) => {
     const payload = {
       contents: [{ role: 'user', parts: [{ text: `${SYSTEM}\n\n${userText}` }] }],
       generationConfig: /flash-lite/i.test(model)
@@ -145,8 +145,8 @@ async function askGemini(model, userText, useSearch) {
   return { text, searched, sources: sourceList(meta) };
 }
 
-async function askOpenAI(userText) {
-  const body = await withTimeout(55000, async (signal) => {
+async function askOpenAI(userText, ms = 55000) {
+  const body = await withTimeout(ms, async (signal) => {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       signal,
@@ -176,7 +176,7 @@ function busy(err) {
 
 function publicError(err) {
   const message = String(err && err.message || '');
-  if (/請先填|請寫|無法解析|沒有產出|無法提供/.test(message)) return message;
+  if (/請先填|請寫|無法解析|沒有產出|無法提供|逾時/.test(message)) return message;
   if (/high demand|overloaded|unavailable|try again later|UNAVAILABLE|429|503/i.test(message)) {
     return '現在使用的人較多，請稍後再試。';
   }
@@ -196,13 +196,16 @@ async function writeHot({ topic, scope }) {
     range === 'tw' ? '只要台灣熱問，foreign 給空陣列。' : range === 'foreign' ? '只要國外近一年商業思維改寫成短片題，taiwan 給空陣列。' : '台灣熱問與國外近一年商業思維都要，分開兩欄。',
     '請先搜尋公開網頁再整理。冷門行業公開討論少就少寫，不要編造排名。',
   ].join('\n');
+  const deadline = Date.now() + 75000;
+  const left = () => deadline - Date.now();
   try {
     let lastErr;
     if (process.env.GEMINI_API_KEY) {
       for (const model of ['gemini-flash-lite-latest', 'gemini-3.6-flash']) {
         for (const useSearch of [true, false]) {
+          if (left() < 12000) break;
           try {
-            const raw = await askGemini(model, userText, useSearch);
+            const raw = await askGemini(model, userText, useSearch, Math.min(40000, left()));
             let pack;
             try {
               pack = parsePack(raw.text, range, subject);
@@ -222,13 +225,14 @@ async function writeHot({ topic, scope }) {
         }
       }
     }
-    if (process.env.OPENAI_API_KEY) {
-      const raw = await askOpenAI(userText);
+    if (process.env.OPENAI_API_KEY && left() >= 12000) {
+      const raw = await askOpenAI(userText, left());
       const pack = parsePack(raw.text, range, subject);
       pack.live = false;
       pack.sources = [];
       return pack;
     }
+    if (left() < 12000) throw new Error('產出逾時，請再試一次');
     throw lastErr || new Error('熱問暫時無法使用，請稍後再試。');
   } catch (err) {
     if (err.name === 'AbortError') throw new Error('產出逾時，請再試一次');
