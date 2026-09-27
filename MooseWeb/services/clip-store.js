@@ -30,9 +30,66 @@ function load() {
   }
 }
 
+function diskInfo() {
+  try {
+    ensure();
+    const st = fs.statfsSync(DATA_DIR);
+    const total = st.blocks * st.bsize;
+    const free = st.bavail * st.bsize;
+    return { total, free, usedPct: total ? Math.round(((total - free) / total) * 100) : 0 };
+  } catch {
+    return null;
+  }
+}
+
+function pruneMedia(force) {
+  const disk = diskInfo();
+  if (!force && (!disk || disk.usedPct < 80)) return 0;
+  let files;
+  try {
+    files = fs.readdirSync(MEDIA)
+      .map((name) => {
+        const full = path.join(MEDIA, name);
+        const st = fs.statSync(full);
+        return st.isFile() ? { name, full, time: st.mtimeMs, size: st.size } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.time - b.time);
+  } catch {
+    return 0;
+  }
+  const target = disk && disk.total ? disk.total * 0.4 : Infinity;
+  let free = disk ? disk.free : 0;
+  let removed = 0;
+  for (const row of files) {
+    if (free >= target) break;
+    try {
+      fs.unlinkSync(row.full);
+      free += row.size;
+      removed += 1;
+    } catch { /* 略過 */ }
+  }
+  if (removed) console.log(`[clip-store] pruned ${removed} old media files`);
+  return removed;
+}
+
 function save(data) {
   ensure();
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), 'utf8');
+  const text = JSON.stringify(data, null, 2);
+  try {
+    fs.writeFileSync(FILE, text, 'utf8');
+  } catch (err) {
+    if (err && err.code === 'ENOSPC' && pruneMedia(true)) {
+      try {
+        fs.writeFileSync(FILE, text, 'utf8');
+        return;
+      } catch (again) {
+        console.error('[clip-store] save failed after prune', again.code || again.message);
+        return;
+      }
+    }
+    console.error('[clip-store] save failed', err && (err.code || err.message));
+  }
 }
 
 function session(sid) {
@@ -105,6 +162,7 @@ function saveMedia(sid, kind, buffer, mime) {
     : /webp/i.test(mime) ? 'webp'
     : 'jpg';
   const filename = `${id}.${ext}`;
+  pruneMedia(false);
   fs.writeFileSync(path.join(MEDIA, filename), buffer);
   const data = load();
   data.media[id] = { id, sid, kind, mime, filename, createdAt: new Date().toISOString() };
@@ -252,6 +310,8 @@ function consumeGuestScript(sid) {
 
 module.exports = {
   MEDIA,
+  diskInfo,
+  pruneMedia,
   session,
   putAccount,
   accounts,

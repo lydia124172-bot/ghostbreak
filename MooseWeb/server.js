@@ -69,8 +69,12 @@ const pages = {
 };
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, site: publicConfig().name, admin: adminConfigured() });
+  const disk = clipStore.diskInfo();
+  res.json({ ok: true, site: publicConfig().name, admin: adminConfigured(), diskUsedPct: disk ? disk.usedPct : null });
 });
+
+clipStore.pruneMedia(false);
+setInterval(() => clipStore.pruneMedia(false), 60 * 60 * 1000).unref();
 
 app.get('/api/config', (_req, res) => {
   res.json(publicConfig());
