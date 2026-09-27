@@ -37,14 +37,14 @@ function diskInfo() {
     const total = st.blocks * st.bsize;
     const free = st.bavail * st.bsize;
     return { total, free, usedPct: total ? Math.round(((total - free) / total) * 100) : 0 };
-  } catch {
-    return null;
+  } catch (err) {
+    return { error: (err && err.code) || 'unknown' };
   }
 }
 
 function pruneMedia(force) {
   const disk = diskInfo();
-  if (!force && (!disk || disk.usedPct < 80)) return 0;
+  if (!force && (!disk || disk.error || disk.usedPct < 80)) return 0;
   let files;
   try {
     files = fs.readdirSync(MEDIA)
@@ -59,6 +59,7 @@ function pruneMedia(force) {
     return 0;
   }
   const target = disk && disk.total ? disk.total * 0.4 : Infinity;
+  if (disk && disk.error) return 0;
   let free = disk ? disk.free : 0;
   let removed = 0;
   for (const row of files) {

@@ -70,7 +70,13 @@ const pages = {
 
 app.get('/api/health', (_req, res) => {
   const disk = clipStore.diskInfo();
-  res.json({ ok: true, site: publicConfig().name, admin: adminConfigured(), diskUsedPct: disk ? disk.usedPct : null });
+  res.json({
+    ok: true,
+    site: publicConfig().name,
+    admin: adminConfigured(),
+    diskUsedPct: disk && !disk.error ? disk.usedPct : null,
+    diskError: disk && disk.error ? disk.error : undefined,
+  });
 });
 
 clipStore.pruneMedia(false);
