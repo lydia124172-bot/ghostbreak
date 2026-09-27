@@ -2,7 +2,25 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+function writableDir(dir) {
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.accessSync(dir, fs.constants.W_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function pickDataDir() {
+  const wanted = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+  if (writableDir(wanted)) return wanted;
+  const fallback = path.join(__dirname, '..', 'data');
+  console.error(`[clip-store] ${wanted} not writable, using ${fallback} (cleared on each deploy)`);
+  return fallback;
+}
+
+const DATA_DIR = pickDataDir();
 const FILE = path.join(DATA_DIR, 'clip.json');
 const MEDIA = path.join(DATA_DIR, 'clip-media');
 
