@@ -76,6 +76,7 @@ app.get('/api/health', (_req, res) => {
     admin: adminConfigured(),
     diskUsedPct: disk && !disk.error ? disk.usedPct : null,
     diskError: disk && disk.error ? disk.error : undefined,
+    hotError: hotAgent.lastFailure() || undefined,
   });
 });
 

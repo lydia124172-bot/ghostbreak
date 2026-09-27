@@ -235,9 +235,17 @@ async function writeHot({ topic, scope }) {
     if (left() < 12000) throw new Error('產出逾時，請再試一次');
     throw lastErr || new Error('熱問暫時無法使用，請稍後再試。');
   } catch (err) {
+    const cause = err.cause ? ` cause=${err.cause.code || err.cause.message || ''}` : '';
+    lastError = `${new Date().toISOString()} ${err.name || ''} ${String(err.message || '').replace(/key=[^&\s]+/gi, 'key=***')}${cause}`.slice(0, 240);
     if (err.name === 'AbortError') throw new Error('產出逾時，請再試一次');
     throw new Error(publicError(err));
   }
 }
 
-module.exports = { configured, writeHot };
+let lastError = '';
+
+function lastFailure() {
+  return lastError;
+}
+
+module.exports = { configured, writeHot, lastFailure };
