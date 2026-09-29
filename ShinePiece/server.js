@@ -153,6 +153,7 @@ app.patch('/api/admin/settings', requireAdmin, (req, res) => {
     liveTitle: String(req.body.liveTitle || '').trim(),
     archiveNote: String(req.body.archiveNote || '').trim(),
     wishLead: String(req.body.wishLead || '').trim(),
+    coverVol: String(req.body.coverVol || '').trim(),
     origins: current.origins,
   });
   res.json({ success: true, content: saved });

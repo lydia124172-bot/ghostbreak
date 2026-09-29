@@ -158,6 +158,10 @@
             <input id="monthLabel" class="form-input" maxlength="40" placeholder="例如：2026年9月號" />
           </div>
           <div>
+            <label class="field" for="coverVol">封面期號（空白＝自動用今天年月）</label>
+            <input id="coverVol" class="form-input" maxlength="40" placeholder="例如：Vol. 2026.10" />
+          </div>
+          <div>
             <label class="field" for="themeTitle">本月主題／國家</label>
             <input id="themeTitle" class="form-input" maxlength="40" placeholder="例如：台灣好物月、日本精選月" />
           </div>
@@ -421,6 +425,7 @@
       $('heroTitle').value = content.heroTitle || '';
       $('heroLead').value = content.heroLead || '';
       $('monthLabel').value = content.monthLabel || '';
+      $('coverVol').value = content.coverVol || '';
       $('liveWhen').value = content.liveWhen || '';
       $('liveNote').value = content.liveNote || '';
       $('themeTitle').value = content.themeTitle || '';
@@ -946,6 +951,7 @@
           heroTitle: $('heroTitle').value,
           heroLead: $('heroLead').value,
           monthLabel: $('monthLabel').value,
+          coverVol: $('coverVol').value,
           liveWhen: $('liveWhen').value,
           liveNote: $('liveNote').value,
           themeTitle: $('themeTitle').value,

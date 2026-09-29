@@ -189,7 +189,7 @@ function shell({ title, description, canonical, image, type = 'website', jsonLd,
 ${main}
   </main>
   <div data-shell="footer"></div>
-  <script src="/js/site.js?v=18"></script>
+  <script src="/js/site.js?v=19"></script>
 </body>
 </html>`;
 }

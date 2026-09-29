@@ -301,7 +301,7 @@ fetch('/api/config').then((r) => r.json()).then((data) => {
   }
   if (coverIssue) {
     const now = new Date();
-    const vol = `Vol. ${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const vol = String(data.coverVol || '').trim() || `Vol. ${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}`;
     coverIssue.textContent = `${vol}　${data.monthLabel || data.tagline || '月刊生活指南'}`;
   }
   if (coverEnglish) coverEnglish.classList.toggle('hidden', !data.coverEnglish);

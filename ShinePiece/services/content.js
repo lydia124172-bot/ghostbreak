@@ -57,12 +57,12 @@ const CANON_ORIGINS = ['日本', '韓國', '中國', '泰國', '台灣'];
 const COPY_KEYS = [
   'coverLabel', 'coverEnglish', 'pullQuote', 'countryHead', 'countryLead',
   'shopLead', 'shopEmpty', 'col1Title', 'col1Body', 'col2Title', 'col2Body',
-  'col3Title', 'col3Body', 'liveTitle', 'archiveNote', 'wishLead',
+  'col3Title', 'col3Body', 'liveTitle', 'archiveNote', 'wishLead', 'coverVol',
 ];
 const COPY_MAX = {
   coverLabel: 40, coverEnglish: 80, pullQuote: 120, countryHead: 40, countryLead: 300,
   shopLead: 200, shopEmpty: 120, col1Title: 20, col1Body: 200, col2Title: 20, col2Body: 200,
-  col3Title: 20, col3Body: 200, liveTitle: 40, archiveNote: 200, wishLead: 200,
+  col3Title: 20, col3Body: 200, liveTitle: 40, archiveNote: 200, wishLead: 200, coverVol: 40,
 };
 
 function pickCopy(saved, key) {
