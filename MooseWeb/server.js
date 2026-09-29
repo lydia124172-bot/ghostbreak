@@ -26,6 +26,7 @@ const scriptAgent = require('./services/script-agent');
 const liveScript = require('./services/live-script');
 const personaAgent = require('./services/persona-agent');
 const hotAgent = require('./services/hot-agent');
+const promptAgent = require('./services/prompt-agent');
 const dressAgent = require('./services/dress-agent');
 const accounts = require('./services/accounts');
 const ecpay = require('./services/ecpay');
@@ -61,6 +62,7 @@ const pages = {
   '/live': 'live.html',
   '/ip': 'ip.html',
   '/hot': 'hot.html',
+  '/prompt': 'prompt.html',
   '/dress': 'dress.html',
   '/account': 'account.html',
   '/privacy': 'privacy.html',
@@ -592,6 +594,37 @@ app.post('/api/hot', express.json({ limit: '200kb' }), async (req, res) => {
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請再試一次' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
+  }
+});
+
+app.get('/api/prompt/status', (req, res) => {
+  const guest = clipStore.guestScriptState(clipSid(req, res));
+  res.json({
+    ready: promptAgent.configured(),
+    owner: isOwner(req),
+    left: guest.left,
+    limit: guest.limit,
+    kinds: promptAgent.publicKinds(),
+  });
+});
+
+app.post('/api/prompt', express.json({ limit: '50kb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const sid = clipSid(req, res);
+  if (!owner && !clipStore.guestScriptState(sid).left) {
+    const guest = clipStore.guestScriptState(sid);
+    return res.status(402).json({ error: `今日免費次數已用完（${guest.limit} 則）。可明天再試。`, left: 0 });
+  }
+  try {
+    const result = await promptAgent.writePrompt({
+      kind: String(req.body?.kind || '').trim(),
+      idea: String(req.body?.idea || '').trim(),
+      picks: req.body?.picks && typeof req.body.picks === 'object' ? req.body.picks : {},
+    });
+    const extra = owner ? { owner: true } : { left: clipStore.consumeGuestScript(sid).left };
+    res.json({ ...result, ...extra });
+  } catch (err) {
+    res.status(400).json({ error: err.message || '產出失敗' });
   }
 });
 

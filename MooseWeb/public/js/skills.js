@@ -120,6 +120,13 @@ const TRADES = [
         href: '/hot',
       },
       {
+        name: 'AI 提示詞',
+        need: '寫一句中文想法，產出圖片、影片、文案用的專業提示詞，中英對照。',
+        saas: '提示詞產生器智能體',
+        status: '已上線',
+        href: '/prompt',
+      },
+      {
         name: '劇本質感廣告',
         need: '貼上分鏡或旁白，做成較有質感的廣告。目前建置中。',
         saas: 'StoryClip 劇本廣告（建置中）',
