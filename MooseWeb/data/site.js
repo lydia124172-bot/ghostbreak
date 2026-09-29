@@ -149,7 +149,7 @@ module.exports = {
       id: 'prompt-maker',
       name: '提示詞產生器',
       kind: '智能體',
-      summary: '寫一句中文想法，產出可直接貼進 AI 的圖片、影片、文案提示詞，中英對照。免費使用。',
+      summary: '寫一句中文想法，產出可直接貼進 AI 的圖片、影片、文案提示詞，中文、英文都有。免費使用。',
       href: '/prompt',
     },
     {

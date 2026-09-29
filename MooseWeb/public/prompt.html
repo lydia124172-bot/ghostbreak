@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>提示詞產生器 — 麋鹿網</title>
-  <meta name="description" content="免費智能體：寫一句中文想法，產出可直接貼進 AI 的圖片、影片、文案提示詞，中英對照。" />
+  <meta name="description" content="免費智能體：寫一句中文想法，產出可直接貼進 AI 的圖片、影片、文案提示詞，中文、英文都有。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
@@ -32,7 +32,7 @@
     <section class="hero research-hero">
       <p class="kicker">智能體　免費使用</p>
       <h1>寫一句想法，變成專業提示詞。</h1>
-      <p class="lead">選要生成圖片、影片或文案，用中文寫下想要的畫面或內容，再挑風格與細節。產出英文提示詞可直接貼進 AI 工具，並附中文對照。</p>
+      <p class="lead">選要生成圖片、影片或文案，用中文寫下想要的畫面或內容，也可以放一張參考圖，再挑風格與細節。產出中文與英文提示詞，複製後可直接貼進 AI 工具。</p>
       <p class="clip-plan" id="promptPlan">每日可免費產出 20 則。</p>
     </section>
 
@@ -50,6 +50,15 @@
           <label class="field" for="idea">你的想法</label>
           <textarea id="idea" class="form-input" rows="3" maxlength="300" placeholder="例如：一杯拿鐵放在木桌上，早晨陽光從窗邊照進來"></textarea>
         </div>
+        <div>
+          <label class="field" for="refImg">參考圖（選填）</label>
+          <input id="refImg" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" />
+          <p class="combo-fit">可放商品照或喜歡的風格圖，AI 會看圖再加上你的想法寫提示詞。只放圖不寫想法也可以。</p>
+          <div id="refPreview" class="hidden" style="display:flex;align-items:center;gap:12px;">
+            <img id="refThumb" alt="參考圖" style="width:96px;height:96px;object-fit:cover;border-radius:12px;" />
+            <button class="btn btn-cream" type="button" id="refClear">移除圖片</button>
+          </div>
+        </div>
         <div id="pickBox"></div>
         <div class="admin-actions">
           <button class="btn btn-copper" type="button" id="makeBtn">產出提示詞</button>
@@ -64,19 +73,19 @@
       <h2 id="outName">提示詞</h2>
       <article class="script-out">
         <section class="live-ep">
-          <h3>英文提示詞（貼進 AI 用）</h3>
+          <h3>中文提示詞（Gemini、ChatGPT、可靈可直接用）</h3>
+          <p id="outZh"></p>
+          <div class="admin-actions"><button class="btn btn-copper" type="button" data-copy="zh">複製中文提示詞</button></div>
+        </section>
+        <section class="live-ep">
+          <h3>英文提示詞（Midjourney、Runway 等國外工具效果較好）</h3>
           <p id="outEn"></p>
-          <div class="admin-actions"><button class="btn btn-copper" type="button" data-copy="en">複製英文</button></div>
+          <div class="admin-actions"><button class="btn btn-cream" type="button" data-copy="en">複製英文提示詞</button></div>
         </section>
         <section class="live-ep hidden" id="negBox">
           <h3>負面提示詞（不要出現的東西）</h3>
           <p id="outNeg"></p>
           <div class="admin-actions"><button class="btn btn-cream" type="button" data-copy="negative">複製負面詞</button></div>
-        </section>
-        <section class="live-ep">
-          <h3>中文對照</h3>
-          <p id="outZh"></p>
-          <div class="admin-actions"><button class="btn btn-cream" type="button" data-copy="zh">複製中文</button></div>
         </section>
         <section class="live-ep hidden" id="tipBox">
           <h3>微調建議</h3>
@@ -85,7 +94,6 @@
       </article>
       <div class="admin-actions">
         <button class="btn btn-cream" type="button" id="againBtn">同樣設定再產一版</button>
-        <a class="btn btn-cream" href="/dress">拿去模特兒換裝</a>
       </div>
       <p id="copyMsg" class="combo-fit"></p>
     </section>
@@ -112,6 +120,6 @@
     </div>
   </footer>
   <script src="/js/site.js?v=nav13"></script>
-  <script src="/js/prompt.js?v=1"></script>
+  <script src="/js/prompt.js?v=3"></script>
 </body>
 </html>

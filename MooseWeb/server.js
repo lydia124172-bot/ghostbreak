@@ -608,7 +608,7 @@ app.get('/api/prompt/status', (req, res) => {
   });
 });
 
-app.post('/api/prompt', express.json({ limit: '50kb' }), async (req, res) => {
+app.post('/api/prompt', express.json({ limit: '3mb' }), async (req, res) => {
   const owner = isOwner(req);
   const sid = clipSid(req, res);
   if (!owner && !clipStore.guestScriptState(sid).left) {
@@ -620,6 +620,7 @@ app.post('/api/prompt', express.json({ limit: '50kb' }), async (req, res) => {
       kind: String(req.body?.kind || '').trim(),
       idea: String(req.body?.idea || '').trim(),
       picks: req.body?.picks && typeof req.body.picks === 'object' ? req.body.picks : {},
+      image: typeof req.body?.image === 'string' ? req.body.image : '',
     });
     const extra = owner ? { owner: true } : { left: clipStore.consumeGuestScript(sid).left };
     res.json({ ...result, ...extra });

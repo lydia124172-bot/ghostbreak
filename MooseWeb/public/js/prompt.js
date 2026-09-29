@@ -7,6 +7,34 @@ const DEMOS = {
 let kinds = [];
 let kind = 'image';
 let last = null;
+let refImage = '';
+
+function fileToJpegDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('圖片讀取失敗，請換一張 JPG 或 PNG。'));
+    };
+    img.src = url;
+  });
+}
+
+function clearRef() {
+  refImage = '';
+  document.getElementById('refImg').value = '';
+  document.getElementById('refPreview').classList.add('hidden');
+}
 
 function currentKind() {
   return kinds.find((k) => k.id === kind);
@@ -86,17 +114,17 @@ async function makePrompt() {
   const msg = document.getElementById('promptMsg');
   const btn = document.getElementById('makeBtn');
   const idea = document.getElementById('idea').value.trim();
-  if (idea.length < 2) {
-    msg.textContent = '請先寫一句想法。';
+  if (idea.length < 2 && !refImage) {
+    msg.textContent = '請先寫一句想法，或上傳參考圖。';
     return;
   }
-  msg.textContent = '正在寫提示詞，約 10 秒。';
+  msg.textContent = refImage ? '正在看圖並寫提示詞，約 15 秒。' : '正在寫提示詞，約 10 秒。';
   btn.disabled = true;
   try {
     const res = await fetch('/api/prompt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind, idea, picks: readPicks() }),
+      body: JSON.stringify({ kind, idea, picks: readPicks(), image: refImage }),
     });
     const text = await res.text();
     let body;
@@ -119,6 +147,23 @@ async function makePrompt() {
 document.querySelectorAll('#kindRow [data-kind]').forEach((btn) => {
   btn.addEventListener('click', () => setKind(btn.dataset.kind));
 });
+
+document.getElementById('refImg').addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  const msg = document.getElementById('promptMsg');
+  if (!file) return;
+  try {
+    refImage = await fileToJpegDataUrl(file);
+    document.getElementById('refThumb').src = refImage;
+    document.getElementById('refPreview').classList.remove('hidden');
+    msg.textContent = '';
+  } catch (err) {
+    clearRef();
+    msg.textContent = err.message;
+  }
+});
+
+document.getElementById('refClear').addEventListener('click', clearRef);
 
 document.getElementById('makeBtn').addEventListener('click', makePrompt);
 document.getElementById('againBtn').addEventListener('click', makePrompt);
