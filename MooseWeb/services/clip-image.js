@@ -339,4 +339,4 @@ async function enhance({ images, product, price, hook, style }) {
   return viaGemini({ images, product, price, hook, style });
 }
 
-module.exports = { configured, engine, enhance, recoverRecent };
+module.exports = { configured, engine, enhance, recoverRecent, falRun, firstImageUrl, urlToDataUrl };

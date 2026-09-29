@@ -60,6 +60,13 @@ module.exports = {
       href: '/dress',
     },
     {
+      id: 'model-lock',
+      name: '固定模特兒',
+      status: '已上線',
+      summary: '上傳同一位模特兒與商品照，寫下場景，產出同一張臉、同一個商品的新照片。',
+      href: '/model',
+    },
+    {
       id: 'storyclip',
       name: '劇本廣告',
       status: '建置中',
@@ -102,6 +109,13 @@ module.exports = {
       kind: '付費工具',
       summary: '上傳模特兒照與衣服圖，做成換裝靜態圖。成功一張扣 1 點，與商品短片進階圖共用。',
       href: '/dress',
+    },
+    {
+      id: 'model-lock',
+      name: '固定模特兒',
+      kind: '付費工具',
+      summary: '上傳同一位模特兒與商品照，寫下場景，產出同一張臉、同一個商品的新照片。成功一張扣 2 點。',
+      href: '/model',
     },
     {
       id: 'storyclip',

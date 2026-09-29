@@ -32,7 +32,7 @@
     <section class="hero research-hero">
       <p class="kicker">智能體　免費使用</p>
       <h1>寫一句想法，變成專業提示詞。</h1>
-      <p class="lead">選要生成圖片、影片或文案，用中文寫下想要的畫面或內容，也可以放一張參考圖，再挑風格與細節。產出中文與英文提示詞，複製後可直接貼進 AI 工具。</p>
+      <p class="lead">選要生成圖片、影片或文案，用中文寫下想要的畫面或內容，也可以放一到兩張參考圖，再挑風格與細節。產出中文與英文提示詞，複製後可直接貼進 AI 工具。</p>
       <p class="clip-plan" id="promptPlan">每日可免費產出 20 則。</p>
     </section>
 
@@ -44,20 +44,19 @@
             <button class="btn btn-copper" type="button" data-kind="image">圖片</button>
             <button class="btn btn-cream" type="button" data-kind="video">影片</button>
             <button class="btn btn-cream" type="button" data-kind="text">文案</button>
+            <button class="btn btn-cream" type="button" data-kind="reverse">看圖反推</button>
           </div>
+          <p class="combo-fit hidden" id="reverseHint">丟一張已經生成得很好的圖，AI 會拆成主體、服裝、場景、構圖、光線、色調、風格七段提示詞。哪段想改就直接改，再一鍵組成新提示詞。</p>
         </div>
         <div>
-          <label class="field" for="idea">你的想法</label>
+          <label class="field" for="idea" id="ideaLabel">你的想法</label>
           <textarea id="idea" class="form-input" rows="3" maxlength="300" placeholder="例如：一杯拿鐵放在木桌上，早晨陽光從窗邊照進來"></textarea>
         </div>
         <div>
-          <label class="field" for="refImg">參考圖（選填）</label>
-          <input id="refImg" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" />
-          <p class="combo-fit">可放商品照或喜歡的風格圖，AI 會看圖再加上你的想法寫提示詞。只放圖不寫想法也可以。</p>
-          <div id="refPreview" class="hidden" style="display:flex;align-items:center;gap:12px;">
-            <img id="refThumb" alt="參考圖" style="width:96px;height:96px;object-fit:cover;border-radius:12px;" />
-            <button class="btn btn-cream" type="button" id="refClear">移除圖片</button>
-          </div>
+          <label class="field" for="refImg" id="refLabel">參考圖（選填，最多兩張）</label>
+          <input id="refImg" class="form-input" type="file" multiple accept="image/jpeg,image/png,image/webp" />
+          <p class="combo-fit">可放商品照或喜歡的風格圖，AI 會看圖再加上你的想法寫提示詞。放兩張時，想法可寫「把圖 1 的包包放進圖 2 的場景」。只放圖不寫想法也可以。</p>
+          <div id="refPreview" class="hidden" style="display:flex;flex-wrap:wrap;gap:16px;"></div>
         </div>
         <div id="pickBox"></div>
         <div class="admin-actions">
@@ -71,11 +70,17 @@
     <section class="panel clip-panel hidden" id="resultBox">
       <p class="kicker" id="outKind">產出結果</p>
       <h2 id="outName">提示詞</h2>
+      <p class="lead hidden" id="refNote"><strong>要保留同一張臉或同一個商品：</strong>生圖時請把剛才的原圖和提示詞一起上傳到 Gemini 或 ChatGPT。只貼文字，AI 會畫出長得像但不是同一個的人或商品。要換衣服可用<a href="/dress">模特兒換裝</a>；要同一張臉換場景、換動作，可用<a href="/model">固定模特兒</a>。</p>
       <article class="script-out">
+        <section class="live-ep hidden" id="partBox">
+          <h3>拆解（想改哪段就直接改）</h3>
+          <div id="partList"></div>
+          <div class="admin-actions"><button class="btn btn-copper" type="button" id="rebuildBtn">用改過的內容組成新提示詞</button></div>
+        </section>
         <section class="live-ep">
           <h3>中文提示詞（Gemini、ChatGPT、可靈可直接用）</h3>
           <p id="outZh"></p>
-          <div class="admin-actions"><button class="btn btn-copper" type="button" data-copy="zh">複製中文提示詞</button></div>
+          <div class="admin-actions"><button class="btn btn-copper" type="button" data-copy="zh">複製中文提示詞</button><button class="btn btn-cream hidden" type="button" id="toModelBtn">用這段提示詞生成固定模特兒照片</button></div>
         </section>
         <section class="live-ep">
           <h3>英文提示詞（Midjourney、Runway 等國外工具效果較好）</h3>
@@ -120,6 +125,6 @@
     </div>
   </footer>
   <script src="/js/site.js?v=nav13"></script>
-  <script src="/js/prompt.js?v=3"></script>
+  <script src="/js/prompt.js?v=7"></script>
 </body>
 </html>

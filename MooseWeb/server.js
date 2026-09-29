@@ -28,6 +28,7 @@ const personaAgent = require('./services/persona-agent');
 const hotAgent = require('./services/hot-agent');
 const promptAgent = require('./services/prompt-agent');
 const dressAgent = require('./services/dress-agent');
+const modelLock = require('./services/model-lock');
 const accounts = require('./services/accounts');
 const ecpay = require('./services/ecpay');
 const payOrders = require('./services/pay-orders');
@@ -64,6 +65,7 @@ const pages = {
   '/hot': 'hot.html',
   '/prompt': 'prompt.html',
   '/dress': 'dress.html',
+  '/model': 'model.html',
   '/account': 'account.html',
   '/privacy': 'privacy.html',
   '/terms': 'terms.html',
@@ -608,7 +610,7 @@ app.get('/api/prompt/status', (req, res) => {
   });
 });
 
-app.post('/api/prompt', express.json({ limit: '3mb' }), async (req, res) => {
+app.post('/api/prompt', express.json({ limit: '6mb' }), async (req, res) => {
   const owner = isOwner(req);
   const sid = clipSid(req, res);
   if (!owner && !clipStore.guestScriptState(sid).left) {
@@ -620,7 +622,7 @@ app.post('/api/prompt', express.json({ limit: '3mb' }), async (req, res) => {
       kind: String(req.body?.kind || '').trim(),
       idea: String(req.body?.idea || '').trim(),
       picks: req.body?.picks && typeof req.body.picks === 'object' ? req.body.picks : {},
-      image: typeof req.body?.image === 'string' ? req.body.image : '',
+      images: Array.isArray(req.body?.images) ? req.body.images.filter((x) => typeof x === 'string') : [],
     });
     const extra = owner ? { owner: true } : { left: clipStore.consumeGuestScript(sid).left };
     res.json({ ...result, ...extra });
@@ -700,6 +702,49 @@ app.post('/api/dress', express.json({ limit: '8mb' }), async (req, res) => {
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請不要重按。' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
+  }
+});
+
+app.get('/api/model/status', (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  res.json({
+    ready: modelLock.configured(),
+    cost: modelLock.creditCost(),
+    ratios: modelLock.RATIOS,
+    scenes: dressAgent.publicScenes(),
+    owner,
+    loggedIn: Boolean(paid && paid.ok),
+    credits: paid ? Number(paid.credits || 0) : 0,
+  });
+});
+
+app.post('/api/model', express.json({ limit: '14mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  const cost = modelLock.creditCost();
+  if (!owner && (!paid || Number(paid.credits || 0) < cost)) {
+    return res.status(402).json({
+      error: `固定模特兒每張扣 ${cost} 點，需購買方案點數。作者請先到後台登入，即可直接使用。`,
+    });
+  }
+  const strings = (list) => (Array.isArray(list) ? list.filter((x) => typeof x === 'string') : []);
+  try {
+    const result = await modelLock.generate({
+      faces: strings(req.body?.faces),
+      items: strings(req.body?.items),
+      scene: String(req.body?.scene || ''),
+      sceneId: String(req.body?.sceneId || '').trim(),
+      ratio: String(req.body?.ratio || ''),
+    });
+    const mediaId = stashDressImage(req, res, result.image);
+    if (owner) return res.json({ image: result.image, owner: true, mediaId });
+    const account = accounts.consumeCredit(row.id, cost);
+    res.json({ image: result.image, credits: account.credits, mediaId });
+  } catch (err) {
+    res.status(400).json({ error: err.message || '產出失敗' });
   }
 });
 
