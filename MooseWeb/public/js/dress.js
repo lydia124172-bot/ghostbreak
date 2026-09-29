@@ -238,7 +238,9 @@ async function saveVideoFile(event) {
     const blob = await res.blob();
     const name = /webm/i.test(blob.type || '') ? '換裝短片.webm' : '換裝短片.mp4';
     const file = new File([blob], name, { type: blob.type || 'video/mp4' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    const phone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+    if (phone && navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title: name });
       if (note) note.textContent = '已開啟分享，請選「儲存到檔案」或傳到電腦。';
       return;
@@ -251,7 +253,7 @@ async function saveVideoFile(event) {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
-    if (note) note.textContent = '已開始下載，請到下載資料夾或桌面查看。';
+    if (note) note.textContent = '已開始下載，請到「下載」資料夾查看。';
   } catch (err) {
     if (err && err.name === 'AbortError') return;
     if (note) note.textContent = err.message || '無法下載，請改用電腦瀏覽器開啟此頁再存。';
