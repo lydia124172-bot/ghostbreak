@@ -51,6 +51,15 @@
             <div class="photo-row" id="photoRow"></div>
           </div>
           <div>
+            <label class="field">商品資訊截圖（AI 自動讀，選填）</label>
+            <div class="dropzone" id="infoZone" tabindex="0">
+              <input id="infoInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden />
+              <b>拖曳、點擊或貼上廠商給的資訊截圖</b>
+              <span>AI 會讀出商品名稱、產地、售價與介紹，自動填進下方商品說明。截圖不會放到前台。貼上前先點一下這個框。</span>
+            </div>
+            <p id="infoStatus" class="lead hidden" style="margin:8px 0 0;"></p>
+          </div>
+          <div>
             <label class="field" for="listingText">商品說明</label>
             <textarea id="listingText" class="form-input listing-text" rows="8" placeholder="【紫瑄老闆親測推薦】台灣鑄鐵鍋（附私房煎牛排時間表）&#10;台灣&#10;NT$ 1680&#10;https://youtu.be/xxxxxxxx&#10;自己用了很久，這個月想推薦給你。"></textarea>
           </div>
@@ -467,7 +476,70 @@
     document.addEventListener('paste', (e) => {
       if ($('appBox').classList.contains('hidden')) return;
       const files = [...(e.clipboardData?.files || [])].filter((file) => file.type.startsWith('image/'));
-      if (files.length) addFiles(files);
+      if (!files.length) return;
+      if (document.activeElement === $('infoZone')) readInfo(files);
+      else addFiles(files);
+    });
+
+    function shrinkImage(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          resolve(canvas.toDataURL('image/jpeg', 0.88));
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('圖片讀取失敗，請換一張 JPG 或 PNG。'));
+        };
+        img.src = url;
+      });
+    }
+    function infoMessage(text, isError) {
+      const box = $('infoStatus');
+      box.textContent = text || '';
+      box.style.color = isError ? '#b23b3b' : '';
+      box.classList.toggle('hidden', !text);
+    }
+    async function readInfo(list) {
+      const files = Array.from(list || []).filter((file) => /^image\//.test(file.type)).slice(0, 4);
+      if (!files.length) return;
+      infoMessage('AI 讀取中，約 5 到 15 秒…');
+      try {
+        const images = await Promise.all(files.map(shrinkImage));
+        const data = await api('/api/admin/read-listing', { method: 'POST', body: JSON.stringify({ images }) });
+        const current = $('listingText').value.trim();
+        $('listingText').value = current && !confirm('商品說明已經有內容，要換成 AI 讀到的內容嗎？') ? current : data.text;
+        renderChips();
+        infoMessage(`已填入商品說明，上架前請再確認名稱與售價。${data.note ? `提醒：${data.note}` : ''}`);
+        $('listingText').focus();
+      } catch (err) {
+        infoMessage(err.message || '讀圖失敗，請再試一次。', true);
+      }
+    }
+    $('infoZone').addEventListener('click', () => $('infoInput').click());
+    $('infoZone').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('infoInput').click(); }
+    });
+    ['dragenter', 'dragover'].forEach((name) => {
+      $('infoZone').addEventListener(name, (e) => { e.preventDefault(); $('infoZone').classList.add('is-on'); });
+    });
+    ['dragleave', 'drop'].forEach((name) => {
+      $('infoZone').addEventListener(name, (e) => { e.preventDefault(); $('infoZone').classList.remove('is-on'); });
+    });
+    $('infoZone').addEventListener('drop', (e) => readInfo(e.dataTransfer.files));
+    $('infoInput').addEventListener('change', (e) => {
+      readInfo(e.target.files);
+      e.target.value = '';
     });
     $('listingText').addEventListener('input', renderChips);
     $('cancelEdit').onclick = () => resetListing();

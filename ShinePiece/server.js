@@ -8,6 +8,7 @@ const multer = require('multer');
 const { adminConfigured, login: adminLogin, requireAdmin } = require('./services/admin-auth');
 const { publicConfig, loadContent, saveContent, upsertItem, removeItem, archiveCurrentMonth, archiveItem, flashItem, addWishCount } = require('./services/content');
 const { parseListing } = require('./services/listing');
+const { readListing } = require('./services/read-listing');
 const { loadOrders, addOrder, removeOrder, findOrder, updateOrder } = require('./services/orders');
 const { INQUIRE_EMAIL, initMail, sendMail, orderMail, partnerMail, wishMail, mailConfigured } = require('./services/mail');
 const { METHODS, buildEcpay, verifyEcpay, instructions, publicPay } = require('./services/pay');
@@ -22,7 +23,7 @@ const UPLOAD_DIR = process.env.DATA_DIR
 
 const app = express();
 app.set('trust proxy', 1);
-app.use(express.json({ limit: '1mb' }));
+app.use((req, res, next) => (req.path === '/api/admin/read-listing' ? next() : express.json({ limit: '1mb' })(req, res, next)));
 app.use(express.urlencoded({ extended: true }));
 
 const pages = {
@@ -100,6 +101,15 @@ app.post('/api/admin/upload', requireAdmin, (req, res) => {
     }));
     res.json({ files });
   });
+});
+
+app.post('/api/admin/read-listing', requireAdmin, express.json({ limit: '18mb' }), async (req, res) => {
+  try {
+    const images = Array.isArray(req.body?.images) ? req.body.images.filter((x) => typeof x === 'string') : [];
+    res.json(await readListing(images));
+  } catch (err) {
+    res.status(400).json({ error: err.message || '讀圖失敗' });
+  }
 });
 
 app.post('/api/admin/preview-listing', requireAdmin, (req, res) => {
