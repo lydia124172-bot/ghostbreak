@@ -6,7 +6,7 @@
   <title>商品 — 瑄品集選</title>
   <link rel="icon" href="/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=21" />
+  <link rel="stylesheet" href="/css/site.css?v=23" />
 </head>
 <body data-page="item">
   <div data-shell="header"></div>
@@ -14,7 +14,7 @@
     <p class="empty-note">載入中。</p>
   </main>
   <div data-shell="footer"></div>
-  <script src="/js/site.js?v=15"></script>
+  <script src="/js/site.js?v=18"></script>
   <script>
     const id = decodeURIComponent(location.pathname.split('/').pop() || '');
     fetch('/api/config').then((r) => r.json()).then((data) => {
@@ -38,11 +38,12 @@
             ${videoFrame(p.video)}
           </div>
           <aside class="item-buy">
-            <p class="price" style="font-size:20px;">${escapeHtml(p.price || '')}</p>
+            <p class="price" style="font-size:20px;">${escapeHtml(p.price || '')} ${stockNote(p)}</p>
             <p class="lead">直播裡實測的那一段，放在上面。看完可直接結帳，不必再搜商品名。</p>
             <div class="admin-actions">
+              ${isSoldOut(p) ? soldOutButton('btn btn-ink') : `
               <button class="btn btn-ink" type="button" data-buy="${payload}">立即結帳</button>
-              <button class="btn btn-ghost" type="button" data-add="${payload}">放入購物</button>
+              <button class="btn btn-ghost" type="button" data-add="${payload}">放入購物</button>`}
             </div>
             <a class="more" href="/issue">回本月專區</a>
           </aside>

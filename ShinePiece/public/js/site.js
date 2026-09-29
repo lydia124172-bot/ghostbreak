@@ -52,6 +52,25 @@ function shownName(p) {
   return p.displayName || p.name || '';
 }
 
+function isSoldOut(p) {
+  return p.qty === 0 || /缺貨|售完/.test(p.stock || '');
+}
+
+function soldOutButton(cls = 'add') {
+  return `<button class="${cls}" type="button" disabled>${cls === 'add' ? '售完' : '已售完'}</button>`;
+}
+
+function stockNote(p) {
+  if (isSoldOut(p)) return '<span class="stock-note">已售完</span>';
+  if (typeof p.qty === 'number' && p.qty <= 5) return `<span class="stock-note">剩 ${p.qty} 件</span>`;
+  return '';
+}
+
+const MEMBER_KEY = 'shine-piece-member';
+function memberToken() {
+  return localStorage.getItem(MEMBER_KEY) || '';
+}
+
 function cartPayload(p) {
   return encodeURIComponent(JSON.stringify({
     id: p.id,
@@ -85,7 +104,7 @@ function productCard(p) {
         <h3>${escapeHtml(shownName(p))}</h3>
         <div class="product-foot">
           <span class="price">${escapeHtml(p.price || '')}</span>
-          <button class="add" type="button" data-add="${payload}">加入</button>
+          ${isSoldOut(p) ? soldOutButton() : `<button class="add" type="button" data-add="${payload}">加入</button>`}
         </div>
       </div>
     </article>`;
@@ -119,8 +138,8 @@ function editorialLead(p) {
         <h2>${escapeHtml(shownName(p))}</h2>
         <p>${escapeHtml(note)}</p>
         <div class="product-foot">
-          <span class="price">${escapeHtml(p.price || '')}</span>
-          <button class="add" type="button" data-buy="${payload}">立即結帳</button>
+          <span class="price">${escapeHtml(p.price || '')}</span>${stockNote(p)}
+          ${isSoldOut(p) ? soldOutButton() : `<button class="add" type="button" data-buy="${payload}">立即結帳</button>`}
         </div>
       </div>
     </article>`;
@@ -145,10 +164,10 @@ function featureRow(p, i) {
         <h2><a href="/item/${encodeURIComponent(p.id)}">${escapeHtml(shownName(p))}</a></h2>
         <p>${escapeHtml(note)}</p>
         <div class="product-foot issue-actions">
-          <span class="price">${escapeHtml(p.price || '')}</span>
-          <button class="add" type="button" data-add="${payload}">放入</button>
+          <span class="price">${escapeHtml(p.price || '')}</span>${stockNote(p)}
+          ${isSoldOut(p) ? '' : `<button class="add" type="button" data-add="${payload}">放入</button>`}
           <a class="more" href="/item/${encodeURIComponent(p.id)}">看短片</a>
-          <button class="btn btn-ink" type="button" data-buy="${payload}">立即結帳</button>
+          ${isSoldOut(p) ? soldOutButton('btn btn-ink') : `<button class="btn btn-ink" type="button" data-buy="${payload}">立即結帳</button>`}
         </div>
       </div>
     </article>`;
@@ -192,12 +211,14 @@ function renderChrome() {
           <nav class="nav" id="nav">
             ${navLink('/', 'home', '月刊')}
             ${navLink('/issue', 'issue', '本月開箱')}
+            ${navLink('/journal', 'journal', '專欄')}
             ${navLink('/wish', 'wish', '許願池')}
-            <a href="/issue">客廳直播</a>
+            <a href="/#live">客廳直播</a>
             ${navLink('/order', 'order', '結帳')}
           </nav>
           <div class="header-side">
             <a class="header-line hidden" data-line href="#">LINE 諮詢</a>
+            <a class="header-member${PAGE === 'member' ? ' active' : ''}" href="/member">${memberToken() ? '我的訂單' : '會員'}</a>
             <a class="cart-btn" href="/cart" aria-label="購物車">${BAG_ICON}<span class="cart-badge" data-cart-count></span></a>
           </div>
         </div>
@@ -209,7 +230,7 @@ function renderChrome() {
       <footer class="site-footer">
         <div class="wrap">
           <span>© 瑄品集選　月刊生活指南</span>
-          <span><a href="/issue">本月專區</a>　<a href="/qr">直播 QR</a>　<a href="/partner">通路合作</a>　<a class="hidden" data-line href="#">LINE 諮詢</a></span>
+          <span><a href="/issue">本月專區</a>　<a href="/journal">主編專欄</a>　<a href="/qr">直播 QR</a>　<a href="/partner">通路合作</a>　<a class="hidden" data-line href="#">LINE 諮詢</a></span>
         </div>
       </footer>`;
   }

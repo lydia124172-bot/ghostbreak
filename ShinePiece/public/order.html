@@ -6,7 +6,7 @@
   <title>結帳 — 瑄品集選</title>
   <link rel="icon" href="/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=21" />
+  <link rel="stylesheet" href="/css/site.css?v=23" />
 </head>
 <body data-page="order">
   <div data-shell="header"></div>
@@ -18,6 +18,7 @@
       <p class="lead">只留收件與付款。刷卡、超商代碼、ATM 虛擬帳號可選；手機可走 Apple Pay／Google Pay。</p>
     </section>
     <p id="doneBox" class="panel hidden" style="margin-bottom:24px;"></p>
+    <p id="memberHint" class="lead" style="margin:0 0 18px;"><a class="more" href="/member?next=/order">登入或註冊會員</a>，下次免填資料，也能隨時查訂單與物流。不登入也可以直接結帳。</p>
     <form id="orderForm" class="check-grid">
       <div class="admin-grid">
         <section class="panel check-block">
@@ -85,7 +86,7 @@
     </form>
   </main>
   <div data-shell="footer"></div>
-  <script src="/js/site.js?v=15"></script>
+  <script src="/js/site.js?v=18"></script>
   <script>
     const params = new URLSearchParams(location.search);
     function shippingValue() {
@@ -125,6 +126,20 @@
         </label>`).join('');
     });
 
+    if (memberToken()) {
+      fetch('/api/member/me', { headers: { 'X-Member-Token': memberToken() } })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (!data || !data.member) return;
+          const m = data.member;
+          document.getElementById('memberHint').textContent = `${m.name}，歡迎回來。這筆訂單會記在你的會員帳號，可到「我的訂單」查詢。`;
+          if (!document.getElementById('name').value) document.getElementById('name').value = m.name || '';
+          if (!document.getElementById('phone').value) document.getElementById('phone').value = m.phone || '';
+          if (!document.getElementById('address').value) document.getElementById('address').value = m.address || '';
+        })
+        .catch(() => {});
+    }
+
     const cart = loadCart();
     document.getElementById('summary').innerHTML = cart.length
       ? cart.map((row) => `<article class="item" style="padding:10px 0;border:0;background:transparent;border-radius:0;"><div><h3>${escapeHtml(row.name)}</h3><p class="product-cat">× ${row.qty}</p></div><span class="price">${escapeHtml(row.price || '')}</span></article>`).join('')
@@ -144,7 +159,7 @@
       }
       const res = await fetch('/api/order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Member-Token': memberToken() },
         body: JSON.stringify({
           name: document.getElementById('name').value.trim(),
           phone: document.getElementById('phone').value.trim(),

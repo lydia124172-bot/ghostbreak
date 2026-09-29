@@ -6,12 +6,14 @@ const crypto = require('crypto');
 const express = require('express');
 const multer = require('multer');
 const { adminConfigured, login: adminLogin, requireAdmin } = require('./services/admin-auth');
-const { publicConfig, loadContent, saveContent, upsertItem, removeItem, archiveCurrentMonth, archiveItem, flashItem, addWishCount } = require('./services/content');
+const { publicConfig, loadContent, saveContent, upsertItem, removeItem, archiveCurrentMonth, archiveItem, flashItem, relistItem, deleteArchived, setQty, deductStock, restock, addWishCount } = require('./services/content');
+const members = require('./services/members');
+const journal = require('./services/journal');
 const { parseListing } = require('./services/listing');
 const { readListing } = require('./services/read-listing');
 const { loadOrders, addOrder, removeOrder, findOrder, updateOrder } = require('./services/orders');
 const { INQUIRE_EMAIL, initMail, sendMail, orderMail, partnerMail, wishMail, mailConfigured } = require('./services/mail');
-const { METHODS, buildEcpay, verifyEcpay, instructions, publicPay } = require('./services/pay');
+const { METHODS, buildEcpay, verifyEcpay, instructions, publicPay, parseAmount } = require('./services/pay');
 
 const PORT = Number(process.env.PORT || 3003);
 const BASE_URL = (process.env.BASE_URL || `http://127.0.0.1:${PORT}`).replace(/\/$/, '');
@@ -36,6 +38,7 @@ const pages = {
   '/order': 'order.html',
   '/partner': 'partner.html',
   '/wish': 'wish.html',
+  '/member': 'member.html',
   '/admin': 'admin.html',
 };
 
@@ -86,6 +89,7 @@ function listingBody(body) {
     description: body?.description || body?.summary,
     summary: body?.description || body?.summary,
     filename: body?.filename,
+    ...(body && 'qty' in body ? { qty: body.qty } : {}),
   };
 }
 
@@ -193,11 +197,158 @@ app.post('/api/admin/archive/:id/flash', requireAdmin, (req, res) => {
   }
 });
 
+app.post('/api/admin/archive/:id/relist', requireAdmin, (req, res) => {
+  try {
+    res.json({ success: true, content: relistItem(req.params.id) });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || '重新上架失敗' });
+  }
+});
+app.delete('/api/admin/archive/:id', requireAdmin, (req, res) => {
+  res.json({ success: true, content: deleteArchived(req.params.id) });
+});
+app.patch('/api/admin/products/:id/qty', requireAdmin, (req, res) => {
+  try {
+    res.json({ success: true, content: setQty(req.params.id, req.body?.qty) });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || '庫存更新失敗' });
+  }
+});
+
+app.get('/api/admin/journal', requireAdmin, (_req, res) => {
+  res.json({ posts: journal.loadPosts() });
+});
+app.post('/api/admin/journal', requireAdmin, (req, res) => {
+  try {
+    res.json({ success: true, post: journal.savePost(req.body || {}) });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || '儲存失敗' });
+  }
+});
+app.delete('/api/admin/journal/:id', requireAdmin, (req, res) => {
+  journal.removePost(req.params.id);
+  res.json({ success: true });
+});
+
+const ORDER_STATUSES = ['待付款', '已付款', '已出貨', '已完成', '已取消'];
 app.get('/api/admin/orders', requireAdmin, (_req, res) => {
-  res.json({ orders: loadOrders() });
+  res.json({ orders: loadOrders(), statuses: ORDER_STATUSES });
+});
+app.patch('/api/admin/orders/:id', requireAdmin, (req, res) => {
+  const order = findOrder(req.params.id);
+  if (!order) return res.status(404).json({ error: '找不到訂單' });
+  const patch = {};
+  if (req.body?.status !== undefined) {
+    const status = String(req.body.status || '').trim();
+    if (order.kind === '零售訂單' && !ORDER_STATUSES.includes(status)) return res.status(400).json({ error: '狀態不正確' });
+    patch.status = status.slice(0, 20);
+    if (order.kind === '零售訂單') {
+      if (status === '已取消' && !order.restocked) {
+        restock(order.items);
+        patch.restocked = true;
+      } else if (status !== '已取消' && order.restocked) {
+        try {
+          deductStock(order.items);
+        } catch (err) {
+          return res.status(400).json({ error: `無法恢復訂單：${err.message}` });
+        }
+        patch.restocked = false;
+      }
+      if (status === '已出貨' && !order.shippedAt) patch.shippedAt = new Date().toISOString();
+      if (status === '已付款' && !order.paidAt) patch.paidAt = new Date().toISOString();
+    }
+  }
+  if (req.body?.trackingNo !== undefined) patch.trackingNo = String(req.body.trackingNo || '').trim().slice(0, 60);
+  if (req.body?.adminNote !== undefined) patch.adminNote = String(req.body.adminNote || '').trim().slice(0, 500);
+  res.json({ success: true, order: updateOrder(order.id, patch) });
 });
 app.delete('/api/admin/orders/:id', requireAdmin, (req, res) => {
+  const order = findOrder(req.params.id);
+  if (order && order.kind === '零售訂單' && !order.restocked && !['已出貨', '已完成'].includes(order.status)) restock(order.items);
   res.json({ success: true, orders: removeOrder(req.params.id) });
+});
+
+function memberStats(list, orders) {
+  return list.map((row) => {
+    const mine = orders.filter((o) => o.memberId === row.id && o.kind === '零售訂單');
+    const spent = mine.filter((o) => o.status !== '已取消').reduce((sum, o) => sum + (Number(o.amount) || parseAmount(o.items)), 0);
+    return { ...members.publicMember(row), orderCount: mine.length, spent };
+  });
+}
+app.get('/api/admin/members', requireAdmin, (_req, res) => {
+  res.json({ members: memberStats(members.loadMembers(), loadOrders()) });
+});
+app.post('/api/admin/members/:id/reset', requireAdmin, (req, res) => {
+  try {
+    res.json({ success: true, tempPassword: members.resetPassword(req.params.id) });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || '重設失敗' });
+  }
+});
+app.delete('/api/admin/members/:id', requireAdmin, (req, res) => {
+  members.removeMember(req.params.id);
+  res.json({ success: true });
+});
+
+const memberAttempts = new Map();
+function memberThrottle(req, res, next) {
+  const key = req.ip || 'x';
+  const now = Date.now();
+  const hits = (memberAttempts.get(key) || []).filter((t) => now - t < 15 * 60 * 1000);
+  if (hits.length >= 20) return res.status(429).json({ error: '嘗試太多次，請 15 分鐘後再試' });
+  hits.push(now);
+  memberAttempts.set(key, hits);
+  next();
+}
+function currentMember(req) {
+  return members.verifyToken(members.readMemberToken(req));
+}
+function requireMember(req, res, next) {
+  const member = currentMember(req);
+  if (!member) return res.status(401).json({ error: '請先登入會員' });
+  req.member = member;
+  next();
+}
+function memberOrders(id) {
+  return loadOrders()
+    .filter((o) => o.memberId === id && o.kind === '零售訂單')
+    .map((o) => ({
+      id: o.id,
+      createdAt: o.createdAt,
+      status: o.status,
+      payment: o.payment,
+      shipping: o.shipping,
+      trackingNo: o.trackingNo || '',
+      amount: Number(o.amount) || parseAmount(o.items),
+      items: (o.items || []).map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
+    }));
+}
+app.post('/api/member/register', memberThrottle, (req, res) => {
+  try {
+    res.json(members.register(req.body || {}));
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || '註冊失敗' });
+  }
+});
+app.post('/api/member/login', memberThrottle, (req, res) => {
+  try {
+    res.json(members.login(req.body || {}));
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || '登入失敗' });
+  }
+});
+app.get('/api/member/me', requireMember, (req, res) => {
+  res.json({ member: members.publicMember(req.member), orders: memberOrders(req.member.id) });
+});
+app.patch('/api/member/me', requireMember, (req, res) => {
+  try {
+    const body = req.body || {};
+    if (body.newPassword) members.login({ email: req.member.email, password: body.oldPassword });
+    res.json(members.updateProfile(req.member.id, body));
+  } catch (err) {
+    const msg = err.status === 401 ? '舊密碼不正確' : err.message;
+    res.status(400).json({ error: msg || '更新失敗' });
+  }
 });
 
 async function safeSendMail(opts) {
@@ -225,13 +376,20 @@ app.post('/api/order', async (req, res) => {
   const fields = contactFields(req.body, { phoneRequired: true });
   if (fields.error) return res.status(400).json({ error: fields.error });
   const items = Array.isArray(req.body?.items) ? req.body.items.slice(0, 30) : [];
-  const cleanItems = items.map((row) => ({
-    id: String(row.id || '').trim(),
-    name: String(row.name || '').trim().slice(0, 120),
-    qty: Math.max(1, Math.min(99, Number(row.qty) || 1)),
-    price: String(row.price || '').trim().slice(0, 40),
-    image: String(row.image || '').trim().slice(0, 200),
-  })).filter((row) => row.name);
+  const catalog = Object.fromEntries((loadContent().products || []).map((p) => [p.id, p]));
+  const cleanItems = items.map((row) => {
+    const id = String(row.id || '').trim();
+    const known = catalog[id];
+    return {
+      id,
+      name: known ? (known.displayName || known.name) : String(row.name || '').trim().slice(0, 120),
+      qty: Math.max(1, Math.min(99, Number(row.qty) || 1)),
+      price: known ? known.price : String(row.price || '').trim().slice(0, 40),
+      image: known ? known.image : String(row.image || '').trim().slice(0, 200),
+    };
+  }).filter((row) => row.name);
+  const gone = cleanItems.filter((row) => !catalog[row.id]);
+  if (gone.length) return res.status(400).json({ error: `「${gone[0].name}」已下架，請從購物車移除` });
   if (!cleanItems.length) return res.status(400).json({ error: '請先加入商品' });
   const shipping = String(req.body?.shipping || '宅配').trim().slice(0, 20);
   const allowedPay = METHODS.map((row) => row.id);
@@ -245,6 +403,13 @@ app.post('/api/order', async (req, res) => {
   if (!allowedPay.includes(payment)) return res.status(400).json({ error: '請選擇付款方式' });
   if (shipping === '宅配' && !address) return res.status(400).json({ error: '請填寫收件地址' });
   if (shipping === '超商取貨' && (!storeBrand || !store)) return res.status(400).json({ error: '請填寫取件超商與門市' });
+  try {
+    deductStock(cleanItems);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+  const member = currentMember(req);
+  if (member && shipping === '宅配') members.updateProfile(member.id, { phone: fields.phone, city, address });
   const entry = {
     id: `O-${Date.now()}`,
     createdAt: new Date().toISOString(),
@@ -258,6 +423,9 @@ app.post('/api/order', async (req, res) => {
     store,
     storeId,
     ...fields,
+    email: fields.email || (member ? member.email : ''),
+    memberId: member ? member.id : '',
+    amount: parseAmount(cleanItems),
     items: cleanItems,
   };
   addOrder(entry);
@@ -400,8 +568,38 @@ Object.entries(pages).forEach(([route, file]) => {
 });
 app.get('/item/:id', (req, res) => sendPage(req, res, 'item.html'));
 
-app.get('/robots.txt', (_req, res) => {
-  res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin.html\n\nUser-agent: Linespider\nAllow: /\n');
+function siteName() {
+  return loadContent().name || '瑄品集選';
+}
+function seoOrigin(req) {
+  return /^https:\/\//i.test(BASE_URL) ? BASE_URL : requestOrigin(req);
+}
+app.get('/journal', (req, res) => {
+  res.type('html').send(journal.renderList(seoOrigin(req), siteName()));
+});
+app.get('/journal/:slug', (req, res) => {
+  const post = journal.findPublished(req.params.slug);
+  if (!post) return sendPage(req, res, '404.html', 404);
+  res.type('html').send(journal.renderPost(post, seoOrigin(req), siteName()));
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  const origin = seoOrigin(req);
+  const urls = [
+    { loc: '/', freq: 'weekly' },
+    { loc: '/issue', freq: 'weekly' },
+    { loc: '/journal', freq: 'weekly' },
+    { loc: '/wish', freq: 'monthly' },
+    { loc: '/partner', freq: 'monthly' },
+  ];
+  (loadContent().products || []).forEach((p) => urls.push({ loc: `/item/${encodeURIComponent(p.id)}`, freq: 'weekly' }));
+  journal.publishedPosts().forEach((post) => urls.push({ loc: `/journal/${encodeURIComponent(post.slug)}`, freq: 'monthly', lastmod: post.updatedAt || post.publishedAt }));
+  const body = urls.map((u) => `  <url><loc>${origin}${u.loc}</loc>${u.lastmod ? `<lastmod>${String(u.lastmod).slice(0, 10)}</lastmod>` : ''}<changefreq>${u.freq}</changefreq></url>`).join('\n');
+  res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`);
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin.html\nDisallow: /member\nDisallow: /cart\nDisallow: /order\n\nUser-agent: Linespider\nAllow: /\n\nSitemap: ${seoOrigin(req)}/sitemap.xml\n`);
 });
 
 app.use('/uploads/products', express.static(UPLOAD_DIR));

@@ -7,7 +7,7 @@
   <meta name="description" content="瑄品集選月刊生活指南。教了二十六年英文的牛排館老闆，每個月開箱一個國家的生活好物。" />
   <link rel="icon" href="/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=21" />
+  <link rel="stylesheet" href="/css/site.css?v=23" />
 </head>
 <body data-page="home">
   <div data-shell="header"></div>
@@ -35,6 +35,7 @@
       <p class="letter-body" id="heroLead">一位教了二十六年英文的牛排館老闆，用挑剔的眼光與國際視野，每個月帶你開箱一個國家的生活好物。</p>
       <blockquote class="pull-quote" id="pullQuote">每個月只深讀一個國家。用過的，才寫進這一期。</blockquote>
       <p class="letter-sign">瑄品集選　Shine Piece</p>
+      <a class="more" href="/journal">閱讀主編專欄</a>
     </article>
 
     <a class="ed-tile is-photo is-mid" href="/issue">
@@ -47,7 +48,7 @@
       <p class="lead hidden" id="countryLead"></p>
       <a class="more" href="/issue">本月開箱</a>
     </article>
-    <a class="ed-tile is-photo is-mid" href="/issue">
+    <a class="ed-tile is-photo is-mid" href="#live">
       <img src="/images/ed-room.jpg" alt="">
       <span>客廳直播</span>
     </a>
@@ -102,7 +103,7 @@
   </section>
 
   <div data-shell="footer"></div>
-  <script src="/js/site.js?v=15"></script>
+  <script src="/js/site.js?v=18"></script>
   <script>
     const notes = { 日本: 'Japan', 韓國: 'Korea', 中國: 'China', 泰國: 'Thailand', 台灣: 'Taiwan' };
     fetch('/api/config').then((r) => r.json()).then((data) => {

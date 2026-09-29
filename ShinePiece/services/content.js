@@ -107,10 +107,19 @@ function emptyContent() {
   return base;
 }
 
+function normQty(raw) {
+  if (raw === null || raw === undefined || String(raw).trim() === '') return null;
+  const n = Math.floor(Number(raw));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.min(n, 99999);
+}
+
 function cleanProduct(item, fallback = {}) {
   const src = item || {};
   const parsed = parseListing(src.description || src.summary, src.filename);
   const images = pickImages(src, fallback);
+  const qty = src.qty !== undefined ? normQty(src.qty) : normQty(fallback.qty);
+  const baseStock = String(src.stock || '').trim() || parsed.stock || String(fallback.stock || '').trim() || '有貨';
   const name = String(src.name || '').trim() || parsed.name || String(fallback.name || '').trim();
   const badge = String(src.badge || '').trim() || parsed.badge || String(fallback.badge || '').trim();
   const perk = String(src.perk || '').trim() || parsed.perk || String(fallback.perk || '').trim();
@@ -125,7 +134,8 @@ function cleanProduct(item, fallback = {}) {
     video,
     displayName: displayName({ name, badge, perk }),
     price: String(src.price || '').trim() || parsed.price || String(fallback.price || '').trim(),
-    stock: String(src.stock || '').trim() || parsed.stock || String(fallback.stock || '').trim() || '有貨',
+    qty,
+    stock: qty === 0 ? '售完' : (baseStock === '售完' ? '有貨' : baseStock),
     summary: String(src.summary || src.description || fallback.summary || '').trim() || parsed.summary,
     image: images[0] || '',
     images,
@@ -147,6 +157,7 @@ function cleanArchiveProduct(item) {
     summary: row.summary,
     image: row.image,
     images: row.images,
+    qty: row.qty,
     wishCount: Math.max(0, Number(item && item.wishCount) || 0),
   };
 }
@@ -359,6 +370,72 @@ function flashItem(id) {
   return saveContent(data);
 }
 
+function relistItem(id) {
+  const data = loadContent();
+  const found = findArchiveProduct(data, id);
+  if (!found) fail('下架商品不存在');
+  if ((data.products || []).some((item) => item.id === id)) fail('這個商品已經在本月集選');
+  found.month.products = found.month.products.filter((item) => item.id !== id);
+  data.products = [cleanProduct({ ...found.product, flash: false, stock: '' }), ...(data.products || [])];
+  data.archive = (data.archive || []).filter((month) => month.products.length);
+  return saveContent(data);
+}
+
+function deleteArchived(id) {
+  const data = loadContent();
+  data.archive = (data.archive || [])
+    .map((month) => ({ ...month, products: (month.products || []).filter((item) => item.id !== id) }))
+    .filter((month) => month.products.length);
+  return saveContent(data);
+}
+
+function setQty(id, raw) {
+  const data = loadContent();
+  const idx = (data.products || []).findIndex((row) => row.id === id);
+  if (idx < 0) fail('找不到商品');
+  data.products[idx] = cleanProduct({ ...data.products[idx], qty: normQty(raw) });
+  return saveContent(data);
+}
+
+function deductStock(items) {
+  const data = loadContent();
+  const byId = Object.fromEntries((data.products || []).map((row) => [row.id, row]));
+  const need = {};
+  (items || []).forEach((row) => {
+    if (row.id) need[row.id] = (need[row.id] || 0) + (Number(row.qty) || 1);
+  });
+  for (const [id, qty] of Object.entries(need)) {
+    const product = byId[id];
+    if (!product) continue;
+    if (/缺貨|售完/.test(product.stock || '')) fail(`「${product.name}」目前${product.stock}，請從購物車移除`);
+    if (product.qty !== null && product.qty !== undefined && product.qty < qty) {
+      fail(product.qty > 0 ? `「${product.name}」只剩 ${product.qty} 件，請調整數量` : `「${product.name}」已售完，請從購物車移除`);
+    }
+  }
+  let changed = false;
+  data.products = (data.products || []).map((row) => {
+    if (!need[row.id] || row.qty === null || row.qty === undefined) return row;
+    changed = true;
+    return cleanProduct({ ...row, qty: Math.max(0, row.qty - need[row.id]) });
+  });
+  if (changed) saveContent(data);
+}
+
+function restock(items) {
+  const data = loadContent();
+  const back = {};
+  (items || []).forEach((row) => {
+    if (row.id) back[row.id] = (back[row.id] || 0) + (Number(row.qty) || 1);
+  });
+  let changed = false;
+  data.products = (data.products || []).map((row) => {
+    if (!back[row.id] || row.qty === null || row.qty === undefined) return row;
+    changed = true;
+    return cleanProduct({ ...row, qty: row.qty + back[row.id], stock: '' });
+  });
+  if (changed) saveContent(data);
+}
+
 function addWishCount(productId, key) {
   const data = loadContent();
   const found = findArchiveProduct(data, productId);
@@ -381,5 +458,10 @@ module.exports = {
   archiveCurrentMonth,
   archiveItem,
   flashItem,
+  relistItem,
+  deleteArchived,
+  setQty,
+  deductStock,
+  restock,
   addWishCount,
 };

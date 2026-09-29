@@ -3,6 +3,9 @@ node_modules/
 data/orders.json
 data/inquiries.json
 data/content.json
+data/members.json
+data/member-secret
 data/uploads/
 public/uploads/products/*
 !public/uploads/products/.gitkeep
+data/journal.json
