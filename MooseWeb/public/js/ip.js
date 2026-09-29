@@ -241,43 +241,28 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
     note.textContent = '請先產出個人IP。';
     return;
   }
-  if (typeof html2pdf !== 'function') {
-    note.textContent = 'PDF 套件尚未載入，請稍後再試，或先複製全部。';
-    return;
-  }
-  note.textContent = '正在做成 PDF，請稍候。';
-  const hold = document.createElement('div');
-  hold.style.cssText = 'position:fixed;left:-12000px;top:0;width:720px;background:#fff;';
-  hold.innerHTML = `
-    <style>
-      .ip-print { font-family: "Noto Sans TC","Microsoft JhengHei",sans-serif; color:#1a1a1a; background:#fff; padding:8px 4px 24px; font-size:13px; line-height:1.65; }
-      .ip-print h1 { font-size:22px; margin:0 0 8px; }
-      .ip-print .lead { margin:0 0 16px; }
-      .ip-print h3 { font-size:15px; margin:0 0 8px; }
-      .ip-print section { page-break-inside: avoid; margin:0 0 16px; }
-      .ip-print p, .ip-print li { margin:0 0 8px; }
-    </style>
-    <article class="ip-print">
-      <h1>${escapeHtml(data.name || '個人IP')}</h1>
-      <p class="lead">${escapeHtml(data.oneLiner || '')}</p>
-      ${resultHtml(data)}
-    </article>
-  `;
-  document.body.appendChild(hold);
+  note.textContent = '正在做成 PDF，約 10 到 20 秒，請稍候。';
   try {
-    await html2pdf().set({
-      margin: [12, 12, 14, 12],
+    await exportBlocksPdf({
+      className: 'ip-print',
+      css: `
+        .ip-print { font-family: "Noto Sans TC","Microsoft JhengHei",sans-serif; color:#1a1a1a; background:#fff; padding:8px 4px 24px; font-size:13px; line-height:1.65; }
+        .ip-print h1 { font-size:22px; margin:0 0 8px; }
+        .ip-print .lead { margin:0 0 16px; }
+        .ip-print h3 { font-size:15px; margin:0 0 8px; }
+        .ip-print section { margin:0; }
+        .ip-print p, .ip-print li { margin:0 0 8px; }
+      `,
+      html: `
+        <h1>${escapeHtml(data.name || '個人IP')}</h1>
+        <p class="lead">${escapeHtml(data.oneLiner || '')}</p>
+        ${resultHtml(data)}
+      `,
       filename: fileName(data, 'pdf'),
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'] },
-    }).from(hold.querySelector('.ip-print')).save();
+    });
     note.textContent = '已開始下載 PDF。';
-  } catch {
-    note.textContent = 'PDF 下載失敗，請改複製全部。';
-  } finally {
-    hold.remove();
+  } catch (err) {
+    note.textContent = (err && /套件/.test(err.message)) ? err.message : 'PDF 下載失敗，請改複製全部。';
   }
 });
 
