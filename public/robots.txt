@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
+Disallow: /nc-admin.html
 Disallow: /api/
 
 Sitemap: https://bafuholdings.com/sitemap.xml

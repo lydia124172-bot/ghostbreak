@@ -297,7 +297,7 @@ async function mailPaid(baseUrl, row) {
     tasks.push(sendMail({
       to: owner,
       subject: `新訂單 ${row.id}：${row.planName} US$${row.amount}`,
-      text: `有新的中文修改訂單。\n方案：${row.planName}${row.calligraphy ? '\n★ 含書法字體圖稿：用教育部標準楷書、教育部隸書、霞鶩文楷 TC 排好，交件時在後台上傳圖檔（48 小時內）' : ''}\n客人：${row.email}\n用途：${row.purpose || '-'}\n語氣：${row.tone}\n\n中文原文：\n${row.draft || '(無)'}\n\n英文想表達的意思：\n${row.meaning || '(無)'}\n\n請到後台交件：${baseUrl}/nc-admin.html`,
+      text: `有新的中文修改訂單。\n方案：${row.planName}${row.calligraphy ? '\n★ 含書法字體圖稿：用教育部標準楷書、教育部隸書、霞鶩文楷 TC 排好，交件時在後台上傳圖檔（48 小時內）' : ''}\n客人：${row.email}\n用途：${row.purpose || '-'}\n語氣：${row.tone}\n\n中文原文：\n${row.draft || '(無)'}\n\n英文想表達的意思：\n${row.meaning || '(無)'}\n\n請到後台交件：${baseUrl}/admin.html`,
     }));
   }
   const results = await Promise.allSettled(tasks);

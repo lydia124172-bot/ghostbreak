@@ -1,39 +1,33 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <title>GhostBreak Admin — 訂單與投遞預覽</title>
+  <title>Native Chinese Check 後台</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'DM Sans', system-ui, sans-serif; }
-    .phone-notch {
-      width: 96px; height: 22px; border-radius: 0 0 14px 14px;
-      background: #0a0a0f; margin: 0 auto;
-    }
-    .sms-bubble { border-radius: 18px 18px 4px 18px; }
-    .email-body { font-family: 'Noto Serif TC', Georgia, serif; white-space: pre-wrap; line-height: 1.85; }
+    body { font-family: 'DM Sans', 'Noto Sans TC', system-ui, sans-serif; }
+    .zh { font-family: 'Noto Serif TC', serif; }
     .row-active { background: rgba(139, 92, 246, 0.12); border-left: 3px solid #8b5cf6; }
-    .preview-panel { min-height: 520px; }
-    @media (max-width: 1024px) {
-      .preview-panel { min-height: auto; }
-    }
+    textarea, input[type="password"], input[type="file"] { font-family: inherit; }
+    textarea.zh { font-family: 'Noto Serif TC', serif; }
   </style>
 </head>
 <body class="bg-[#06060a] text-zinc-100 min-h-screen">
 
   <header class="border-b border-zinc-800/80 bg-[#0a0a12]/90 backdrop-blur sticky top-0 z-40">
-    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="text-violet-400 font-semibold tracking-widest text-sm">GHOSTBREAK</span>
-        <span class="text-[10px] uppercase tracking-wider text-zinc-500 border border-zinc-700 rounded-full px-2 py-0.5">Admin</span>
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="text-violet-400 font-semibold tracking-widest text-sm truncate">CHINESE CHECK</span>
+        <span class="text-[10px] uppercase tracking-wider text-zinc-500 border border-zinc-700 rounded-full px-2 py-0.5 shrink-0">Admin</span>
       </div>
-      <div class="flex items-center gap-4 text-xs text-zinc-500">
+      <div class="flex items-center gap-4 text-xs text-zinc-500 shrink-0">
         <span id="orderCount">載入中…</span>
         <button type="button" id="refreshBtn" class="text-violet-300 hover:text-white transition">↻ 重新整理</button>
-        <a href="/" class="hover:text-white transition">← 首頁</a>
+        <a href="/chinese-check" class="hover:text-white transition">← 前台</a>
       </div>
     </div>
   </header>
@@ -41,19 +35,21 @@
   <main class="max-w-[1600px] mx-auto p-4 sm:p-6">
     <div class="grid lg:grid-cols-12 gap-6">
 
-      <!-- 訂單列表 -->
       <section class="lg:col-span-5 xl:col-span-4">
         <div class="bg-[#0d0d14] border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
-          <div class="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-            <h2 class="text-sm font-medium text-zinc-300">歷史訂單</h2>
-            <span class="text-[10px] text-zinc-600">持久化儲存 · 重新整理每 15 秒</span>
+          <div class="px-4 py-3 border-b border-zinc-800">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-sm font-medium text-zinc-300">訂單</h2>
+              <span class="text-[10px] text-zinc-600">已付款才會出現</span>
+            </div>
+            <div id="tabs" class="flex flex-wrap gap-1.5 mt-3"></div>
           </div>
-          <div class="overflow-x-auto max-h-[calc(100vh-10rem)] overflow-y-auto">
+          <div class="overflow-x-auto max-h-[calc(100vh-12rem)] overflow-y-auto">
             <table class="w-full text-left text-xs">
               <thead class="sticky top-0 bg-[#12121c] text-zinc-500 uppercase tracking-wider">
                 <tr>
                   <th class="px-4 py-2.5">時間</th>
-                  <th class="px-4 py-2.5">對象</th>
+                  <th class="px-4 py-2.5">客人</th>
                   <th class="px-4 py-2.5">方案</th>
                   <th class="px-4 py-2.5">金額</th>
                   <th class="px-4 py-2.5">狀態</th>
@@ -67,116 +63,53 @@
         </div>
       </section>
 
-      <!-- 預覽面板 -->
       <section class="lg:col-span-7 xl:col-span-8">
-        <div id="emptyPreview" class="preview-panel flex items-center justify-center bg-[#0d0d14] border border-zinc-800 border-dashed rounded-2xl text-zinc-600 text-sm">
-          ← 點選左側訂單，親眼確認簡訊與郵件投遞內容
+        <div id="emptyPreview" class="min-h-[520px] flex items-center justify-center bg-[#0d0d14] border border-zinc-800 border-dashed rounded-2xl text-zinc-600 text-sm px-6 text-center">
+          ← 點選左側訂單，填寫修改後的中文，再交件寄給客人
         </div>
 
         <div id="detailPreview" class="hidden space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+          <div class="flex flex-wrap items-start justify-between gap-3 px-1">
             <div>
-              <p class="text-[10px] uppercase tracking-widest text-violet-400 mb-1">Order Detail</p>
+              <p class="text-[10px] uppercase tracking-widest text-violet-400 mb-1">Order</p>
               <h3 id="detailTitle" class="text-lg font-medium text-zinc-100"></h3>
               <p id="detailMeta" class="text-xs text-zinc-500 mt-1"></p>
             </div>
-            <span id="detailBadge" class="text-[10px] rounded-full px-3 py-1 border"></span>
+            <span id="detailBadge" class="text-[10px] rounded-full px-3 py-1 border border-zinc-600 text-zinc-300"></span>
           </div>
 
-          <div class="grid xl:grid-cols-2 gap-5">
-
-            <!-- SMS Phone Mockup -->
-            <div class="preview-panel bg-gradient-to-b from-[#0d0d14] to-[#0a0a10] border border-zinc-800 rounded-2xl p-5 shadow-xl">
-              <p class="text-[10px] uppercase tracking-widest text-emerald-400/90 mb-4 text-center">📱 SMS View · 虛擬手機預覽</p>
-
-              <div id="smsPanel" class="mx-auto max-w-[280px]">
-                <div class="rounded-[2rem] border-[3px] border-zinc-700 bg-zinc-900 p-2 shadow-2xl shadow-black/50">
-                  <div class="phone-notch"></div>
-                  <div class="bg-black rounded-[1.4rem] overflow-hidden min-h-[420px] flex flex-col">
-                    <!-- Status bar -->
-                    <div class="flex justify-between items-center px-5 pt-2 pb-1 text-[9px] text-zinc-400">
-                      <span>9:41</span>
-                      <span>5G ▮▮▮</span>
-                    </div>
-                    <!-- Chat header -->
-                    <div class="px-4 py-3 border-b border-zinc-800/80 text-center">
-                      <p class="text-[10px] text-emerald-400/90 font-medium">發送虛擬電話</p>
-                      <p id="smsFromNumber" class="text-sm font-semibold text-white mt-0.5">+1 (855) 914-2394</p>
-                      <p id="smsToNumber" class="text-[10px] text-zinc-500 mt-1">→ 收件人</p>
-                    </div>
-                    <!-- Messages -->
-                    <div class="flex-1 px-3 py-4 space-y-3 overflow-y-auto max-h-[300px]">
-                      <p class="text-[9px] text-center text-zinc-600">Today</p>
-                      <div class="flex justify-end">
-                        <div class="sms-bubble max-w-[88%] bg-emerald-600 text-white text-[11px] leading-relaxed px-3.5 py-2.5 shadow-lg">
-                          <p id="smsBody" class="whitespace-pre-wrap"></p>
-                        </div>
-                      </div>
-                      <p id="smsDelivered" class="text-[9px] text-right text-zinc-600 pr-1">Delivered</p>
-                    </div>
-                    <div class="px-3 py-2 border-t border-zinc-800 text-[10px] text-zinc-600 text-center">iMessage · GhostBreak Relay</div>
-                  </div>
-                </div>
-              </div>
-
-              <p id="smsUnavailable" class="hidden text-center text-zinc-600 text-sm py-16">此方案未包含簡訊投遞</p>
-            </div>
-
-            <!-- Email Inbox Mockup -->
-            <div class="preview-panel bg-gradient-to-b from-[#0d0d14] to-[#0a0a10] border border-zinc-800 rounded-2xl p-5 shadow-xl">
-              <p class="text-[10px] uppercase tracking-widest text-sky-400/90 mb-4 text-center">📧 Email Inbox View · 虛擬收件匣</p>
-
-              <div id="emailPanel" class="rounded-xl border border-zinc-700/80 bg-[#111118] overflow-hidden shadow-inner min-h-[420px] flex flex-col">
-                <!-- Gmail-like toolbar -->
-                <div class="flex items-center gap-2 px-4 py-3 border-b border-zinc-800 bg-[#0f0f16]">
-                  <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold">G</div>
-                  <span class="text-xs text-zinc-400">Inbox</span>
-                  <span class="ml-auto text-[10px] text-zinc-600">GhostBreak Mail</span>
-                </div>
-                <!-- Email row selected -->
-                <div class="px-4 py-3 border-b border-zinc-800/80 bg-violet-500/5">
-                  <div class="flex items-start gap-3">
-                    <div class="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center text-xs shrink-0">👻</div>
-                    <div class="min-w-0 flex-1">
-                      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span class="text-[10px] text-sky-400">寄件人：</span>
-                        <span id="emailFrom" class="text-xs font-medium text-white truncate">noreply@bafuholdings.com</span>
-                      </div>
-                      <p id="emailSubject" class="text-sm font-semibold text-zinc-100 mt-2 truncate"></p>
-                      <p id="emailTo" class="text-[10px] text-zinc-500 mt-1"></p>
-                    </div>
-                  </div>
-                </div>
-                <!-- Email body -->
-                <div class="flex-1 px-5 py-5 overflow-y-auto max-h-[280px]">
-                  <p id="emailBody" class="email-body text-sm text-zinc-300"></p>
-                </div>
-                <div class="px-4 py-2 border-t border-zinc-800 text-[10px] text-zinc-600 flex justify-between">
-                  <span id="emailTime"></span>
-                  <span>AES-256 · Anonymous</span>
-                </div>
-              </div>
-
-              <p id="emailUnavailable" class="hidden text-center text-zinc-600 text-sm py-16">此方案未包含 Email 投遞</p>
-            </div>
+          <div id="draftBlock" class="hidden bg-[#0d0d14] border border-zinc-800 rounded-xl p-4">
+            <p class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">客人寫的中文</p>
+            <p id="draftText" class="zh text-lg leading-relaxed text-zinc-100 whitespace-pre-wrap"></p>
+          </div>
+          <div id="meaningBlock" class="hidden bg-[#0d0d14] border border-zinc-800 rounded-xl p-4">
+            <p class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">客人想表達的意思（英文）</p>
+            <p id="meaningText" class="text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap"></p>
           </div>
 
-          <!-- 訂單資訊 -->
-          <div class="grid sm:grid-cols-2 gap-3 px-1">
-            <div class="bg-[#0d0d14] border border-zinc-800 rounded-xl p-4">
-              <p class="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">PayPal 訂單 ID</p>
-              <p id="detailOrderId" class="text-xs text-zinc-300 break-all font-mono"></p>
-            </div>
-            <div class="bg-[#0d0d14] border border-zinc-800 rounded-xl p-4">
-              <p class="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">委託人 Anonymous Email</p>
-              <p id="detailAnonEmail" class="text-xs text-violet-300 break-all"></p>
-            </div>
-          </div>
-
-          <!-- 原始信件全文 -->
           <div class="bg-[#0d0d14] border border-zinc-800 rounded-xl p-4">
-            <p class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">完整信件原文（orders.json）</p>
-            <pre id="fullLetter" class="text-xs text-zinc-400 whitespace-pre-wrap font-[Noto_Serif_TC] leading-relaxed max-h-48 overflow-y-auto"></pre>
+            <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2" for="result">修改後的中文（會寄給客人）</label>
+            <textarea id="result" class="zh w-full bg-black/40 border border-zinc-700 rounded-xl px-4 py-3 text-lg leading-relaxed text-zinc-100 outline-none focus:border-violet-500" rows="5"></textarea>
+            <label class="block text-[10px] uppercase tracking-widest text-zinc-500 mt-4 mb-2" for="notes">給客人的說明（英文，選填）</label>
+            <textarea id="notes" class="w-full bg-black/40 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 outline-none focus:border-violet-500" rows="4" placeholder="例如：I changed 非常多 to 真的好, because..."></textarea>
+          </div>
+
+          <div id="callBlock" class="hidden bg-[#0d0d14] border border-dashed border-violet-700/70 rounded-xl p-4">
+            <p class="text-sm font-medium text-violet-200">這張訂單有加購書法字體圖稿（48 小時內交件）</p>
+            <p class="text-xs text-zinc-500 mt-1">把修改好的字用 3 種免費可商用字體排在白底上：教育部標準楷書、教育部隸書、霞鶩文楷 TC，存成圖檔上傳。交件時圖稿會附在 Email 裡。</p>
+            <img id="callPreview" class="hidden max-w-full max-h-80 mt-3 rounded-lg border border-zinc-800" alt="書法圖稿" />
+            <div class="flex flex-wrap items-center gap-3 mt-3">
+              <input id="callFile" type="file" accept="image/jpeg,image/png,image/webp" class="text-xs text-zinc-400 max-w-xs" />
+              <button type="button" id="uploadBtn" class="text-xs border border-zinc-700 rounded-full px-4 py-2 hover:border-violet-500 transition">上傳照片</button>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="deliverBtn" class="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-full px-5 py-2.5 text-sm font-semibold transition">交件並寄給客人</button>
+            <button type="button" id="saveBtn" class="border border-zinc-700 rounded-full px-4 py-2.5 text-sm hover:border-zinc-500 transition">先存草稿</button>
+            <button type="button" id="startBtn" class="hidden border border-zinc-700 rounded-full px-4 py-2.5 text-sm hover:border-zinc-500 transition">標記處理中</button>
+            <button type="button" id="refundBtn" class="border border-zinc-700 rounded-full px-4 py-2.5 text-sm text-zinc-400 hover:border-zinc-500 transition">標記已退款</button>
+            <span id="formMsg" class="text-xs"></span>
           </div>
         </div>
       </section>
@@ -185,113 +118,89 @@
 
   <div id="loginOverlay" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
     <form id="loginForm" class="w-full max-w-sm bg-[#0d0d14] border border-zinc-800 rounded-2xl p-6 shadow-2xl">
-      <p class="text-violet-400 text-xs tracking-[0.3em] uppercase mb-2">GhostBreak Admin</p>
+      <p class="text-violet-400 text-xs tracking-[0.3em] uppercase mb-2">Chinese Check</p>
       <h2 class="text-xl font-semibold text-zinc-100 mb-2">後台登入</h2>
       <p class="text-xs text-zinc-500 mb-5">輸入 Render 環境變數 <code class="text-zinc-400">ADMIN_PASSWORD</code></p>
       <label class="block text-xs uppercase tracking-wider text-zinc-500 mb-2" for="adminPassword">密碼</label>
       <input type="password" id="adminPassword" autocomplete="current-password" required
         class="w-full bg-black/40 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 mb-4 focus:border-violet-500 outline-none" />
       <p id="loginError" class="hidden text-xs text-red-400 mb-3"></p>
-      <button type="submit" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-xl py-3 text-sm font-semibold transition">
-        登入
-      </button>
+      <button type="submit" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-xl py-3 text-sm font-semibold transition">登入</button>
     </form>
   </div>
 
   <script>
-    const PLAN_LABEL = { email: 'Email', sms: 'SMS', bundle: 'Bundle' };
+    const LABEL = { paid: '待處理', in_progress: '處理中', delivered: '已交件', refunded: '已退款' };
+    const TONE = { natural: '自然日常', romantic: '浪漫', respectful: '尊敬長輩', friendly: '輕鬆', formal: '正式', business: '商業' };
     const AUTH_KEY = 'ghostbreakAdminAuth';
+    let auth = sessionStorage.getItem(AUTH_KEY) || '';
     let orders = [];
+    let tab = 'paid';
     let selectedId = null;
 
-    function getAuthHeader() {
-      const token = sessionStorage.getItem(AUTH_KEY);
-      return token ? { Authorization: `Basic ${token}` } : {};
-    }
-
-    function setAuth(password) {
-      sessionStorage.setItem(AUTH_KEY, btoa(`admin:${password}`));
-    }
-
-    function clearAuth() {
-      sessionStorage.removeItem(AUTH_KEY);
-    }
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
     function showLogin(message) {
-      const overlay = document.getElementById('loginOverlay');
-      overlay.classList.remove('hidden');
-      const err = document.getElementById('loginError');
-      if (message) {
-        err.textContent = message;
-        err.classList.remove('hidden');
-      } else {
-        err.classList.add('hidden');
-      }
+      $('loginOverlay').classList.remove('hidden');
+      const err = $('loginError');
+      if (message) { err.textContent = message; err.classList.remove('hidden'); }
+      else err.classList.add('hidden');
     }
+    function hideLogin() { $('loginOverlay').classList.add('hidden'); }
 
-    function hideLogin() {
-      document.getElementById('loginOverlay').classList.add('hidden');
-      document.getElementById('loginError').classList.add('hidden');
+    async function api(url, opts = {}) {
+      const res = await fetch(url, {
+        ...opts,
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch', Authorization: `Basic ${auth}`, ...(opts.headers || {}) },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        sessionStorage.removeItem(AUTH_KEY);
+        auth = '';
+        showLogin(data.error || '密碼不正確');
+        throw new Error('Login required');
+      }
+      if (!res.ok) throw new Error(data.error || '操作失敗');
+      return data;
     }
 
     function fmtTime(iso) {
       if (!iso) return '—';
-      const d = new Date(iso);
-      return d.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      return new Date(iso).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     }
 
-    function esc(s) {
-      const d = document.createElement('div');
-      d.textContent = s || '';
-      return d.innerHTML;
-    }
-
-    function deliveryStatus(order) {
-      const emailOk = Boolean(order.email);
-      const smsOk = Boolean(order.sms);
-      const parts = [];
-      if (emailOk) parts.push('Email');
-      if (smsOk) parts.push('SMS');
-      if (!parts.length) return '<span class="text-zinc-500">—</span>';
-      return `<span class="text-emerald-400">${parts.join(' + ')}</span>`;
-    }
-
-    async function fetchOrders() {
-      const res = await fetch('/api/admin/orders', { headers: getAuthHeader() });
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 401) {
-        clearAuth();
-        showLogin('請重新登入');
-        throw new Error('Login required');
-      }
-      if (res.status === 503) {
-        throw new Error(data.error || '後台尚未設定 ADMIN_PASSWORD');
-      }
-      if (!res.ok) throw new Error(data.error || '載入失敗');
-      return data.orders || [];
+    function renderTabs() {
+      $('tabs').innerHTML = Object.entries(LABEL).map(([k, v]) => {
+        const n = orders.filter((o) => o.status === k).length;
+        const on = k === tab;
+        return `<button type="button" data-tab="${k}" class="text-[11px] rounded-full px-2.5 py-1 border ${on ? 'bg-violet-600 border-violet-500 text-white' : 'border-zinc-700 text-zinc-400 hover:text-white'}">${v} ${n}</button>`;
+      }).join('');
+      $('tabs').querySelectorAll('[data-tab]').forEach((b) => {
+        b.onclick = () => { tab = b.dataset.tab; renderTable(); };
+      });
     }
 
     function renderTable() {
-      const tbody = document.getElementById('ordersTable');
-      document.getElementById('orderCount').textContent = `${orders.length} 筆訂單`;
-
-      if (!orders.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-zinc-600">尚無訂單。客戶完成付款並發送後，訂單會出現在這裡。</td></tr>';
+      renderTabs();
+      const rows = orders.filter((o) => o.status === tab);
+      $('orderCount').textContent = `${orders.length} 筆訂單`;
+      const tbody = $('ordersTable');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-zinc-600">這裡沒有訂單。</td></tr>';
         return;
       }
-
-      tbody.innerHTML = orders.map((o) => {
+      tbody.innerHTML = rows.map((o) => {
         const active = o.id === selectedId ? 'row-active' : 'hover:bg-zinc-800/30 cursor-pointer';
-        const amount = o.amount ? `$${o.amount}` : '—';
-        return `<tr class="${active} transition" data-id="${esc(o.id)}">
-          <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">${fmtTime(o.createdAt)}</td>
-          <td class="px-4 py-3 text-zinc-200">${esc(o.exName || '（未填）')}</td>
-          <td class="px-4 py-3 text-violet-300">${PLAN_LABEL[o.planId] || o.planId}</td>
-          <td class="px-4 py-3 text-zinc-300">${amount}</td>
-          <td class="px-4 py-3">${deliveryStatus(o)}</td>
+        const who = o.name || (o.email || '').split('@')[0] || '（未填）';
+        return `<tr class="${active} cursor-pointer transition" data-id="${esc(o.id)}">
+          <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">${fmtTime(o.paidAt || o.createdAt)}</td>
+          <td class="px-4 py-3 text-zinc-200">${esc(who)}</td>
+          <td class="px-4 py-3 text-violet-300">${esc(o.planName)}</td>
+          <td class="px-4 py-3 text-zinc-300">$${esc(o.amount)}</td>
+          <td class="px-4 py-3 text-zinc-400">${LABEL[o.status] || esc(o.status)}</td>
         </tr>`;
       }).join('');
-
       tbody.querySelectorAll('tr[data-id]').forEach((row) => {
         row.onclick = () => selectOrder(row.dataset.id);
       });
@@ -301,97 +210,202 @@
       selectedId = id;
       const order = orders.find((o) => o.id === id);
       if (!order) return;
-
       renderTable();
+      $('emptyPreview').classList.add('hidden');
+      $('detailPreview').classList.remove('hidden');
+      $('detailTitle').textContent = `${order.id} · ${order.planName} · US$${order.amount}`;
+      $('detailMeta').textContent = `${order.name || ''} ${order.email} · 用途：${order.purpose || '-'} · 語氣：${TONE[order.tone] || order.tone || '-'}`;
+      $('detailBadge').textContent = LABEL[order.status] || order.status;
+      $('draftBlock').classList.toggle('hidden', !order.draft);
+      $('draftText').textContent = order.draft || '';
+      $('meaningBlock').classList.toggle('hidden', !order.meaning);
+      $('meaningText').textContent = order.meaning || '';
+      $('result').value = order.result || '';
+      $('notes').value = order.notes || '';
+      $('callBlock').classList.toggle('hidden', !order.calligraphy);
+      $('uploadBtn').textContent = order.image ? '換一張照片' : '上傳照片';
+      $('deliverBtn').textContent = order.status === 'delivered' ? '修改後重新寄出' : '交件並寄給客人';
+      $('startBtn').classList.toggle('hidden', order.status !== 'paid');
+      $('refundBtn').classList.toggle('hidden', order.status === 'refunded');
+      $('formMsg').textContent = '';
+      $('formMsg').className = 'text-xs';
+      if (order.image) loadPreview(order.id);
+      else $('callPreview').classList.add('hidden');
+    }
 
-      document.getElementById('emptyPreview').classList.add('hidden');
-      document.getElementById('detailPreview').classList.remove('hidden');
+    async function loadPreview(id) {
+      const res = await fetch(`/api/nc/admin/orders/${encodeURIComponent(id)}/image?t=${Date.now()}`, {
+        headers: { 'X-Requested-With': 'fetch', Authorization: `Basic ${auth}` },
+      });
+      if (!res.ok) return;
+      $('callPreview').src = URL.createObjectURL(await res.blob());
+      $('callPreview').classList.remove('hidden');
+    }
 
-      document.getElementById('detailTitle').textContent =
-        order.exName ? `寫給 ${order.exName}` : `訂單 ${order.id}`;
-      document.getElementById('detailMeta').textContent =
-        `${order.planName} · $${order.amount || '—'} · ${order.toneLabel || order.tone}`;
-      document.getElementById('detailOrderId').textContent = order.id || '—';
-      document.getElementById('detailAnonEmail').textContent =
-        order.delegateInternal?.anonEmail || '—';
+    function shrinkImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, 2400 / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(img.src);
+          resolve(canvas.toDataURL('image/jpeg', 0.9));
+        };
+        img.onerror = () => reject(new Error('這個檔案無法讀取，請換 JPG 或 PNG'));
+        img.src = URL.createObjectURL(file);
+      });
+    }
 
-      const badge = document.getElementById('detailBadge');
-      const channels = [];
-      if (order.email) channels.push('Email');
-      if (order.sms) channels.push('SMS');
-      badge.textContent = channels.length ? channels.join(' + ') : '已記錄';
-      badge.className = `text-[10px] rounded-full px-3 py-1 border ${
-        order.twilioLive ? 'border-emerald-500/40 text-emerald-300' : 'border-zinc-600 text-zinc-400'
-      }`;
+    function setMsg(text, ok) {
+      const el = $('formMsg');
+      el.textContent = text;
+      el.className = ok ? 'text-xs text-emerald-400' : 'text-xs text-red-400';
+    }
 
-      // SMS panel
-      const hasSms = Boolean(order.sms);
-      document.getElementById('smsPanel').classList.toggle('hidden', !hasSms);
-      document.getElementById('smsUnavailable').classList.toggle('hidden', hasSms);
-      if (hasSms) {
-        document.getElementById('smsFromNumber').textContent = order.sms.from || '+1 (855) 914-2394';
-        document.getElementById('smsToNumber').textContent = `→ ${order.sms.to}`;
-        document.getElementById('smsBody').textContent = order.sms.body || '';
-        const smsDelivery = (order.deliveries || []).find((d) => d.channel === 'sms');
-        document.getElementById('smsDelivered').textContent = smsDelivery?.sid
-          ? `Delivered · ${smsDelivery.sid}`
-          : 'Delivered';
+    async function reloadKeep(id) {
+      const data = await api('/api/nc/admin/orders');
+      orders = data.orders || [];
+      const still = orders.find((o) => o.id === id);
+      if (still) {
+        if (still.status !== tab) tab = still.status;
+        selectOrder(id);
+      } else {
+        selectedId = null;
+        $('detailPreview').classList.add('hidden');
+        $('emptyPreview').classList.remove('hidden');
+        renderTable();
       }
-
-      // Email panel
-      const hasEmail = Boolean(order.email);
-      document.getElementById('emailPanel').classList.toggle('hidden', !hasEmail);
-      document.getElementById('emailUnavailable').classList.toggle('hidden', hasEmail);
-      if (hasEmail) {
-        document.getElementById('emailFrom').textContent = order.email.from || 'noreply@bafuholdings.com';
-        document.getElementById('emailSubject').textContent = order.email.subject || '';
-        document.getElementById('emailTo').textContent = `收件人：${order.email.to}`;
-        document.getElementById('emailBody').textContent = order.email.body || '';
-        document.getElementById('emailTime').textContent = fmtTime(order.createdAt);
-      }
-
-      document.getElementById('fullLetter').textContent = order.letter || '（無內容）';
     }
 
     async function load() {
-      try {
-        orders = await fetchOrders();
-        renderTable();
-        if (selectedId && orders.some((o) => o.id === selectedId)) {
-          selectOrder(selectedId);
-        } else if (orders.length) {
-          selectOrder(orders[0].id);
-        }
-      } catch (err) {
-        if (err.message === 'Login required') return;
-        document.getElementById('ordersTable').innerHTML =
-          `<tr><td colspan="5" class="px-4 py-8 text-center text-red-400">${esc(err.message)}</td></tr>`;
-      }
+      const data = await api('/api/nc/admin/orders');
+      orders = data.orders || [];
+      hideLogin();
+      renderTable();
+      if (selectedId && orders.some((o) => o.id === selectedId && o.status === tab)) selectOrder(selectedId);
     }
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    $('deliverBtn').onclick = async () => {
+      const order = orders.find((o) => o.id === selectedId);
+      if (!order) return;
+      const result = $('result').value;
+      const notes = $('notes').value;
+      if (order.calligraphy && !order.image && !confirm('這張訂單有加購書法圖稿，但還沒上傳圖檔。確定不附圖就交件？')) return;
+      if (!confirm('確定交件？會馬上寄 Email 給客人。')) return;
+      setMsg('處理中…', true);
+      try {
+        const r = await api(`/api/nc/admin/orders/${encodeURIComponent(order.id)}/deliver`, { method: 'POST', body: JSON.stringify({ result, notes }) });
+        if (r.warning) alert(r.warning);
+        await reloadKeep(order.id);
+        setMsg('已寄出', true);
+      } catch (err) {
+        if (err.message !== 'Login required') setMsg(err.message, false);
+      }
+    };
+
+    $('saveBtn').onclick = async () => {
+      const order = orders.find((o) => o.id === selectedId);
+      if (!order) return;
+      setMsg('處理中…', true);
+      try {
+        await api(`/api/nc/admin/orders/${encodeURIComponent(order.id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ result: $('result').value, notes: $('notes').value }),
+        });
+        await reloadKeep(order.id);
+        setMsg('已儲存', true);
+      } catch (err) {
+        if (err.message !== 'Login required') setMsg(err.message, false);
+      }
+    };
+
+    $('startBtn').onclick = async () => {
+      const order = orders.find((o) => o.id === selectedId);
+      if (!order) return;
+      setMsg('處理中…', true);
+      try {
+        await api(`/api/nc/admin/orders/${encodeURIComponent(order.id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ result: $('result').value, notes: $('notes').value, status: 'in_progress' }),
+        });
+        await reloadKeep(order.id);
+        setMsg('已標記處理中', true);
+      } catch (err) {
+        if (err.message !== 'Login required') setMsg(err.message, false);
+      }
+    };
+
+    $('refundBtn').onclick = async () => {
+      const order = orders.find((o) => o.id === selectedId);
+      if (!order) return;
+      if (!confirm('請先到 PayPal 退款，再標記已退款。確定標記？')) return;
+      setMsg('處理中…', true);
+      try {
+        await api(`/api/nc/admin/orders/${encodeURIComponent(order.id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'refunded', result: $('result').value, notes: $('notes').value }),
+        });
+        await reloadKeep(order.id);
+        setMsg('已標記退款', true);
+      } catch (err) {
+        if (err.message !== 'Login required') setMsg(err.message, false);
+      }
+    };
+
+    $('uploadBtn').onclick = async () => {
+      const order = orders.find((o) => o.id === selectedId);
+      if (!order) return;
+      const file = $('callFile').files[0];
+      if (!file) { setMsg('請先選擇照片', false); return; }
+      setMsg('上傳中…', true);
+      try {
+        const dataUrl = await shrinkImage(file);
+        await api(`/api/nc/admin/orders/${encodeURIComponent(order.id)}/image`, { method: 'POST', body: JSON.stringify({ dataUrl }) });
+        await api(`/api/nc/admin/orders/${encodeURIComponent(order.id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ result: $('result').value, notes: $('notes').value }),
+        });
+        await reloadKeep(order.id);
+        setMsg('照片已上傳', true);
+      } catch (err) {
+        if (err.message !== 'Login required') setMsg(err.message, false);
+      }
+    };
+
+    $('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const password = document.getElementById('adminPassword').value;
-      setAuth(password);
+      auth = btoa(unescape(encodeURIComponent(`admin:${$('adminPassword').value}`)));
       try {
         await load();
-        hideLogin();
-        document.getElementById('adminPassword').value = '';
-      } catch {
-        clearAuth();
-        showLogin('密碼錯誤，請再試一次');
+        sessionStorage.setItem(AUTH_KEY, auth);
+        $('adminPassword').value = '';
+      } catch (err) {
+        if (err.message !== 'Login required') showLogin(err.message);
       }
     });
 
-    document.getElementById('refreshBtn').onclick = load;
-    if (!sessionStorage.getItem(AUTH_KEY)) {
-      showLogin();
+    $('refreshBtn').onclick = () => {
+      if (!auth) return showLogin();
+      load().catch((err) => {
+        if (err.message !== 'Login required') {
+          $('ordersTable').innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-red-400">${esc(err.message)}</td></tr>`;
+        }
+      });
+    };
+
+    if (auth) {
+      load().catch((err) => {
+        if (err.message !== 'Login required') showLogin(err.message);
+      });
     } else {
-      load();
+      showLogin();
     }
-    setInterval(() => {
-      if (sessionStorage.getItem(AUTH_KEY)) load();
-    }, 15000);
   </script>
 </body>
 </html>

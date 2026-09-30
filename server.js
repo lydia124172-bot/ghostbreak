@@ -19,7 +19,7 @@ const {
   assertOutboundPrivacy,
   sanitizeDeliveryForClient,
 } = require('./services/privacy');
-const { loadOrders, findOrder, recordOrder } = require('./services/orders');
+const { recordOrder } = require('./services/orders');
 const { requireAdmin } = require('./services/admin-auth');
 const { PLANS, getPlan, resolvePlanDelivery, validatePlanDelivery, SURVIVAL_GUIDE_PATH } = require('./services/plans');
 const { getRecaptchaSiteKey, recaptchaConfigured, isRecaptchaDevBypass, getRecaptchaMinScore, verifyRecaptcha } = require('./services/recaptcha');
@@ -452,16 +452,6 @@ app.post('/api/send-message', async (req, res) => {
   }
 });
 
-app.get('/api/admin/orders', requireAdmin, (_req, res) => {
-  res.json({ success: true, orders: loadOrders() });
-});
-
-app.get('/api/admin/orders/:id', requireAdmin, (req, res) => {
-  const order = findOrder(req.params.id);
-  if (!order) return res.status(404).json({ success: false, error: 'Order not found.' });
-  res.json({ success: true, order });
-});
-
 app.post('/api/paypal/create-order', async (req, res) => {
   try {
     const fields = validateFormFields(req.body);
@@ -758,6 +748,13 @@ const GHOSTBREAK_PAGES = [
 ];
 app.get(GHOSTBREAK_PAGES, (_req, res) => res.redirect(301, '/chinese-check'));
 
+app.get(['/admin', '/admin.html'], (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.type('html').send(renderPublicHtml('admin.html'));
+});
+
+app.get(['/nc-admin', '/nc-admin.html'], (_req, res) => res.redirect(301, '/admin.html'));
+
 app.get('/chinese-check', (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.type('html').send(renderPublicHtml('chinese-check.html'));
@@ -850,7 +847,7 @@ app.listen(PORT, async () => {
   console.log(`🔗 ${BASE_URL}`);
   console.log('📝 POST /api/generate-letter  （免費預覽，無需 PayPal）');
   console.log('📤 POST /api/send-message');
-  console.log('📋 GET  /api/admin/orders  ·  /admin.html');
+  console.log('📋 GET  /api/nc/admin/orders  ·  /admin.html');
   console.log(`💳 PayPal: ${isPayPalConfigured() ? PAYPAL_MODE.toUpperCase() : '未設定（不影響預覽）'}`);
   console.log(`🌐 營運網域: ${getDomainName()}`);
   console.log(`📧 Email From: ${getOfficialEmailFrom()}`);
