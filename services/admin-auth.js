@@ -17,8 +17,11 @@ function requireAdmin(req, res, next) {
   }
 
   const header = req.headers.authorization || '';
+  const challenge = () => {
+    if (req.get('X-Requested-With') !== 'fetch') res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
+  };
   if (!header.startsWith('Basic ')) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="GhostBreak Admin"');
+    challenge();
     return res.status(401).json({ success: false, error: 'Login required.' });
   }
 
@@ -27,7 +30,7 @@ function requireAdmin(req, res, next) {
   const supplied = colon >= 0 ? decoded.slice(colon + 1) : decoded;
 
   if (supplied !== password) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="GhostBreak Admin"');
+    challenge();
     return res.status(401).json({ success: false, error: 'Invalid password.' });
   }
 

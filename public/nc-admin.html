@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Native Chinese Check 後台</title>
+  <style>
+    body { margin:0; font-family:'Noto Sans TC',system-ui,sans-serif; background:#f6f3ee; color:#1b1916; line-height:1.6; }
+    .wrap { max-width:960px; margin:0 auto; padding:24px 18px 60px; }
+    h1 { font-size:24px; margin:0 0 4px; }
+    .muted { color:#6a645b; font-size:14px; }
+    .card { background:#fff; border:1px solid #e5ddd0; border-radius:14px; padding:18px; margin-top:16px; }
+    input, textarea, select { width:100%; box-sizing:border-box; font:16px inherit; padding:10px 12px; border:1px solid #d9d0c2; border-radius:10px; }
+    textarea.zh { font-size:19px; line-height:1.8; }
+    button { font:600 15px inherit; padding:10px 18px; border-radius:999px; border:0; cursor:pointer; background:#b4552d; color:#fff; }
+    button.ghost { background:#fff; color:#1b1916; border:1px solid #d9d0c2; }
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+    .tabs button { background:#fff; color:#1b1916; border:1px solid #d9d0c2; }
+    .tabs button.on { background:#1b1916; color:#fff; }
+    .order-head { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .pill { display:inline-block; padding:2px 10px; border-radius:999px; font-size:13px; background:#eee7dc; }
+    .pill.paid { background:#fde2d3; } .pill.in_progress { background:#fff1c2; } .pill.delivered { background:#d6f0de; } .pill.refunded { background:#e5e5e5; }
+    .box { background:#faf7f2; border-radius:10px; padding:12px; white-space:pre-wrap; font-size:18px; }
+    label { display:block; font-weight:600; margin:14px 0 6px; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; align-items:center; }
+    .ok { color:#2f7d4f; } .err { color:#b33a3a; }
+    .hidden { display:none !important; }
+    .call { margin-top:16px; border:1px dashed #b4552d; background:#fff6ef; border-radius:12px; padding:14px; }
+    .call .preview { display:block; max-width:100%; max-height:360px; margin:10px 0; border-radius:8px; border:1px solid #e5ddd0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Native Chinese Check 後台</h1>
+    <p class="muted">客人付款後的訂單會出現在這裡。寫好修改後的中文和說明，按「交件並寄給客人」即可。</p>
+
+    <div class="card" id="loginCard">
+      <label for="pw">後台密碼</label>
+      <input id="pw" type="password" autocomplete="current-password" />
+      <div class="actions"><button id="loginBtn" type="button">登入</button><span class="err" id="loginErr"></span></div>
+    </div>
+
+    <div id="main" class="hidden">
+      <div class="tabs" id="tabs"></div>
+      <div id="list"></div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const LABEL = { paid: '待處理', in_progress: '處理中', delivered: '已交件', refunded: '已退款' };
+    const TONE = { natural: '自然日常', romantic: '浪漫', respectful: '尊敬長輩', friendly: '輕鬆', formal: '正式', business: '商業' };
+    let auth = sessionStorage.getItem('nc-admin') || '';
+    let orders = [];
+    let tab = 'paid';
+
+    const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    async function api(url, opts = {}) {
+      const res = await fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch', Authorization: `Basic ${auth}` } });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) { sessionStorage.removeItem('nc-admin'); throw new Error('密碼不正確'); }
+      if (!res.ok) throw new Error(data.error || '操作失敗');
+      return data;
+    }
+
+    async function load() {
+      const data = await api('/api/nc/admin/orders');
+      orders = data.orders || [];
+      $('loginCard').classList.add('hidden');
+      $('main').classList.remove('hidden');
+      render();
+    }
+
+    function render() {
+      $('tabs').innerHTML = Object.entries(LABEL).map(([k, v]) => {
+        const n = orders.filter((o) => o.status === k).length;
+        return `<button type="button" class="${k === tab ? 'on' : ''}" data-tab="${k}">${v}（${n}）</button>`;
+      }).join('');
+      $('tabs').querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { tab = b.dataset.tab; render(); }; });
+      const rows = orders.filter((o) => o.status === tab);
+      $('list').innerHTML = rows.map((o) => `
+        <div class="card" data-id="${o.id}">
+          <div class="order-head">
+            <div><b>${esc(o.id)}</b> · ${esc(o.planName)} · US$${esc(o.amount)} <span class="pill ${o.status}">${LABEL[o.status] || o.status}</span></div>
+            <div class="muted">付款 ${o.paidAt ? new Date(o.paidAt).toLocaleString('zh-TW') : '-'}${o.deliveredAt ? ` · 交件 ${new Date(o.deliveredAt).toLocaleString('zh-TW')}` : ''}</div>
+          </div>
+          <p class="muted">客人：${esc(o.name || '')} ${esc(o.email)} · 用途：${esc(o.purpose || '-')} · 語氣：${TONE[o.tone] || o.tone}</p>
+          ${o.draft ? `<label>客人寫的中文</label><div class="box">${esc(o.draft)}</div>` : ''}
+          ${o.meaning ? `<label>客人想表達的意思（英文）</label><div class="box" style="font-size:16px">${esc(o.meaning)}</div>` : ''}
+          <label>修改後的中文（會寄給客人）</label>
+          <textarea class="zh" rows="5" data-f="result">${esc(o.result)}</textarea>
+          <label>給客人的說明（英文，選填）</label>
+          <textarea rows="4" data-f="notes" placeholder="例如：I changed 非常多 to 真的好, because...">${esc(o.notes)}</textarea>
+          ${o.calligraphy ? `
+          <div class="call">
+            <b>★ 這張訂單有加購書法字體圖稿（48 小時內交件）</b>
+            <p class="muted">把修改好的字用 3 種免費可商用字體排在白底上：教育部標準楷書、教育部隸書、霞鶩文楷 TC，存成圖檔上傳。交件時圖稿會附在 Email 裡寄給客人。</p>
+            <img class="preview${o.image ? '' : ' hidden'}" alt="書法圖稿" />
+            <div class="actions"><input type="file" accept="image/jpeg,image/png,image/webp" data-f="image" style="max-width:320px" /><button type="button" class="ghost" data-act="upload">${o.image ? '換一張照片' : '上傳照片'}</button></div>
+          </div>` : ''}
+          <div class="actions">
+            <button type="button" data-act="deliver">${o.status === 'delivered' ? '修改後重新寄出' : '交件並寄給客人'}</button>
+            <button type="button" class="ghost" data-act="save">先存草稿</button>
+            ${o.status === 'paid' ? '<button type="button" class="ghost" data-act="start">標記處理中</button>' : ''}
+            ${o.status !== 'refunded' ? '<button type="button" class="ghost" data-act="refund">標記已退款</button>' : ''}
+            <span class="msg"></span>
+          </div>
+        </div>`).join('') || '<div class="card muted">這裡沒有訂單。</div>';
+      $('list').querySelectorAll('[data-act]').forEach((btn) => { btn.onclick = () => act(btn); });
+      rows.filter((o) => o.image).forEach((o) => loadPreview(o.id));
+    }
+
+    async function loadPreview(id) {
+      const img = document.querySelector(`[data-id="${id}"] .preview`);
+      if (!img) return;
+      const res = await fetch(`/api/nc/admin/orders/${encodeURIComponent(id)}/image?t=${Date.now()}`, { headers: { 'X-Requested-With': 'fetch', Authorization: `Basic ${auth}` } });
+      if (!res.ok) return;
+      img.src = URL.createObjectURL(await res.blob());
+      img.classList.remove('hidden');
+    }
+
+    function shrinkImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, 2400 / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(img.src);
+          resolve(canvas.toDataURL('image/jpeg', 0.9));
+        };
+        img.onerror = () => reject(new Error('這個檔案無法讀取，請換 JPG 或 PNG'));
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    async function act(btn) {
+      const card = btn.closest('[data-id]');
+      const id = card.dataset.id;
+      const msg = card.querySelector('.msg');
+      const result = card.querySelector('[data-f=result]').value;
+      const notes = card.querySelector('[data-f=notes]').value;
+      msg.className = 'msg';
+      msg.textContent = '處理中…';
+      try {
+        const order = orders.find((o) => o.id === id);
+        if (btn.dataset.act === 'upload') {
+          const file = card.querySelector('[data-f=image]').files[0];
+          if (!file) throw new Error('請先選擇照片');
+          const dataUrl = await shrinkImage(file);
+          await api(`/api/nc/admin/orders/${encodeURIComponent(id)}/image`, { method: 'POST', body: JSON.stringify({ dataUrl }) });
+          await api(`/api/nc/admin/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ result, notes }) });
+        } else if (btn.dataset.act === 'deliver') {
+          if (order?.calligraphy && !order.image && !confirm('這張訂單有加購書法圖稿，但還沒上傳圖檔。確定不附圖就交件？')) { msg.textContent = ''; return; }
+          if (!confirm('確定交件？會馬上寄 Email 給客人。')) { msg.textContent = ''; return; }
+          const r = await api(`/api/nc/admin/orders/${encodeURIComponent(id)}/deliver`, { method: 'POST', body: JSON.stringify({ result, notes }) });
+          if (r.warning) alert(r.warning);
+        } else if (btn.dataset.act === 'refund') {
+          if (!confirm('請先到 PayPal 退款，再標記已退款。確定標記？')) { msg.textContent = ''; return; }
+          await api(`/api/nc/admin/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ status: 'refunded', result, notes }) });
+        } else {
+          const body = { result, notes };
+          if (btn.dataset.act === 'start') body.status = 'in_progress';
+          await api(`/api/nc/admin/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) });
+        }
+        await load();
+      } catch (err) {
+        msg.className = 'msg err';
+        msg.textContent = err.message;
+      }
+    }
+
+    $('loginBtn').onclick = async () => {
+      auth = btoa(unescape(encodeURIComponent(`admin:${$('pw').value}`)));
+      $('loginErr').textContent = '';
+      try {
+        await load();
+        sessionStorage.setItem('nc-admin', auth);
+      } catch (err) {
+        $('loginErr').textContent = err.message;
+      }
+    };
+    $('pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('loginBtn').click(); });
+    if (auth) load().catch(() => {});
+  </script>
+</body>
+</html>

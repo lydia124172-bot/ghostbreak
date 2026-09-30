@@ -25,10 +25,11 @@ const { PLANS, getPlan, resolvePlanDelivery, validatePlanDelivery, SURVIVAL_GUID
 const { getRecaptchaSiteKey, recaptchaConfigured, isRecaptchaDevBypass, getRecaptchaMinScore, verifyRecaptcha } = require('./services/recaptcha');
 const { isTwilioTrialAccount, getTwilioSmsMaxLength } = require('./services/twilio');
 const { getDomainName, getOfficialEmailFrom } = require('./services/privacy');
+const nativeCheck = require('./services/native-check');
 
 const PORT = process.env.PORT || 3000;
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
-const HTML_SKIP_GA = new Set(['admin.html']);
+const HTML_SKIP_GA = new Set(['admin.html', 'nc-admin.html']);
 
 const PAYPAL_MODE = (process.env.PAYPAL_MODE || 'sandbox').toLowerCase();
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || '';
@@ -38,7 +39,9 @@ const PAYPAL_API = PAYPAL_MODE === 'live'
   : 'https://api-m.sandbox.paypal.com';
 
 const app = express();
-app.use(express.json());
+const jsonSmall = express.json();
+const jsonLarge = express.json({ limit: '10mb' });
+app.use((req, res, next) => (/^\/api\/nc\/admin\/orders\/[^/]+\/image$/.test(req.path) ? jsonLarge : jsonSmall)(req, res, next));
 
 /** 已驗證的 PayPal 訂單（付款成功後才允許發送） */
 const verifiedOrders = new Set();
@@ -587,6 +590,183 @@ app.post('/api/paypal/capture-order', async (req, res) => {
   }
 });
 
+// ── Native Chinese Check ──────────────────────────────────────
+
+const aiCheckHits = new Map();
+function aiCheckAllowed(ip) {
+  const now = Date.now();
+  const hits = (aiCheckHits.get(ip) || []).filter((t) => now - t < 24 * 60 * 60 * 1000);
+  if (hits.length >= 8) return false;
+  hits.push(now);
+  aiCheckHits.set(ip, hits);
+  return true;
+}
+
+app.get('/api/nc/config', (_req, res) => {
+  res.json({
+    plans: nativeCheck.publicPlans(),
+    addons: nativeCheck.publicAddons(),
+    aiCheck: nativeCheck.aiConfigured(),
+    paypalClientId: isPayPalConfigured() ? PAYPAL_CLIENT_ID : null,
+    paypalSandbox: PAYPAL_MODE !== 'live',
+  });
+});
+
+app.post('/api/nc/ai-check', async (req, res) => {
+  if (!aiCheckAllowed(req.ip)) {
+    return res.status(429).json({ error: 'You have used today\'s free checks. Order a teacher review for a full correction.' });
+  }
+  try {
+    res.json(await nativeCheck.aiCheck(req.body?.text, req.body?.meaning));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/nc/create', async (req, res) => {
+  let fields;
+  try {
+    fields = nativeCheck.validateOrder(req.body || {});
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+  const token = await getPayPalToken();
+  if (!token) return res.status(503).json({ error: 'Payment is temporarily unavailable. Please try again later.' });
+  const row = nativeCheck.createOrder(fields);
+  try {
+    const ppRes = await fetch(`${PAYPAL_API}/v2/checkout/orders`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [{
+          amount: { currency_code: 'USD', value: row.amount },
+          description: `Native Chinese Check — ${row.planName}`,
+          custom_id: row.id,
+        }],
+        application_context: { brand_name: 'Native Chinese Check', user_action: 'PAY_NOW', shipping_preference: 'NO_SHIPPING' },
+      }),
+    });
+    const pp = await ppRes.json();
+    if (!ppRes.ok) throw new Error(pp.message || 'PayPal order failed');
+    nativeCheck.updateOrder(row.id, { paypalOrderId: pp.id });
+    res.json({ orderId: pp.id, ref: row.id });
+  } catch (err) {
+    console.error('[nc create]', err.message);
+    res.status(502).json({ error: 'Could not start the payment. Please try again.' });
+  }
+});
+
+app.post('/api/nc/capture', async (req, res) => {
+  const ppId = String(req.body?.orderId || '');
+  const row = nativeCheck.loadOrders().find((o) => o.paypalOrderId && o.paypalOrderId === ppId);
+  if (!row) return res.status(404).json({ error: 'Order not found.' });
+  if (row.status !== 'pending_payment') {
+    return res.json({ ok: true, id: row.id, key: row.key });
+  }
+  const token = await getPayPalToken();
+  if (!token) return res.status(503).json({ error: 'Payment is temporarily unavailable.' });
+  try {
+    const capRes = await fetch(`${PAYPAL_API}/v2/checkout/orders/${encodeURIComponent(ppId)}/capture`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+    const cap = await capRes.json();
+    if (!capRes.ok || cap.status !== 'COMPLETED') throw new Error(cap.message || cap.status || 'Capture failed');
+    const capture = cap.purchase_units?.[0]?.payments?.captures?.[0];
+    if (!capture || capture.amount?.value !== row.amount || capture.amount?.currency_code !== 'USD' || capture.custom_id !== row.id) {
+      throw new Error('Payment details do not match the order');
+    }
+    const paid = nativeCheck.updateOrder(row.id, { status: 'paid', paidAt: new Date().toISOString(), paypalCaptureId: capture.id });
+    nativeCheck.mailPaid(BASE_URL, paid).catch((e) => console.error('[nc mail]', e.message));
+    res.json({ ok: true, id: paid.id, key: paid.key });
+  } catch (err) {
+    console.error('[nc capture]', err.message);
+    res.status(400).json({ error: 'Payment was not completed. You have not been charged twice — please contact support if money left your account.' });
+  }
+});
+
+app.get('/api/nc/order', (req, res) => {
+  const row = nativeCheck.findOrder(String(req.query.id || ''));
+  if (!row || row.key !== String(req.query.k || '')) return res.status(404).json({ error: 'Order not found.' });
+  res.json(nativeCheck.customerView(row));
+});
+
+app.get('/api/nc/order/image', (req, res) => {
+  const row = nativeCheck.findOrder(String(req.query.id || ''));
+  if (!row || row.key !== String(req.query.k || '') || row.status !== 'delivered') return res.status(404).end();
+  const file = nativeCheck.imagePath(row);
+  if (!file) return res.status(404).end();
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.sendFile(file);
+});
+
+app.get('/api/nc/admin/orders/:id/image', requireAdmin, (req, res) => {
+  const file = nativeCheck.imagePath(nativeCheck.findOrder(req.params.id));
+  if (!file) return res.status(404).end();
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(file);
+});
+
+app.post('/api/nc/admin/orders/:id/image', requireAdmin, (req, res) => {
+  try {
+    const row = nativeCheck.saveImage(req.params.id, req.body?.dataUrl);
+    res.json({ ok: true, order: row });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/nc/admin/orders', requireAdmin, (_req, res) => {
+  res.json({ orders: nativeCheck.loadOrders().filter((o) => o.status !== 'pending_payment'), statuses: nativeCheck.STATUSES });
+});
+
+app.patch('/api/nc/admin/orders/:id', requireAdmin, (req, res) => {
+  const patch = {};
+  if (typeof req.body?.result === 'string') patch.result = req.body.result.slice(0, 20000);
+  if (typeof req.body?.notes === 'string') patch.notes = req.body.notes.slice(0, 20000);
+  if (nativeCheck.STATUSES.includes(req.body?.status) && req.body.status !== 'delivered') patch.status = req.body.status;
+  const row = nativeCheck.updateOrder(req.params.id, patch);
+  if (!row) return res.status(404).json({ error: '找不到訂單' });
+  res.json({ ok: true, order: row });
+});
+
+app.post('/api/nc/admin/orders/:id/deliver', requireAdmin, async (req, res) => {
+  const current = nativeCheck.findOrder(req.params.id);
+  if (!current) return res.status(404).json({ error: '找不到訂單' });
+  const result = String(req.body?.result ?? current.result ?? '').trim();
+  if (!result) return res.status(400).json({ error: '請先填寫修改後的中文' });
+  const row = nativeCheck.updateOrder(current.id, {
+    result: result.slice(0, 20000),
+    notes: String(req.body?.notes ?? current.notes ?? '').slice(0, 20000),
+    status: 'delivered',
+    deliveredAt: new Date().toISOString(),
+  });
+  try {
+    await nativeCheck.mailDelivered(BASE_URL, row);
+    res.json({ ok: true, order: row });
+  } catch (err) {
+    console.error('[nc deliver mail]', err.message);
+    res.json({ ok: true, order: row, warning: '已交件，但 Email 寄送失敗；客人仍可從訂單連結看到結果。' });
+  }
+});
+
+const GHOSTBREAK_PAGES = [
+  '/ghostbreak', '/index.html', '/faq.html', '/success.html', '/tools/sms-character-counter',
+  '/tools/sms-character-counter.html',
+  '/blog/how-to-break-up-over-text-anonymously.html', '/blog/send-anonymous-breakup-sms.html',
+];
+app.get(GHOSTBREAK_PAGES, (_req, res) => res.redirect(301, '/chinese-check'));
+
+app.get('/chinese-check', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.type('html').send(renderPublicHtml('chinese-check.html'));
+});
+
+app.get('/chinese-check/order', (_req, res) => {
+  res.type('html').send(renderPublicHtml('chinese-check-order.html'));
+});
+
 function getGaMeasurementId() {
   return String(process.env.GA_MEASUREMENT_ID || '').trim();
 }
@@ -615,23 +795,7 @@ function renderPublicHtml(relPath) {
   return html;
 }
 
-function renderIndexHtml() {
-  const template = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
-  const siteKey = getRecaptchaSiteKey() || '';
-  const buildId = String(Date.now());
-  const sandboxBadgeClass = PAYPAL_MODE === 'live' ? 'hidden' : 'inline';
-  return injectGaSnippet(template
-    .replaceAll('__RECAPTCHA_SITE_KEY__', siteKey)
-    .replace('__BUILD_ID__', buildId)
-    .replace('__SANDBOX_BADGE_CLASS__', sandboxBadgeClass));
-}
-
-app.get('/tools/sms-character-counter', (_req, res) => {
-  res.type('html').send(renderPublicHtml('tools/sms-character-counter.html'));
-});
-
 app.get(/\.html$/, (req, res, next) => {
-  if (req.path === '/index.html') return next();
   const rel = req.path.replace(/^\//, '');
   const filePath = path.join(__dirname, 'public', rel);
   if (!fs.existsSync(filePath)) return next();
@@ -641,11 +805,6 @@ app.get(/\.html$/, (req, res, next) => {
 app.get('/', (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.type('html').send(renderPublicHtml('home.html'));
-});
-
-app.get(['/ghostbreak', '/index.html'], (_req, res) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.type('html').send(renderIndexHtml());
 });
 
 app.use(express.static(path.join(__dirname, 'public'), {

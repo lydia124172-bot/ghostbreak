@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Your order — Native Chinese Check</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    body { margin:0; font-family:Inter,system-ui,sans-serif; color:#1b1916; background:#fbf8f3; line-height:1.65; }
+    .wrap { max-width:720px; margin:0 auto; padding:24px 22px 60px; }
+    .logo { font-weight:700; text-decoration:none; color:inherit; }
+    .logo span { color:#b4552d; }
+    .card { background:#fff; border:1px solid #e8e0d4; border-radius:20px; padding:26px; margin-top:24px; }
+    h1 { font-size:30px; margin:0 0 6px; }
+    .muted { color:#6a645b; }
+    .steps { display:flex; gap:8px; margin:18px 0; flex-wrap:wrap; }
+    .step { padding:6px 12px; border-radius:999px; background:#eee7dc; font-size:14px; color:#6a645b; }
+    .step.on { background:#b4552d; color:#fff; }
+    .zh { font-family:'Noto Serif TC',serif; font-size:21px; line-height:1.9; white-space:pre-wrap; }
+    .result { border-left:4px solid #b4552d; background:#fbf8f3; padding:16px 18px; border-radius:8px; }
+    .notes { white-space:pre-wrap; }
+    h2 { font-size:17px; margin:22px 0 8px; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="logo" href="/chinese-check">Native <span>Chinese</span> Check</a>
+    <div class="card" id="box">
+      <p class="muted" id="loading">Loading your order…</p>
+    </div>
+  </div>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const box = document.getElementById('box');
+    const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const STEP = { paid: 1, in_progress: 2, delivered: 3, refunded: 0 };
+    fetch(`/api/nc/order?id=${encodeURIComponent(q.get('id') || '')}&k=${encodeURIComponent(q.get('k') || '')}`)
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((o) => {
+        const imgUrl = `/api/nc/order/image?id=${encodeURIComponent(o.id)}&k=${encodeURIComponent(q.get('k') || '')}`;
+        const step = STEP[o.status] ?? 0;
+        const steps = ['Paid', 'Teacher working', 'Delivered'].map((s, i) => `<span class="step${i < step ? ' on' : ''}">${s}</span>`).join('');
+        const head = o.status === 'delivered'
+          ? '<h1>Your Chinese is ready</h1>'
+          : o.status === 'refunded'
+            ? '<h1>This order was refunded</h1>'
+            : `<h1>${q.get('new') ? 'Thank you! ' : ''}We're on it</h1><p class="muted">We emailed you a receipt. You'll get another email as soon as the teacher finishes — bookmark this page to check anytime.</p>`;
+        box.innerHTML = `${head}
+          <div class="steps">${steps}</div>
+          <p class="muted">Order ${esc(o.id)} · ${esc(o.planName)} · US$${esc(o.amount)}</p>
+          ${o.status === 'delivered' ? `<h2>Checked Chinese</h2><div class="result zh">${esc(o.result)}</div>${o.notes ? `<h2>Teacher's notes</h2><div class="notes">${esc(o.notes)}</div>` : ''}${o.hasImage ? `<h2>Calligraphy design</h2><a href="${imgUrl}" target="_blank" rel="noopener"><img src="${imgUrl}" alt="Calligraphy design" style="max-width:100%;border-radius:12px;border:1px solid #e8e0d4" /></a><p class="muted">Tap the image to open the full-size file for your tattoo artist.</p>` : ''}<p class="muted" style="margin-top:18px">Something not right? Reply to the result email within 7 days for a free revision.</p>` : ''}
+          ${o.draft ? `<h2>What you sent</h2><div class="zh muted" style="font-size:18px">${esc(o.draft)}</div>` : ''}
+          ${o.meaning ? `<h2>Your English note</h2><p class="muted">${esc(o.meaning)}</p>` : ''}`;
+      })
+      .catch(() => { box.innerHTML = '<h1>Order not found</h1><p class="muted">Please use the link from your email, or contact support@bafuholdings.com.</p>'; });
+  </script>
+</body>
+</html>

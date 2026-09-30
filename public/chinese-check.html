@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Native Chinese Check — Make Your Chinese Sound Natural | Checked by a Taiwanese Teacher</title>
+  <meta name="description" content="Google Translate and AI get Chinese words right but the feeling wrong. A native Taiwanese teacher fixes your Traditional Chinese — messages, cards, tattoos, business copy. Free AI check, from US$9." />
+  <link rel="canonical" href="https://bafuholdings.com/chinese-check" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Native Chinese Check" />
+  <meta property="og:title" content="Native Chinese Check — Make Your Chinese Sound Natural" />
+  <meta property="og:description" content="A native Taiwanese teacher fixes the Chinese that Google Translate and AI get wrong. Free AI check, from US$9." />
+  <meta property="og:url" content="https://bafuholdings.com/chinese-check" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet" />
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Service","name":"Native Chinese Check","serviceType":"Chinese proofreading and correction",
+   "provider":{"@type":"Organization","name":"BAFU HOLDINGS","url":"https://bafuholdings.com/"},
+   "areaServed":"Worldwide","availableLanguage":["English","Chinese"],
+   "offers":[{"@type":"Offer","name":"Quick Fix","price":"9.00","priceCurrency":"USD"},
+             {"@type":"Offer","name":"Tattoo Check","price":"15.00","priceCurrency":"USD"},
+             {"@type":"Offer","name":"Polish","price":"29.00","priceCurrency":"USD"}]}
+  </script>
+  <style>
+    :root { --ink:#1b1916; --muted:#6a645b; --paper:#fbf8f3; --card:#fff; --line:#e8e0d4; --accent:#b4552d; --accent2:#8f3f1f; --dark:#1a1613; --ok:#2f7d4f; --warn:#b7791f; --bad:#b33a3a; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,system-ui,sans-serif; color:var(--ink); background:var(--paper); line-height:1.65; }
+    a { color:inherit; }
+    .wrap { max-width:1060px; margin:0 auto; padding:0 22px; }
+    .zh { font-family:'Noto Serif TC',serif; }
+    header.top { display:flex; justify-content:space-between; align-items:center; padding:16px 0; }
+    .logo { font-weight:700; text-decoration:none; letter-spacing:.01em; }
+    .logo span { color:var(--accent); }
+    .top nav a { margin-left:20px; text-decoration:none; color:var(--muted); font-size:15px; }
+    .btn { display:inline-block; border:0; cursor:pointer; padding:13px 24px; border-radius:999px; font:600 15px Inter,sans-serif; text-decoration:none; }
+    .btn-main { background:var(--accent); color:#fff; }
+    .btn-main:hover { background:var(--accent2); }
+    .btn-line { border:1px solid var(--line); background:#fff; color:var(--ink); }
+    .btn:disabled { opacity:.55; cursor:wait; }
+    .hero { padding-top:64px; padding-bottom:56px; }
+    .hero h1 { font-size:clamp(34px,5.2vw,56px); line-height:1.12; margin:0 0 18px; letter-spacing:-.02em; }
+    .hero p.lead { font-size:19px; color:var(--muted); max-width:640px; margin:0 0 28px; }
+    .trust { margin-top:22px; color:var(--muted); font-size:14px; }
+    section { padding:64px 0; }
+    h2 { font-size:clamp(26px,3.4vw,36px); margin:0 0 8px; letter-spacing:-.01em; }
+    .sub { color:var(--muted); margin:0 0 30px; }
+    .panel { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:26px; }
+    label { display:block; font-weight:600; font-size:14px; margin:14px 0 6px; }
+    .hint { font-weight:400; color:var(--muted); }
+    textarea, input, select { width:100%; font:16px Inter,'Noto Serif TC',sans-serif; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:#fff; color:var(--ink); }
+    textarea.zh-in { font-family:'Noto Serif TC',serif; font-size:19px; }
+    .count { font-size:13px; color:var(--muted); text-align:right; margin-top:4px; }
+    .count.over { color:var(--bad); font-weight:600; }
+    .row2 { display:grid; gap:14px; grid-template-columns:1fr 1fr; }
+    .msg { margin-top:12px; font-size:15px; }
+    .msg.err { color:var(--bad); }
+    .result { margin-top:18px; border-top:1px solid var(--line); padding-top:18px; }
+    .badge { display:inline-block; padding:4px 12px; border-radius:999px; font-size:13px; font-weight:600; color:#fff; }
+    .b-natural { background:var(--ok); } .b-minor { background:var(--warn); } .b-unnatural { background:var(--bad); }
+    .issues { list-style:none; padding:0; margin:14px 0; }
+    .issues li { padding:10px 0; border-bottom:1px dashed var(--line); }
+    .issues .q { font-family:'Noto Serif TC',serif; font-size:18px; background:#fdeee6; padding:1px 6px; border-radius:6px; }
+    .upsell { background:#fff6ef; border:1px solid #f1d7c6; border-radius:14px; padding:16px; margin-top:14px; }
+    .grid3 { display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+    .ex { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:22px; }
+    .ex .tag { font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; }
+    .ex .bad { font-size:20px; color:var(--bad); text-decoration:line-through; text-decoration-thickness:1px; margin:0; }
+    .ex .good { font-size:22px; color:var(--ok); margin:6px 0 10px; }
+    .ex p.why { margin:0; color:var(--muted); font-size:14px; }
+    .plan { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:26px; display:flex; flex-direction:column; }
+    .plan.pop { border:2px solid var(--accent); }
+    .plan h3 { margin:0; font-size:20px; }
+    .price { font-size:40px; font-weight:700; margin:8px 0 2px; }
+    .price small { font-size:15px; color:var(--muted); font-weight:500; }
+    .plan ul { padding-left:18px; color:var(--muted); flex:1; }
+    .band { background:#f2ece3; }
+    .who { display:grid; gap:30px; grid-template-columns:1.2fr 1fr; align-items:center; }
+    .who ul { padding-left:18px; }
+    .uses { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); }
+    .use { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; }
+    .use b { display:block; margin-bottom:4px; }
+    .plans-pick { display:grid; gap:10px; grid-template-columns:repeat(3,1fr); }
+    .plans-pick label { margin:0; border:1px solid var(--line); border-radius:12px; padding:12px; cursor:pointer; font-weight:500; background:#fff; }
+    .plans-pick input { width:auto; margin-right:6px; }
+    .plans-pick label.on { border-color:var(--accent); background:#fff6ef; }
+    #paypal { margin-top:20px; min-height:48px; }
+    .addon { display:block; margin-top:12px; border:1px dashed var(--accent); border-radius:12px; padding:12px 14px; font-weight:600; background:#fff6ef; cursor:pointer; }
+    .addon input { width:auto; margin-right:6px; }
+    .addon .hint { font-weight:400; }
+    .total { margin:20px 0 0; font-size:18px; }
+    details { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:10px; }
+    summary { font-weight:600; cursor:pointer; }
+    details p { color:var(--muted); margin:10px 0 0; }
+    footer { padding:40px 0 56px; color:var(--muted); font-size:14px; }
+    footer .wrap { display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; }
+    .hidden { display:none !important; }
+    @media (max-width:720px) { .top nav { display:none; } .row2, .who, .plans-pick { grid-template-columns:1fr; } .hero { padding-top:40px; padding-bottom:40px; } section { padding:48px 0; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="logo" href="/chinese-check">Native <span>Chinese</span> Check</a>
+      <nav>
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a class="btn btn-main" href="#check">Check my Chinese</a>
+    </header>
+  </div>
+
+  <div class="wrap hero">
+    <h1>Don't send Chinese<br />that sounds like a robot.</h1>
+    <p class="lead">Google Translate and AI get the words right but the feeling wrong. A native Taiwanese teacher fixes your Chinese so it sounds natural — for your partner, their family, your tattoo, or your business.</p>
+    <a class="btn btn-main" href="#check">Try the free AI check</a>
+    <a class="btn btn-line" href="#pricing">See pricing</a>
+    <p class="trust">Traditional Chinese (Taiwan) · Checked by a real teacher · Results by email in 24–48 hours · Pay with PayPal or card</p>
+  </div>
+
+  <section id="check" class="band">
+    <div class="wrap">
+      <h2>Free AI check</h2>
+      <p class="sub">Paste your Chinese. Our AI will point out what sounds off to a native speaker — free, no sign-up.</p>
+      <div class="panel">
+        <label for="chkText">Your Chinese text <span class="hint">(up to 300 characters)</span></label>
+        <textarea id="chkText" class="zh-in" rows="4" maxlength="300" placeholder="例如：我愛你非常多，我希望你的父母喜歡我。"></textarea>
+        <label for="chkMeaning">What do you want to say? <span class="hint">(optional, in English — helps the check)</span></label>
+        <input id="chkMeaning" maxlength="400" placeholder="e.g. I love you so much, I hope your parents like me." />
+        <p style="margin-top:16px"><button class="btn btn-main" id="chkBtn" type="button">Check it free</button></p>
+        <p class="msg err hidden" id="chkErr"></p>
+        <div class="result hidden" id="chkResult">
+          <span class="badge" id="chkBadge"></span>
+          <p id="chkSummary"></p>
+          <ul class="issues" id="chkIssues"></ul>
+          <div class="upsell">
+            <b>AI can spot problems, but it can't tell you what a native would really say.</b><br />
+            Get it rewritten by a Taiwanese teacher, with notes explaining every change.
+            <p style="margin:12px 0 0"><button class="btn btn-main" type="button" id="chkOrder">Fix it for me — from $9</button></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <h2>What AI gets wrong</h2>
+      <p class="sub">These are real kinds of mistakes we fix every day. Grammatically "okay" — but no native speaker would say them.</p>
+      <div class="grid3">
+        <div class="ex">
+          <p class="tag">To a partner</p>
+          <p class="bad zh">我愛你非常多</p>
+          <p class="good zh">我真的好愛你</p>
+          <p class="why">Word-for-word from "I love you very much". Sounds like a textbook, not a lover.</p>
+        </div>
+        <div class="ex">
+          <p class="tag">To their parents</p>
+          <p class="bad zh">祝你的父母有一個快樂的新年</p>
+          <p class="good zh">祝伯父伯母新年快樂、身體健康</p>
+          <p class="why">Taiwanese families expect respectful titles and a blessing for good health.</p>
+        </div>
+        <div class="ex">
+          <p class="tag">Tattoo</p>
+          <p class="bad zh">力量家庭</p>
+          <p class="good zh">家人是我的力量</p>
+          <p class="why">Two nouns stuck together means nothing to a native reader. Forever is a long time.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing" class="band">
+    <div class="wrap">
+      <h2>Simple pricing</h2>
+      <p class="sub">One-time payment. No subscription. Free revision within 7 days if anything isn't right.</p>
+      <div class="grid3">
+        <div class="plan">
+          <h3>Quick Fix</h3>
+          <div class="price">$9 <small>USD</small></div>
+          <ul>
+            <li>Up to 300 Chinese characters</li>
+            <li>Rewritten to sound natural</li>
+            <li>Short notes on what changed</li>
+            <li>Delivered within 24 hours</li>
+          </ul>
+          <button class="btn btn-line" type="button" data-pick="quick">Choose Quick Fix</button>
+        </div>
+        <div class="plan pop">
+          <h3>Polish</h3>
+          <div class="price">$29 <small>USD</small></div>
+          <ul>
+            <li>Up to 1,000 Chinese characters</li>
+            <li>Line-by-line edit in your chosen tone</li>
+            <li>Detailed English explanations</li>
+            <li>Great for letters, speeches, business copy</li>
+            <li>Delivered within 48 hours</li>
+          </ul>
+          <button class="btn btn-main" type="button" data-pick="polish">Choose Polish</button>
+        </div>
+        <div class="plan">
+          <h3>Tattoo Check</h3>
+          <div class="price">$15 <small>USD</small></div>
+          <ul>
+            <li>Up to 20 characters</li>
+            <li>Meaning, word order and stroke check</li>
+            <li>Better alternatives if needed</li>
+            <li>Delivered within 24 hours</li>
+            <li><b>Add-on +$25:</b> calligraphy design in 3 brush styles, as a high-resolution image your artist can use (48 hours)</li>
+          </ul>
+          <button class="btn btn-line" type="button" data-pick="tattoo">Choose Tattoo Check</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="order">
+    <div class="wrap">
+      <h2>Order a teacher review</h2>
+      <p class="sub">Only have English? That's fine — tell us what you want to say and we'll write it in natural Chinese.</p>
+      <div class="panel">
+        <label>Plan</label>
+        <div class="plans-pick" id="planPick">
+          <label><input type="radio" name="plan" value="quick" /> Quick Fix · $9</label>
+          <label><input type="radio" name="plan" value="polish" checked /> Polish · $29</label>
+          <label><input type="radio" name="plan" value="tattoo" /> Tattoo · $15</label>
+        </div>
+        <label class="addon hidden" id="callWrap"><input type="checkbox" id="oCall" /> Add a calligraphy design (+$25) <span class="hint">— your checked characters laid out in 3 Chinese calligraphy styles, as a high-resolution image to give your tattoo artist. Delivered within 48 hours.</span></label>
+        <label for="oDraft">Your Chinese text <span class="hint">(leave empty if you only have English)</span></label>
+        <textarea id="oDraft" class="zh-in" rows="5"></textarea>
+        <div class="count" id="oCount"></div>
+        <label for="oMeaning">What do you want to say, in English?</label>
+        <textarea id="oMeaning" rows="3" placeholder="The more context, the better the result."></textarea>
+        <div class="row2">
+          <div>
+            <label for="oPurpose">Who is it for / where will it be used?</label>
+            <input id="oPurpose" maxlength="200" placeholder="e.g. birthday card for my girlfriend's mom" />
+          </div>
+          <div>
+            <label for="oTone">Tone</label>
+            <select id="oTone">
+              <option value="natural">Natural / everyday</option>
+              <option value="romantic">Romantic</option>
+              <option value="respectful">Respectful (elders, family)</option>
+              <option value="friendly">Friendly / casual</option>
+              <option value="formal">Formal</option>
+              <option value="business">Business</option>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="oName">Your name <span class="hint">(optional)</span></label>
+            <input id="oName" maxlength="60" />
+          </div>
+          <div>
+            <label for="oEmail">Email for the result</label>
+            <input id="oEmail" type="email" maxlength="120" placeholder="you@example.com" />
+          </div>
+        </div>
+        <p class="total">Total: <b id="oTotal">$29.00</b> USD</p>
+        <p class="msg err hidden" id="oErr"></p>
+        <div id="paypal"></div>
+        <p class="msg hidden" id="payOff">Online payment is being set up. Please check back soon.</p>
+        <p class="hint" style="font-size:13px;margin-top:10px">We deliver in Traditional Chinese (as used in Taiwan). Your text is only seen by our teacher and never shared.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap who">
+      <div>
+        <h2>Who checks your Chinese?</h2>
+        <p class="sub" style="margin-bottom:14px">Not a freelancer marketplace. One experienced teacher, every time.</p>
+        <ul>
+          <li><b>Native Taiwanese Mandarin speaker</b> — writes Chinese every day, running a restaurant and a shop in Taiwan.</li>
+          <li><b>26 years as an English teacher</b> — so every correction comes with a clear explanation in English you can actually learn from.</li>
+          <li><b>Knows the culture</b> — how to address parents, what to write at weddings, funerals and New Year, and what never to put on your skin.</li>
+        </ul>
+      </div>
+      <div class="uses">
+        <div class="use"><b>Love & family</b>Messages, cards, wedding speeches, meeting the parents.</div>
+        <div class="use"><b>Tattoos</b>Check it before it's permanent.</div>
+        <div class="use"><b>Life in Taiwan</b>Notes to landlords, schools, coworkers.</div>
+        <div class="use"><b>Business</b>Product listings, emails, menus, social posts.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2>FAQ</h2>
+      <p class="sub">Still unsure? Email <a href="mailto:support@bafuholdings.com">support@bafuholdings.com</a>.</p>
+      <details><summary>Do you do Simplified Chinese?</summary><p>We specialize in Traditional Chinese as written in Taiwan. If you send Simplified text, we'll deliver a natural Traditional Chinese version.</p></details>
+      <details><summary>I only have English. Can you still help?</summary><p>Yes. Tell us what you want to say and who it's for, and we'll write it in natural Chinese. It counts toward your plan's length.</p></details>
+      <details><summary>How will I get the result?</summary><p>By email, plus a private link where you can view it anytime. Quick Fix and Tattoo Check within 24 hours, Polish and the calligraphy design within 48 hours.</p></details>
+      <details><summary>Can you give me a design for my tattoo artist?</summary><p>Yes. Add a calligraphy design (+$25) to a Tattoo Check. We lay out your checked characters in 3 Chinese calligraphy styles and send you a high-resolution image, so your artist gets every stroke right. Pick the style you like best.</p></details>
+      <details><summary>What if I'm not happy?</summary><p>Reply to the result email within 7 days and we'll revise it for free. If we miss the delivery time, you get a full refund.</p></details>
+      <details><summary>Is my text private?</summary><p>Your text is only read by our teacher to do the work. We never publish or share it, and we'll delete it on request.</p></details>
+      <details><summary>Is this just AI?</summary><p>No. The free check uses AI to spot problems. Every paid order is rewritten and checked by a real native-speaking teacher.</p></details>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>© Native Chinese Check · a <a href="/">BAFU HOLDINGS</a> service</span>
+      <span><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="mailto:support@bafuholdings.com">Contact</a></span>
+    </div>
+  </footer>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let config = { plans: [], aiCheck: false, paypalClientId: null };
+
+    async function post(url, body) {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+      return data;
+    }
+    function show(el, text) { el.textContent = text; el.classList.toggle('hidden', !text); }
+    function esc(s) { return String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+    const VERDICT = { natural: ['Sounds natural', 'b-natural'], minor: ['A few things sound off', 'b-minor'], unnatural: ['Sounds unnatural', 'b-unnatural'] };
+    $('chkBtn').onclick = async () => {
+      show($('chkErr'), '');
+      $('chkResult').classList.add('hidden');
+      const btn = $('chkBtn');
+      btn.disabled = true; btn.textContent = 'Checking…';
+      try {
+        const r = await post('/api/nc/ai-check', { text: $('chkText').value, meaning: $('chkMeaning').value });
+        const [label, cls] = VERDICT[r.verdict] || VERDICT.minor;
+        $('chkBadge').textContent = label;
+        $('chkBadge').className = `badge ${cls}`;
+        $('chkSummary').textContent = r.summary;
+        $('chkIssues').innerHTML = r.issues.map((i) => `<li>${i.text ? `<span class="q">${esc(i.text)}</span> — ` : ''}${esc(i.why)}</li>`).join('');
+        $('chkResult').classList.remove('hidden');
+      } catch (err) {
+        show($('chkErr'), err.message);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Check it free';
+      }
+    };
+    $('chkOrder').onclick = () => {
+      $('oDraft').value = $('chkText').value;
+      $('oMeaning').value = $('chkMeaning').value;
+      pickPlan($('chkText').value.trim().length > 300 ? 'polish' : 'quick');
+    };
+
+    function currentPlan() {
+      const id = document.querySelector('input[name=plan]:checked')?.value || 'polish';
+      return config.plans.find((p) => p.id === id) || { id, maxDraft: { quick: 300, polish: 1000, tattoo: 20 }[id] };
+    }
+    function refreshPlanUi() {
+      document.querySelectorAll('#planPick label').forEach((l) => l.classList.toggle('on', l.querySelector('input').checked));
+      const plan = currentPlan();
+      const n = $('oDraft').value.trim().length;
+      $('oCount').textContent = `${n} / ${plan.maxDraft} characters`;
+      $('oCount').classList.toggle('over', n > plan.maxDraft);
+      const addon = config.addons?.calligraphy || { amount: '25.00', plans: ['tattoo'] };
+      const canAdd = addon.plans.includes(plan.id);
+      $('callWrap').classList.toggle('hidden', !canAdd);
+      const base = Number(plan.amount || { quick: 9, polish: 29, tattoo: 15 }[plan.id]);
+      $('oTotal').textContent = `$${(base + (canAdd && $('oCall').checked ? Number(addon.amount) : 0)).toFixed(2)}`;
+    }
+    function pickPlan(id) {
+      const input = document.querySelector(`input[name=plan][value=${id}]`);
+      if (input) input.checked = true;
+      refreshPlanUi();
+      $('order').scrollIntoView({ behavior: 'smooth' });
+    }
+    document.querySelectorAll('[data-pick]').forEach((b) => { b.onclick = () => pickPlan(b.dataset.pick); });
+    document.querySelectorAll('input[name=plan]').forEach((i) => { i.onchange = refreshPlanUi; });
+    $('oDraft').addEventListener('input', refreshPlanUi);
+    $('oCall').addEventListener('change', refreshPlanUi);
+
+    function orderBody() {
+      return {
+        plan: currentPlan().id,
+        draft: $('oDraft').value,
+        meaning: $('oMeaning').value,
+        purpose: $('oPurpose').value,
+        tone: $('oTone').value,
+        name: $('oName').value,
+        email: $('oEmail').value,
+        calligraphy: currentPlan().id === 'tattoo' && $('oCall').checked,
+      };
+    }
+    function checkForm() {
+      const b = orderBody();
+      if (!b.draft.trim() && !b.meaning.trim()) return 'Please paste your Chinese text, or tell us in English what you want to say.';
+      if (b.draft.trim().length > currentPlan().maxDraft) return 'Your Chinese text is too long for this plan. Please choose a bigger plan.';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email.trim())) return 'Please enter a valid email so we can send you the result.';
+      return '';
+    }
+
+    function loadPayPal(clientId) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&locale=en_US&disable-funding=paylater,credit`;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    async function setupPayPal() {
+      if (!config.paypalClientId) { $('payOff').classList.remove('hidden'); return; }
+      try {
+        await loadPayPal(config.paypalClientId);
+      } catch {
+        $('payOff').classList.remove('hidden');
+        return;
+      }
+      paypal.Buttons({
+        style: { layout: 'vertical', shape: 'pill', label: 'pay' },
+        onClick: (_data, actions) => {
+          const problem = checkForm();
+          show($('oErr'), problem);
+          return problem ? actions.reject() : actions.resolve();
+        },
+        createOrder: async () => {
+          try {
+            return (await post('/api/nc/create', orderBody())).orderId;
+          } catch (err) {
+            show($('oErr'), err.message);
+            throw err;
+          }
+        },
+        onApprove: async (data) => {
+          try {
+            const r = await post('/api/nc/capture', { orderId: data.orderID });
+            location.href = `/chinese-check/order?id=${encodeURIComponent(r.id)}&k=${encodeURIComponent(r.key)}&new=1`;
+          } catch (err) {
+            show($('oErr'), err.message);
+          }
+        },
+        onError: () => show($('oErr'), 'Payment could not be completed. Please try again.'),
+      }).render('#paypal');
+    }
+
+    fetch('/api/nc/config').then((r) => r.json()).then((c) => {
+      config = c;
+      if (!c.aiCheck) {
+        $('check').classList.add('hidden');
+        document.querySelectorAll('a[href="#check"]').forEach((a) => { a.href = '#order'; a.textContent = 'Get my Chinese checked'; });
+      }
+      refreshPlanUi();
+      setupPayPal();
+    }).catch(() => { refreshPlanUi(); $('payOff').classList.remove('hidden'); });
+  </script>
+</body>
+</html>
