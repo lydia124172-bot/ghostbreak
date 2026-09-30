@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=23" />
+  <link rel="stylesheet" href="/css/site.css?v=24" />
 </head>
 <body>
   <header class="site-header admin-header">
@@ -96,6 +96,12 @@
       <section class="panel">
         <h2>主編專欄（部落格文章）</h2>
         <p class="lead">發布後會出現在前台「專欄」，並自動加進網站地圖讓 Google 收錄。標題和摘要寫進顧客會搜尋的字，例如「日本必買鍋具推薦」。</p>
+        <div class="ai-draft">
+          <p class="field">AI 幫你寫草稿：寫下主題，AI 會寫好標題、摘要、關鍵字和內文，你再修改成自己的話。</p>
+          <input id="aiTopic" class="form-input" maxlength="100" placeholder="主題，例如：日本不沾鍋怎麼挑、韓國面膜怎麼選" />
+          <textarea id="aiNotes" class="form-input" rows="2" maxlength="1000" placeholder="（選填）你想提到的重點，例如：我自己用了三個月、適合小家庭、店裡有賣哪一款"></textarea>
+          <button class="btn btn-ghost" type="button" id="aiDraftBtn">AI 幫我寫草稿</button>
+        </div>
         <form id="postForm" class="admin-grid">
           <input type="hidden" id="postId" />
           <div>
@@ -595,6 +601,31 @@
         }
       };
     });
+    $('aiDraftBtn').onclick = async () => {
+      const btn = $('aiDraftBtn');
+      if (!$('aiTopic').value.trim()) return postNote(false, '請先寫文章主題。');
+      if ($('postBody').value.trim() && !confirm('AI 草稿會取代目前的標題、摘要和內文，確定嗎？')) return;
+      btn.disabled = true;
+      btn.textContent = 'AI 寫作中，約 20～40 秒…';
+      postNote(true, '');
+      try {
+        const d = await api('/api/admin/journal/ai-draft', {
+          method: 'POST',
+          body: JSON.stringify({ topic: $('aiTopic').value, notes: $('aiNotes').value }),
+        });
+        $('postTitle').value = d.title;
+        $('postSummary').value = d.summary;
+        $('postKeywords').value = d.keywords;
+        $('postBody').value = d.body;
+        postNote(true, '草稿寫好了！請看過、改成你自己的語氣，確認內容正確再發布。');
+        $('postTitle').scrollIntoView({ block: 'center' });
+      } catch (err) {
+        postNote(false, err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'AI 幫我寫草稿';
+      }
+    };
     $('postCancel').onclick = resetPost;
     $('coverBtn').onclick = () => $('coverInput').click();
     $('coverClear').onclick = () => setCover('');
@@ -733,6 +764,7 @@
             <p>${escapeHtml([o.city, o.address, o.storeBrand, o.store].filter(Boolean).join(' '))}</p>
             <p>${escapeHtml((o.items || []).map((i) => i.name + ' × ' + i.qty).join('、'))}</p>
             <p>${escapeHtml(o.message || '')}</p>
+            ${o.payInfo ? `<p class="meta">${escapeHtml(o.payInfo)}</p>` : ''}
           </div>
           <div class="order-tools">
             ${isRetail ? `

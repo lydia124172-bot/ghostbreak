@@ -84,6 +84,7 @@ function buildEcpay(order, baseUrl) {
     ItemName: itemName,
     ReturnURL: `${baseUrl}/api/pay/ecpay-return`,
     OrderResultURL: `${baseUrl}/api/pay/ecpay-result`,
+    PaymentInfoURL: `${baseUrl}/api/pay/ecpay-info`,
     ClientBackURL: `${baseUrl}/order?done=${encodeURIComponent(order.id)}`,
     ChoosePayment: choosePayment(order.payment),
     EncryptType: '1',

@@ -57,14 +57,15 @@ function tradeDate(d = new Date()) {
   return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-function checkoutFields({ merchantTradeNo, amount, itemName, returnUrl, resultUrl, clientBackUrl, custom1, custom2 }) {
+function checkoutFields({ merchantTradeNo, amount, itemName, returnUrl, resultUrl, clientBackUrl, custom1, custom2, periodReturnUrl }) {
   if (!configured()) throw new Error('綠界尚未設定。');
+  const total = String(Math.max(1, Math.round(Number(amount) || 0)));
   const fields = {
     MerchantID: merchantId(),
     MerchantTradeNo: String(merchantTradeNo).slice(0, 20),
     MerchantTradeDate: tradeDate(),
     PaymentType: 'aio',
-    TotalAmount: String(Math.max(1, Math.round(Number(amount) || 0))),
+    TotalAmount: total,
     TradeDesc: '麋鹿網方案',
     ItemName: String(itemName || '商品短片方案').replace(/[#&]/g, ' ').slice(0, 200),
     ReturnURL: returnUrl,
@@ -75,8 +76,40 @@ function checkoutFields({ merchantTradeNo, amount, itemName, returnUrl, resultUr
     CustomField1: String(custom1 || '').slice(0, 50),
     CustomField2: String(custom2 || '').slice(0, 50),
   };
+  if (periodReturnUrl) {
+    Object.assign(fields, {
+      ChoosePayment: 'Credit',
+      PeriodAmount: total,
+      PeriodType: 'M',
+      Frequency: '1',
+      ExecTimes: '99',
+      PeriodReturnURL: periodReturnUrl,
+    });
+  }
   fields.CheckMacValue = checkMacValue(fields);
   return { action: checkoutUrl(), fields };
 }
 
-module.exports = { configured, isStage, verify, checkoutFields };
+async function cancelPeriod(merchantTradeNo) {
+  if (!configured()) throw new Error('綠界尚未設定。');
+  const params = {
+    MerchantID: merchantId(),
+    MerchantTradeNo: String(merchantTradeNo),
+    Action: 'Cancel',
+    TimeStamp: String(Math.floor(Date.now() / 1000)),
+  };
+  params.CheckMacValue = checkMacValue(params);
+  const url = isStage()
+    ? 'https://payment-stage.ecpay.com.tw/Cashier/CreditCardPeriodAction'
+    : 'https://payment.ecpay.com.tw/Cashier/CreditCardPeriodAction';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(params).toString(),
+  });
+  const reply = Object.fromEntries(new URLSearchParams(await res.text()));
+  if (String(reply.RtnCode) !== '1') throw new Error(reply.RtnMsg || '綠界取消失敗');
+  return reply;
+}
+
+module.exports = { configured, isStage, verify, checkoutFields, cancelPeriod };

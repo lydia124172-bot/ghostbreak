@@ -32,6 +32,7 @@ const modelLock = require('./services/model-lock');
 const accounts = require('./services/accounts');
 const ecpay = require('./services/ecpay');
 const payOrders = require('./services/pay-orders');
+const lineBot = require('./services/line-bot');
 
 const PORT = Number(process.env.PORT || 3002);
 const BASE_URL = (process.env.BASE_URL || `http://127.0.0.1:${PORT}`).replace(/\/$/, '');
@@ -42,7 +43,10 @@ const STORY_OPEN = process.env.STORY_OPEN === '1';
 
 const app = express();
 app.set('trust proxy', 1);
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({
+  limit: '1mb',
+  verify: (req, _res, buf) => { if (req.url === '/api/line/webhook') req.rawBody = buf; },
+}));
 
 const pages = {
   '/': 'index.html',
@@ -235,6 +239,14 @@ function withSocialMeta(html, origin, pagePath, imagePath) {
   return html.replace(/<\/title>/i, `</title>\n    ${tags}`);
 }
 
+function withAnalytics(html, file) {
+  const id = String(process.env.GA_MEASUREMENT_ID || '').replace(/[^A-Za-z0-9_-]/g, '');
+  if (!id || /admin/i.test(file) || html.includes('googletagmanager.com/gtag/js')) return html;
+  const snippet = `<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${id}');</script>`;
+  return html.replace('</head>', `  ${snippet}\n</head>`);
+}
+
 function sendPage(req, res, file, status = 200) {
   const full = path.join(PUBLIC, file);
   if (!fs.existsSync(full)) {
@@ -242,7 +254,7 @@ function sendPage(req, res, file, status = 200) {
     return;
   }
   const origin = requestOrigin(req);
-  const html = withSocialMeta(fs.readFileSync(full, 'utf8'), origin, req.path || '/', '/og.jpg');
+  const html = withAnalytics(withSocialMeta(fs.readFileSync(full, 'utf8'), origin, req.path || '/', '/og.jpg'), file);
   res.status(status).type('html').send(html);
 }
 
@@ -300,7 +312,27 @@ function sendAccount(req, res, payload, sid) {
 
 app.get('/api/account/me', (req, res) => {
   const row = currentAccount(req);
-  res.json(row ? accounts.publicAccount(row) : { ok: false });
+  if (!row) return res.json({ ok: false });
+  const sub = payOrders.activeSubscription(row.id);
+  res.json({
+    ...accounts.publicAccount(row),
+    subscription: sub ? { planName: sub.planName, amount: sub.amount, since: sub.paidAt } : null,
+  });
+});
+
+app.post('/api/account/subscription/cancel', async (req, res) => {
+  const row = currentAccount(req);
+  if (!row) return res.status(401).json({ error: '請先登入' });
+  const sub = payOrders.activeSubscription(row.id);
+  if (!sub) return res.status(400).json({ error: '目前沒有自動續約。' });
+  try {
+    await ecpay.cancelPeriod(sub.merchantTradeNo);
+    payOrders.markCancelled(sub.merchantTradeNo);
+    res.json({ ok: true, message: '已取消自動續約，本期到期前仍可正常使用。' });
+  } catch (err) {
+    console.error('[subscription cancel]', err.message);
+    res.status(502).json({ error: '取消失敗，請稍後再試或透過 LINE 聯繫。' });
+  }
 });
 
 app.post('/api/account/register', (req, res) => {
@@ -396,6 +428,10 @@ app.post('/api/account/pay', express.json({ limit: '32kb' }), (req, res) => {
   if (full.product === 'storyclip') return res.status(400).json({ error: '劇本廣告建置中，尚未開放購買。' });
   if (full.product === 'dramaclip') return res.status(400).json({ error: 'AI短劇建置中，尚未開放購買。' });
   if (!full.price || full.id === 'free') return res.status(400).json({ error: '免費方案不必付款。' });
+  const periodic = Boolean(req.body?.auto) && /／月/.test(full.priceLabel || '');
+  if (periodic && payOrders.activeSubscription(row.id)) {
+    return res.status(400).json({ error: '你已經有自動續約，要換方案請先取消目前的自動續約。' });
+  }
   try {
     const order = payOrders.createOrder({
       accountId: row.id,
@@ -403,6 +439,7 @@ app.post('/api/account/pay', express.json({ limit: '32kb' }), (req, res) => {
       planId: full.id,
       amount: full.price,
       planName: full.name,
+      periodic,
     });
     const checkout = ecpay.checkoutFields({
       merchantTradeNo: order.merchantTradeNo,
@@ -413,6 +450,7 @@ app.post('/api/account/pay', express.json({ limit: '32kb' }), (req, res) => {
       clientBackUrl: `${BASE_URL}/account`,
       custom1: row.id,
       custom2: full.id,
+      periodReturnUrl: periodic ? `${BASE_URL}/api/pay/ecpay/period` : '',
     });
     res.json({ ok: true, action: checkout.action, fields: checkout.fields });
   } catch (err) {
@@ -437,6 +475,37 @@ app.post('/api/pay/ecpay/notify', express.urlencoded({ extended: false }), (req,
     }
     payOrders.markPaid(order.merchantTradeNo, body.TradeNo);
     try { accounts.grantPlanById(order.accountId, order.planId); } catch { /* 訂單已記，後台可補開 */ }
+  }
+  return res.type('text/plain').send('1|OK');
+});
+
+app.post('/api/line/webhook', (req, res) => {
+  if (!lineBot.configured()) return res.status(503).end();
+  if (!lineBot.verifySignature(req.rawBody, req.get('x-line-signature'))) return res.status(401).end();
+  res.status(200).end();
+  lineBot.handleEvents(req.body?.events, BASE_URL).catch((err) => console.error('[line-bot]', err.message));
+});
+
+app.post('/api/pay/ecpay/period', express.urlencoded({ extended: false }), (req, res) => {
+  const body = req.body || {};
+  if (!ecpay.configured() || !ecpay.verify(body)) {
+    return res.status(400).type('text/plain').send('0|CheckMacValueError');
+  }
+  const order = payOrders.findByTradeNo(body.MerchantTradeNo);
+  if (!order || !order.periodic) return res.status(404).type('text/plain').send('0|OrderNotFound');
+  if (String(body.RtnCode) !== '1') {
+    console.warn('[period] 續約扣款失敗', order.email, body.RtnMsg || '');
+    return res.type('text/plain').send('1|OK');
+  }
+  const amount = Number(body.amount || body.PeriodAmount || 0);
+  if (amount && amount !== Number(order.amount)) {
+    return res.status(400).type('text/plain').send('0|AmountError');
+  }
+  if (Number(body.TotalSuccessTimes || 0) <= 1) return res.type('text/plain').send('1|OK');
+  const key = String(body.Gwsr || body.ProcessDate || body.TotalSuccessTimes);
+  const { fresh } = payOrders.recordRenewal(order.merchantTradeNo, key);
+  if (fresh) {
+    try { accounts.grantPlanById(order.accountId, order.planId); } catch { /* 續約已記，後台可補開 */ }
   }
   return res.type('text/plain').send('1|OK');
 });

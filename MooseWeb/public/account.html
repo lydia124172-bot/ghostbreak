@@ -91,6 +91,11 @@
         <p id="planMsg" class="combo-fit"></p>
       </article>
       <p class="lead" id="billingNote"></p>
+      <div id="subBox" class="lead hidden">
+        <span id="subText"></span>
+        <button class="btn btn-ghost" type="button" id="subCancel">取消自動續約</button>
+      </div>
+      <label id="autoRenewRow" class="lead hidden"><input type="checkbox" id="autoRenew" checked /> 每月自動續約（信用卡每月自動扣款，隨時可取消）</label>
       <h3>商品短片</h3>
       <section class="plan-grid" id="planGrid"></section>
       <h3>劇本廣告　建置中</h3>
@@ -166,6 +171,9 @@
       if (me.pendingDramaPlan) bits.push('AI短劇確認中');
       $('meDetail').textContent = bits.filter(Boolean).join(' · ');
       $('billingNote').textContent = tree.billingNote || '';
+      $('subBox').classList.toggle('hidden', !me.subscription);
+      $('autoRenewRow').classList.toggle('hidden', !payReady || Boolean(me.subscription));
+      if (me.subscription) $('subText').textContent = `自動續約中：${me.subscription.planName}，每月 NT$${Number(me.subscription.amount).toLocaleString('en-US')}。`;
       function planButton(plan, currentId, pendingId) {
         const current = plan.id === currentId;
         const pending = plan.id === pendingId;
@@ -274,7 +282,7 @@
         try {
           const planId = btn.getAttribute('data-plan');
           if (payReady && planId !== 'free') {
-            const data = await api('/api/account/pay', { plan: planId });
+            const data = await api('/api/account/pay', { plan: planId, auto: !$('autoRenewRow').classList.contains('hidden') && $('autoRenew').checked });
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = data.action;
@@ -298,6 +306,16 @@
         }
       });
     }
+    $('subCancel').addEventListener('click', async () => {
+      if (!confirm('確定取消每月自動續約？本期到期前仍可使用。')) return;
+      try {
+        const data = await api('/api/account/subscription/cancel', {});
+        $('planMsg').textContent = data.message;
+        await refresh();
+      } catch (err) {
+        $('planMsg').textContent = err.message;
+      }
+    });
     bindPlanGrid('planGrid');
     bindPlanGrid('storyPlanGrid');
 

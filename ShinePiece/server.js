@@ -11,6 +11,7 @@ const members = require('./services/members');
 const journal = require('./services/journal');
 const { parseListing } = require('./services/listing');
 const { readListing } = require('./services/read-listing');
+const { writePost } = require('./services/write-post');
 const { loadOrders, addOrder, removeOrder, findOrder, updateOrder } = require('./services/orders');
 const { INQUIRE_EMAIL, initMail, sendMail, orderMail, partnerMail, wishMail, mailConfigured } = require('./services/mail');
 const { METHODS, buildEcpay, verifyEcpay, instructions, publicPay, parseAmount } = require('./services/pay');
@@ -226,6 +227,13 @@ app.post('/api/admin/journal', requireAdmin, (req, res) => {
     res.status(err.status || 400).json({ error: err.message || '儲存失敗' });
   }
 });
+app.post('/api/admin/journal/ai-draft', requireAdmin, async (req, res) => {
+  try {
+    res.json(await writePost(req.body?.topic, req.body?.notes));
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'AI 寫作失敗' });
+  }
+});
 app.delete('/api/admin/journal/:id', requireAdmin, (req, res) => {
   journal.removePost(req.params.id);
   res.json({ success: true });
@@ -320,6 +328,7 @@ function memberOrders(id) {
       payment: o.payment,
       shipping: o.shipping,
       trackingNo: o.trackingNo || '',
+      payInfo: o.status === '待付款' ? o.payInfo || '' : '',
       amount: Number(o.amount) || parseAmount(o.items),
       items: (o.items || []).map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
     }));
@@ -453,6 +462,19 @@ app.post('/api/pay/ecpay-return', (req, res) => {
   res.send('1|OK');
 });
 
+app.post('/api/pay/ecpay-info', (req, res) => {
+  if (!verifyEcpay(req.body)) return res.status(400).send('0|Fail');
+  const id = String(req.body.CustomField1 || '').trim();
+  if (id) {
+    const b = req.body;
+    const info = b.vAccount
+      ? `ATM 轉帳：銀行代碼 ${b.BankCode}，帳號 ${b.vAccount}，期限 ${b.ExpireDate}`
+      : b.PaymentNo ? `超商代碼：${b.PaymentNo}，期限 ${b.ExpireDate}` : '';
+    if (info) updateOrder(id, { payInfo: info.slice(0, 200) });
+  }
+  res.send('1|OK');
+});
+
 app.post('/api/pay/ecpay-result', (req, res) => {
   const id = String(req.body?.CustomField1 || '').trim();
   const ok = String(req.body?.RtnCode) === '1';
@@ -553,6 +575,14 @@ function withSocialMeta(html, origin, pagePath, imagePath) {
   return html.replace(/<\/title>/i, `</title>\n    ${tags}`);
 }
 
+function withAnalytics(html, file = '') {
+  const id = String(process.env.GA_MEASUREMENT_ID || '').replace(/[^A-Za-z0-9_-]/g, '');
+  if (!id || /admin/i.test(file) || html.includes('googletagmanager.com/gtag/js')) return html;
+  const snippet = `<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${id}');</script>`;
+  return html.replace('</head>', `  ${snippet}\n</head>`);
+}
+
 function sendPage(req, res, file, status = 200) {
   const full = path.join(PUBLIC, file);
   if (!fs.existsSync(full)) {
@@ -560,7 +590,7 @@ function sendPage(req, res, file, status = 200) {
     return;
   }
   const origin = requestOrigin(req);
-  const html = withSocialMeta(fs.readFileSync(full, 'utf8'), origin, req.path || '/', '/og.jpg');
+  const html = withAnalytics(withSocialMeta(fs.readFileSync(full, 'utf8'), origin, req.path || '/', '/og.jpg'), file);
   res.status(status).type('html').send(html);
 }
 
@@ -576,12 +606,12 @@ function seoOrigin(req) {
   return /^https:\/\//i.test(BASE_URL) ? BASE_URL : requestOrigin(req);
 }
 app.get('/journal', (req, res) => {
-  res.type('html').send(journal.renderList(seoOrigin(req), siteName()));
+  res.type('html').send(withAnalytics(journal.renderList(seoOrigin(req), siteName())));
 });
 app.get('/journal/:slug', (req, res) => {
   const post = journal.findPublished(req.params.slug);
   if (!post) return sendPage(req, res, '404.html', 404);
-  res.type('html').send(journal.renderPost(post, seoOrigin(req), siteName()));
+  res.type('html').send(withAnalytics(journal.renderPost(post, seoOrigin(req), siteName())));
 });
 
 app.get('/sitemap.xml', (req, res) => {

@@ -115,6 +115,8 @@ body[data-page] .goldbar { display: none; }
 .header-member.active { color: var(--olive-deep); }
 .stock-note { color: #b42318; font-size: 14px; letter-spacing: 0.06em; margin-left: 8px; }
 button[disabled] { opacity: 0.5; cursor: not-allowed; }
+.ai-draft { display: grid; gap: 8px; padding: 14px; margin: 0 0 18px; border: 1px dashed var(--line, #d8cfc2); border-radius: 12px; }
+.ai-draft .btn { justify-self: start; }
 .order-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
 .order-tabs button { border: 1px solid var(--line, #d8d0bc); background: #fff; padding: 6px 14px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 15px; }
 .order-tabs button.is-on { background: var(--olive); color: #fff; border-color: var(--olive); }
