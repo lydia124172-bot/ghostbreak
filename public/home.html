@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BAFU HOLDINGS — 牛排館、選物店與店家數位工具</title>
+  <meta name="description" content="一個真的在開店的老闆，三個品牌：八斧牛排、瑄品集選、麋鹿網。我們把開店經驗做成網站與 AI 工具，幫店家把生意做起來。" />
+  <link rel="canonical" href="https://bafuholdings.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="BAFU HOLDINGS — 牛排館、選物店與店家數位工具" />
+  <meta property="og:description" content="八斧牛排、瑄品集選、麋鹿網。真的在開店的人，做給店家用的網站與工具。" />
+  <meta property="og:url" content="https://bafuholdings.com/" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet" />
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Organization","name":"BAFU HOLDINGS","url":"https://bafuholdings.com/",
+   "subOrganization":[
+     {"@type":"Restaurant","name":"八斧牛排 BUFF STEAK","url":"https://steak.bafuholdings.com/"},
+     {"@type":"Store","name":"瑄品集選","url":"https://shine.bafuholdings.com/"},
+     {"@type":"Organization","name":"麋鹿網","url":"https://moose.bafuholdings.com/"}]}
+  </script>
+  <style>
+    :root { --ink:#1d1a16; --muted:#6b6358; --paper:#faf7f2; --card:#fff; --line:#e7dfd3; --accent:#b4552d; --dark:#191512; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Noto Sans TC',system-ui,sans-serif; color:var(--ink); background:var(--paper); line-height:1.75; }
+    a { color:inherit; }
+    .wrap { max-width:1080px; margin:0 auto; padding:0 22px; }
+    header.top { display:flex; justify-content:space-between; align-items:center; padding:18px 0; }
+    .logo { font-weight:700; letter-spacing:.18em; text-decoration:none; }
+    .top nav a { margin-left:18px; text-decoration:none; color:var(--muted); font-size:15px; }
+    .top nav a:hover { color:var(--ink); }
+    .hero { background:var(--dark); color:#f5efe6; padding:96px 0 88px; }
+    .kicker { letter-spacing:.3em; font-size:13px; color:#d9a27f; margin:0 0 14px; }
+    .hero h1 { font-family:'Noto Serif TC',serif; font-size:clamp(34px,5.4vw,58px); line-height:1.25; margin:0 0 22px; }
+    .hero p.lead { font-size:18px; color:#d8cfc3; max-width:640px; margin:0 0 34px; }
+    .btn { display:inline-block; padding:13px 26px; border-radius:999px; text-decoration:none; font-weight:500; }
+    .btn-main { background:var(--accent); color:#fff; }
+    .btn-ghost { border:1px solid #6d6258; color:#f5efe6; margin-left:10px; }
+    section { padding:84px 0; }
+    h2 { font-family:'Noto Serif TC',serif; font-size:clamp(26px,3.4vw,36px); margin:0 0 10px; }
+    .sub { color:var(--muted); margin:0 0 36px; }
+    .grid { display:grid; gap:20px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:28px; display:flex; flex-direction:column; text-decoration:none; transition:transform .15s, box-shadow .15s; }
+    a.card:hover { transform:translateY(-3px); box-shadow:0 14px 30px rgba(40,25,10,.08); }
+    .tag { font-size:12px; letter-spacing:.2em; color:var(--accent); margin:0 0 8px; }
+    .card h3 { font-size:22px; margin:0 0 10px; }
+    .card p { color:var(--muted); margin:0 0 18px; flex:1; }
+    .go { font-weight:500; color:var(--accent); }
+    .band { background:#f1ebe2; }
+    .why { display:grid; gap:26px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+    .why h3 { margin:0 0 6px; font-size:19px; }
+    .why p { margin:0; color:var(--muted); }
+    .num { font-family:'Noto Serif TC',serif; font-size:40px; color:var(--accent); line-height:1; margin-bottom:8px; }
+    .cta { text-align:center; background:var(--dark); color:#f5efe6; border-radius:24px; padding:60px 26px; }
+    .cta p { color:#d8cfc3; margin:0 0 28px; }
+    footer { padding:40px 0 60px; color:var(--muted); font-size:14px; }
+    footer .row { display:flex; flex-wrap:wrap; gap:18px; justify-content:space-between; }
+    footer a { color:var(--muted); }
+    @media (max-width:640px) { .top nav { display:none; } .btn-ghost { margin:12px 0 0; } .hero { padding:70px 0 64px; } section { padding:60px 0; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="logo" href="/">BAFU HOLDINGS</a>
+      <nav>
+        <a href="#brands">品牌</a>
+        <a href="#services">服務</a>
+        <a href="#why">為什麼找我們</a>
+        <a href="https://moose.bafuholdings.com/hire">聯絡</a>
+      </nav>
+    </header>
+  </div>
+
+  <div class="hero">
+    <div class="wrap">
+      <p class="kicker">BAFU HOLDINGS</p>
+      <h1>真的在開店的人，<br />做給店家用的網站與工具。</h1>
+      <p class="lead">教了二十六年英文，開了牛排館，又做了選物店。我們把每天開店遇到的問題，做成網站和 AI 工具，幫你把生意做起來。</p>
+      <a class="btn btn-main" href="https://moose.bafuholdings.com/hire">我想做網站</a>
+      <a class="btn btn-ghost" href="#brands">看看我們的品牌</a>
+    </div>
+  </div>
+
+  <section id="brands">
+    <div class="wrap">
+      <h2>三個品牌，都是自己經營</h2>
+      <p class="sub">每一個網站都是我們自己在用、自己在賺錢的真實生意。</p>
+      <div class="grid">
+        <a class="card" href="https://steak.bafuholdings.com/">
+          <p class="tag">RESTAURANT</p>
+          <h3>八斧牛排 BUFF STEAK</h3>
+          <p>深坑店、士林店。原肉牛排排餐含沙拉吧，不使用組合肉或注脂肉，可線上訂位。</p>
+          <span class="go">前往訂位 →</span>
+        </a>
+        <a class="card" href="https://shine.bafuholdings.com/">
+          <p class="tag">SELECT SHOP</p>
+          <h3>瑄品集選</h3>
+          <p>月刊生活指南。每個月開箱一個國家的生活好物，老闆親自試用、線上直接下單。</p>
+          <span class="go">逛選物店 →</span>
+        </a>
+        <a class="card" href="https://moose.bafuholdings.com/">
+          <p class="tag">FOR BUSINESS</p>
+          <h3>麋鹿網</h3>
+          <p>幫店家做官網，提供 AI 商品短片、模特換裝等付費工具，也開設實戰課程。</p>
+          <span class="go">了解麋鹿網 →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="services" class="band">
+    <div class="wrap">
+      <h2>我們可以幫你做什麼</h2>
+      <p class="sub">不是只給你一個漂亮的頁面，而是能收單、能收錢、能被 Google 找到的網站。</p>
+      <div class="grid">
+        <a class="card" href="https://moose.bafuholdings.com/hire">
+          <p class="tag">WEBSITE</p>
+          <h3>品牌官網</h3>
+          <p>會員登入、線上訂單、庫存管理、金流、部落格 SEO，後台你自己就能管。</p>
+          <span class="go">聊聊你的需求 →</span>
+        </a>
+        <a class="card" href="https://moose.bafuholdings.com/clip">
+          <p class="tag">AI TOOLS</p>
+          <h3>AI 行銷工具</h3>
+          <p>上傳商品照片，AI 幫你做短影音、換模特、寫文案，不用請攝影師也能天天發文。</p>
+          <span class="go">免費試用 →</span>
+        </a>
+        <a class="card" href="https://moose.bafuholdings.com/courses">
+          <p class="tag">COURSES</p>
+          <h3>實戰課程</h3>
+          <p>用 AI 自己做網站、自己做行銷。拿我們真實營運的網站當教材，學了就能用。</p>
+          <span class="go">看課程 →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="why">
+    <div class="wrap">
+      <h2>為什麼找我們</h2>
+      <p class="sub">我們跟你一樣要顧店、要算成本、要想辦法讓客人上門。</p>
+      <div class="why">
+        <div><div class="num">26</div><h3>年教學經驗</h3><p>再複雜的東西，都能用你聽得懂的話講清楚。</p></div>
+        <div><div class="num">3</div><h3>個自營品牌</h3><p>牛排館、選物店、數位工具，每天都在實際營運。</p></div>
+        <div><div class="num">1</div><h3>個窗口到底</h3><p>從網站、金流到行銷工具，找同一個人就能處理。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="cta">
+      <h2>想讓你的店也有一個會賺錢的網站？</h2>
+      <p>留下你的需求，我們會親自回覆你。</p>
+      <a class="btn btn-main" href="https://moose.bafuholdings.com/hire">免費諮詢</a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="wrap row">
+      <span>© BAFU HOLDINGS</span>
+      <span>
+        <a href="https://steak.bafuholdings.com/">八斧牛排</a> ·
+        <a href="https://shine.bafuholdings.com/">瑄品集選</a> ·
+        <a href="https://moose.bafuholdings.com/">麋鹿網</a> ·
+        <a href="/ghostbreak">GhostBreak (English)</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>

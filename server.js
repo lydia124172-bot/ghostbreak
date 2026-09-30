@@ -493,7 +493,7 @@ app.post('/api/paypal/create-order', async (req, res) => {
         }],
         application_context: {
           return_url: `${BASE_URL}/success.html`,
-          cancel_url: `${BASE_URL}/?canceled=1`,
+          cancel_url: `${BASE_URL}/ghostbreak?canceled=1`,
           brand_name: 'GhostBreak',
           user_action: 'PAY_NOW',
         },
@@ -638,7 +638,12 @@ app.get(/\.html$/, (req, res, next) => {
   res.type('html').send(renderPublicHtml(rel));
 });
 
-app.get(['/', '/index.html'], (_req, res) => {
+app.get('/', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.type('html').send(renderPublicHtml('home.html'));
+});
+
+app.get(['/ghostbreak', '/index.html'], (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.type('html').send(renderIndexHtml());
 });
