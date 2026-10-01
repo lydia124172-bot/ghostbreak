@@ -158,13 +158,9 @@ async function refreshPlan() {
   if (!bar) return;
   try {
     const data = await fetch('/api/ip/status').then((r) => r.json());
-    if (!data.ready) {
-      bar.textContent = '個人IP暫時無法使用，請稍後再試。';
-      return;
-    }
-    bar.textContent = `今日尚可免費產出 ${data.left}／${data.limit} 則。與口播腳本、直播稿共用次數。`;
+    setAgentPlanBar(bar, data, { notReady: '個人IP暫時無法使用，請稍後再試。' });
   } catch {
-    bar.textContent = '每日可免費產出 20 則。';
+    bar.textContent = '未購方案者，各智能體可試用 1 次。';
   }
 }
 

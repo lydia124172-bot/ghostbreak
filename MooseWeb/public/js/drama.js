@@ -69,19 +69,23 @@ async function refreshPlan() {
       bar.textContent = 'AI短劇尚未開通。示範劇本仍可看。';
       return;
     }
-    if (st.owner) {
-      bar.textContent = '作者已登入後台。可請 AI 寫三鏡。自己出片不扣方案次數，仍扣三鏡成本。';
-      return;
-    }
     const me = await fetch('/api/account/me').then((r) => r.json());
-    if (me.ok && me.email && me.dramaPlan) {
-      const left = me.dramaCredits != null ? `剩餘 ${me.dramaCredits} 次` : '';
-      bar.innerHTML = `目前：${escapeHtml(me.dramaPlanName || 'AI短劇')}　${left}　一次一支。　<a href="/account">管理方案</a>`;
+    const videoLine = me.ok && me.email && me.dramaPlan
+      ? `出片：${escapeHtml(me.dramaPlanName || 'AI短劇')}，剩餘 ${me.dramaCredits ?? 0} 次。`
+      : '出片需 AI短劇方案（扣次數）。';
+    if (st.scriptPaid) {
+      bar.innerHTML = `已購買付費工具方案，AI 寫三鏡不限次數。${videoLine}　<a href="/account">管理方案</a>`;
       return;
     }
-    bar.innerHTML = '未購也可看示範劇本，也可請 AI 寫三鏡。要出自己的片子，請先選下方方案。　<a href="#dramaPlans">看方案</a>';
+    const left = st.scriptLeft != null ? st.scriptLeft : 0;
+    const limit = st.scriptLimit != null ? st.scriptLimit : 1;
+    if (left > 0) {
+      bar.innerHTML = `AI 寫三鏡試用尚可 ${left} 次（限 ${limit} 次）。${videoLine}　<a href="/account">購買付費工具方案</a>寫稿不限次。`;
+    } else {
+      bar.innerHTML = `AI 寫三鏡試用已用完。${videoLine}　<a href="/account">購買付費工具方案</a>後寫稿不限次。`;
+    }
   } catch {
-    bar.textContent = '未購也可看示範劇本。寫稿可用 AI；出片需 AI短劇方案。';
+    bar.textContent = '未購也可看示範劇本。寫稿各限試用 1 次；出片需 AI短劇方案。';
   }
 }
 

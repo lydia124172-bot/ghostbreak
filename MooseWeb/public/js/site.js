@@ -10,10 +10,10 @@ function applyPublicNav() {
   const path = pathOf();
   const items = [
     { href: '/', label: '首頁', on: path === '/' },
-    { href: '/works', label: '看作品', on: path === '/works' || path === '/agents' || path === '/script' || path === '/live' || path === '/ip' || path === '/hot' || path === '/prompt' },
-    { href: '/courses', label: '上課', on: path === '/courses' },
-    { href: '/hire', label: '做網站', on: path === '/hire' },
-    { href: '/saas', label: '我做的付費工具', on: path === '/saas' || path === '/clip' || path === '/story' || path === '/talk' || path === '/drama' || path === '/dress' || path === '/model' },
+    { href: '/works', label: '過往案例', on: path === '/works' || path === '/agents' || path === '/script' || path === '/live' || path === '/ip' || path === '/hot' || path === '/prompt' || path === '/hook' },
+    { href: '/courses', label: '線上課程', on: path === '/courses' || path === '/course' },
+    { href: '/hire', label: '官網代做', on: path === '/hire' },
+    { href: '/saas', label: '付費工具', on: path === '/saas' || path === '/clip' || path === '/story' || path === '/talk' || path === '/drama' || path === '/dress' || path === '/model' },
   ];
   nav.innerHTML = items.map((item) =>
     `<a href="${item.href}"${item.on ? ' class="active"' : ''}>${item.label}</a>`

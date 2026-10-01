@@ -2,7 +2,8 @@ const state = {
   model: '',
   cloth: '',
   image: '',
-  videoCost: 3,
+  videoCost: 4,
+  videoCost10: 7,
   videoReady: false,
   scenes: [],
   scene: '',
@@ -109,7 +110,8 @@ async function refreshPlan() {
   try {
     const data = await fetch('/api/dress/status').then((r) => r.json());
     state.videoReady = Boolean(data.videoReady);
-    state.videoCost = Number(data.videoCost || 3) || 3;
+    state.videoCost = Number(data.videoCost || 4) || 4;
+    state.videoCost10 = Number(data.videoCost10 || 7) || 7;
     paintScenes(data.scenes || []);
     const recoverBtn = document.getElementById('recoverBtn');
     if (recoverBtn) recoverBtn.classList.toggle('hidden', !data.hasLast);
@@ -118,12 +120,8 @@ async function refreshPlan() {
       return;
     }
     const motion = data.videoReady
-      ? `換裝／換背景各 1 點；動起來 ${state.videoCost} 點（5 或 10 秒）。`
+      ? `換裝／換背景各 1 點；動起來 5 秒 ${state.videoCost} 點、10 秒 ${state.videoCost10} 點。`
       : '換裝／換背景可用。讓圖動起來暫時無法使用。';
-    if (data.owner) {
-      bar.textContent = `作者後台已登入，產出不扣點。${motion}`;
-      return;
-    }
     if (!data.loggedIn) {
       bar.textContent = `需先到方案頁登入。${motion}`;
       return;
@@ -156,7 +154,7 @@ async function makeDress() {
     });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || '產出失敗');
-    paintResult(body.image, body.owner ? '作者後台已登入，這張不扣點。' : '僅供試衣參考，不是實穿保證。');
+    paintResult(body.image, '僅供試衣參考，不是實穿保證。');
     msg.textContent = '';
     refreshPlan();
   } catch (err) {
@@ -191,7 +189,7 @@ async function makeBg() {
     });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || '換背景失敗');
-    paintResult(body.image, body.owner ? '背景已換。作者後台已登入，這張不扣點。' : '背景已換。僅供試衣參考，不是實穿保證。');
+    paintResult(body.image, '背景已換。僅供試衣參考，不是實穿保證。');
     note.textContent = '';
     refreshPlan();
   } catch (err) {
@@ -271,9 +269,7 @@ function paintVideo(done) {
   save.href = mediaDownloadUrl(done.videoUrl);
   save.setAttribute('download', '換裝短片.mp4');
   box.classList.remove('hidden');
-  document.getElementById('motionMsg').textContent = done.owner
-    ? '作者後台已登入，這支不扣點。'
-    : `短片已完成（${done.duration || ''}秒）。`;
+  document.getElementById('motionMsg').textContent = `短片已完成（${done.duration || ''}秒）。`;
 }
 
 async function makeMotion() {
@@ -288,7 +284,8 @@ async function makeMotion() {
     return;
   }
   const duration = document.getElementById('motionSec').value === '10' ? '10' : '5';
-  note.textContent = `正在送出 ${duration} 秒短片，約扣 ${state.videoCost} 點，請不要重按。`;
+  const points = duration === '10' ? state.videoCost10 : state.videoCost;
+  note.textContent = `正在送出 ${duration} 秒短片，扣 ${points} 點，請不要重按。`;
   btn.disabled = true;
   document.getElementById('videoBox').classList.add('hidden');
   try {
@@ -320,6 +317,43 @@ document.getElementById('recoverBtn').addEventListener('click', () => recoverLas
 document.getElementById('bgBtn').addEventListener('click', makeBg);
 document.getElementById('motionBtn').addEventListener('click', makeMotion);
 document.getElementById('saveVideoBtn').addEventListener('click', saveVideoFile);
+
+const DRESS_TO_CLIP_KEY = 'mooseDressToClip';
+
+async function goToClip() {
+  const note = document.getElementById('motionMsg');
+  if (!state.image) {
+    if (note) note.textContent = '請先產出換裝圖，再接到商品短片。';
+    return;
+  }
+  const btn = document.getElementById('toClipBtn');
+  const prev = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '帶入中…';
+  }
+  try {
+    const res = await fetch('/api/dress/stash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: state.image }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || '換裝圖暫存失敗');
+    }
+    try { sessionStorage.setItem(DRESS_TO_CLIP_KEY, '1'); } catch { /* 略過 */ }
+    location.href = '/clip';
+  } catch (err) {
+    if (note) note.textContent = err.message || '無法接到商品短片，請稍後再試。';
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = prev || '接著做成商品短片';
+    }
+  }
+}
+
+document.getElementById('toClipBtn')?.addEventListener('click', goToClip);
 document.getElementById('sceneGrid').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-scene]');
   if (!btn) return;
@@ -333,4 +367,15 @@ document.getElementById('dressForm').addEventListener('submit', (e) => {
   makeDress();
 });
 
+const promptHandoff = sessionStorage.getItem('moosePromptToDress')
+  || sessionStorage.getItem('moosePromptToModel');
+if (promptHandoff) {
+  const note = document.getElementById('note');
+  if (note && !note.value.trim()) note.value = promptHandoff.slice(0, 120);
+  sessionStorage.removeItem('moosePromptToDress');
+  sessionStorage.removeItem('moosePromptToModel');
+}
+if (location.search.includes('mode=')) {
+  history.replaceState(null, '', '/dress');
+}
 refreshPlan().then(() => recoverLast(true));

@@ -67,7 +67,7 @@ function checkoutFields({ merchantTradeNo, amount, itemName, returnUrl, resultUr
     PaymentType: 'aio',
     TotalAmount: total,
     TradeDesc: '麋鹿網方案',
-    ItemName: String(itemName || '商品短片方案').replace(/[#&]/g, ' ').slice(0, 200),
+    ItemName: String(itemName || '付費工具點數方案').replace(/[#&]/g, ' ').slice(0, 200),
     ReturnURL: returnUrl,
     OrderResultURL: resultUrl,
     ClientBackURL: clientBackUrl,

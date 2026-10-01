@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>公民議題 — AI 效率 × 人工判斷</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #060d18;
+      --card: rgba(12, 28, 48, 0.85);
+      --line: rgba(72, 196, 220, 0.35);
+      --text: #e8f4f8;
+      --muted: #8ba3b8;
+      --cyan: #3dd6f5;
+      --teal: #2ee6b8;
+      --accent: #5b9dff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: #111;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    }
+    .viewport {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 16px 8px 24px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .slide-wrap {
+      flex: 0 0 auto;
+      overflow: hidden;
+    }
+    .slide {
+      width: 1280px;
+      height: 720px;
+      position: relative;
+      transform-origin: top left;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+      transform-origin: top center;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(4, 14, 28, 0.92) 0%,
+          rgba(4, 14, 28, 0.78) 38%,
+          rgba(4, 14, 28, 0.15) 62%,
+          rgba(4, 14, 28, 0.55) 100%
+        ),
+        url("/images/civic-harbor-bg.jpg") center center / cover no-repeat;
+      background-color: #060d18;
+    }
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(61, 214, 245, 0.08), transparent 55%);
+      pointer-events: none;
+    }
+    .slide::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.45);
+      pointer-events: none;
+    }
+    .inner {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      padding: clamp(22px, 3.2vw, 40px) clamp(28px, 4vw, 48px) clamp(72px, 10vh, 96px);
+      display: flex;
+      flex-direction: column;
+    }
+    .head h1 {
+      font-size: clamp(26px, 3.2vw, 40px);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.02em;
+      line-height: 1.25;
+      max-width: 18em;
+      text-shadow: 0 2px 24px rgba(0, 0, 0, 0.65);
+    }
+    .head p {
+      margin-top: 12px;
+      font-size: clamp(13px, 1.4vw, 17px);
+      color: #b8cdd9;
+      max-width: 40em;
+      line-height: 1.55;
+      text-shadow: 0 1px 16px rgba(0, 0, 0, 0.7);
+    }
+    .flow-wrap {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      margin-top: 4px;
+    }
+    .brackets {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      margin-bottom: 10px;
+      padding-left: clamp(60px, 12vw, 140px);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--cyan);
+      letter-spacing: 0.2em;
+    }
+    .bracket-ai {
+      flex: 0 0 calc(3 * 11.5% + 2 * 1.2%);
+      text-align: center;
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 6px;
+      margin-right: 1.2%;
+    }
+    .bracket-human {
+      flex: 0 0 11.5%;
+      text-align: center;
+      border-bottom: 2px solid var(--teal);
+      padding-bottom: 6px;
+      color: var(--teal);
+    }
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      width: 100%;
+    }
+    .step {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: "›";
+      position: absolute;
+      right: -6px;
+      top: 42%;
+      transform: translateY(-50%);
+      color: var(--line);
+      font-size: 22px;
+      font-weight: 300;
+      z-index: 2;
+    }
+    .icon-box {
+      width: 100%;
+      max-width: 88px;
+      aspect-ratio: 1;
+      border-radius: 14px;
+      background: rgba(8, 22, 38, 0.72);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .step.human .icon-box {
+      border-color: rgba(46, 230, 184, 0.55);
+      box-shadow: 0 0 24px rgba(46, 230, 184, 0.15), 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+    .icon-box svg {
+      width: 44%;
+      height: 44%;
+      stroke: var(--cyan);
+      fill: none;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .step.human .icon-box svg { stroke: var(--teal); }
+    .step-title {
+      margin-top: 10px;
+      font-size: clamp(11px, 1.05vw, 14px);
+      font-weight: 600;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.35;
+      padding: 0 4px;
+    }
+    .tag {
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(61, 214, 245, 0.12);
+      color: var(--cyan);
+      border: 1px solid rgba(61, 214, 245, 0.25);
+    }
+    .step.human .tag {
+      background: rgba(46, 230, 184, 0.12);
+      color: var(--teal);
+      border-color: rgba(46, 230, 184, 0.35);
+    }
+    .foot {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: clamp(16px, 3vh, 28px);
+      z-index: 2;
+      margin: 0;
+      padding: 12px 24px;
+      text-align: center;
+      font-size: clamp(18px, 2.2vw, 28px);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.04em;
+      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85);
+    }
+    .foot .eff { color: var(--cyan); }
+    .foot .jud { color: var(--teal); }
+    .viewport-hint {
+      display: none;
+      text-align: center;
+      color: #8ba3b8;
+      font-size: 12px;
+      padding: 0 12px 8px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    @media (max-width: 1280px) {
+      .viewport-hint { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <p class="viewport-hint">手機上為與電腦相同的 16:9 簡報，已自動縮放；可橫向或雙指放大查看。</p>
+  <div class="viewport" id="viewport">
+  <div class="slide-wrap" id="slideWrap">
+  <article class="slide" id="slide" aria-label="公民議題流程圖">
+    <div class="inner">
+      <header class="head">
+        <h1>AI 不是主角，而是效率放大器。</h1>
+        <p>公民議題從投稿到追蹤：AI 負責大量整理與比對，人負責查證與最後判斷，讓問題不只被看見，還能留下可查的公共紀錄。</p>
+      </header>
+
+      <div class="flow-wrap">
+        <div class="brackets" aria-hidden="true">
+          <div class="bracket-ai">AI</div>
+          <div class="bracket-human">人工</div>
+        </div>
+        <div class="flow">
+          <div class="step">
+            <div class="icon-box">
+              <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <p class="step-title">公民投稿</p>
+          </div>
+          <div class="step">
+            <div class="icon-box">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+            </div>
+            <p class="step-title">AI 議題整理</p>
+            <span class="tag">整理</span>
+          </div>
+          <div class="step">
+            <div class="icon-box">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </div>
+            <p class="step-title">AI 資料搜尋</p>
+            <span class="tag">搜尋</span>
+          </div>
+          <div class="step">
+            <div class="icon-box">
+              <svg viewBox="0 0 24 24"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z"/><path d="M15 3v6h6"/><path d="M10 12h4M10 16h4"/></svg>
+            </div>
+            <p class="step-title">AI 資料比對</p>
+            <span class="tag">比對</span>
+          </div>
+          <div class="step human">
+            <div class="icon-box">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="m9 14 2 2 4-4"/></svg>
+            </div>
+            <p class="step-title">人工查證</p>
+            <span class="tag">查證</span>
+          </div>
+          <div class="step">
+            <div class="icon-box">
+              <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+            </div>
+            <p class="step-title">內容發布</p>
+          </div>
+          <div class="step">
+            <div class="icon-box">
+              <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            </div>
+            <p class="step-title">案件追蹤</p>
+            <span class="tag">追蹤</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="foot">AI 負責<span class="eff">效率</span>，人負責<span class="jud">判斷</span>。</p>
+    </div>
+  </article>
+  </div>
+  </div>
+  <script>
+    (function () {
+      const slide = document.getElementById('slide');
+      const wrap = document.getElementById('slideWrap');
+      function fit() {
+        const pad = 16;
+        const avail = Math.min(window.innerWidth, document.documentElement.clientWidth) - pad;
+        const scale = Math.min(1, avail / 1280);
+        slide.style.transform = scale < 1 ? 'scale(' + scale + ')' : 'none';
+        wrap.style.width = Math.round(1280 * scale) + 'px';
+        wrap.style.height = Math.round(720 * scale) + 'px';
+      }
+      fit();
+      window.addEventListener('resize', fit);
+      window.addEventListener('orientationchange', function () {
+        setTimeout(fit, 150);
+      });
+    })();
+  </script>
+</body>
+</html>

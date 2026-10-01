@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" role="img" aria-label="design-logo.svg">
+  <rect width="400" height="250" fill="#faf8f5"/>
+  <rect x="40" y="40" width="160" height="170" rx="12" fill="#fff" stroke="#e5dfd6"/>
+  <circle cx="120" cy="95" r="36" fill="#c9a87c"/>
+  <text x="120" y="104" text-anchor="middle" fill="#fff" font-family="serif" font-size="28" font-weight="600">M</text>
+  <text x="120" y="155" text-anchor="middle" fill="#333" font-family="Microsoft JhengHei, sans-serif" font-size="11" font-weight="600">品牌名</text>
+  <text x="120" y="172" text-anchor="middle" fill="#999" font-family="Microsoft JhengHei, sans-serif" font-size="8">Logo 與主色</text>
+  <rect x="220" y="48" width="140" height="28" rx="4" fill="#1a1a1a"/>
+  <rect x="220" y="88" width="100" height="28" rx="4" fill="#c9a87c"/>
+  <rect x="220" y="128" width="120" height="28" rx="4" fill="#e8e2d8"/>
+  <text x="232" y="66" fill="#fff" font-family="Microsoft JhengHei, sans-serif" font-size="9">主色</text>
+  <text x="232" y="106" fill="#fff" font-family="Microsoft JhengHei, sans-serif" font-size="9">按鈕</text>
+  <text x="232" y="146" fill="#666" font-family="Microsoft JhengHei, sans-serif" font-size="9">標題字</text>
+  <text x="220" y="200" fill="#888" font-family="Microsoft JhengHei, sans-serif" font-size="9">識別套組</text>
+</svg>

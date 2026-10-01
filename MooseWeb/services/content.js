@@ -1,7 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-const defaults = require('../data/site');
 const accounts = require('./accounts');
+
+/** 每次讀設定都重載 site.js，避免長跑進程卡在舊 require 快取（後台 content.json 仍會被程式碼預設覆蓋同名 id）。 */
+function loadSiteDefaults() {
+  delete require.cache[require.resolve('../data/site')];
+  return require('../data/site');
+}
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const FILE = path.join(DATA_DIR, 'content.json');
@@ -20,13 +25,14 @@ function normalizeLineUrl(raw) {
 }
 
 function emptyContent() {
+  const defaults = loadSiteDefaults();
   return {
     name: defaults.name,
     tagline: defaults.tagline,
     email: defaults.email,
     lineUrl: defaults.lineUrl || '',
     heroTitle: '店家官網、專業課程，\n與可直接使用的付費工具。',
-    heroLead: '歡迎委託製作官網、報名課程，或使用我做的付費工具。商品短片可直接用。劇本廣告與 AI短劇建置中。',
+    heroLead: '想先試：到商品短片排圖、寫文案，不用登入。要 AI 生圖、小廣告、口播短片，請到帳號買方案用點數。',
     workKinds: clone(defaults.workKinds || []),
     products: clone(defaults.products || []),
     works: clone(defaults.works || []),
@@ -64,25 +70,98 @@ function mergeContent(saved) {
     products: mergeListsById(base.products, saved.products),
     works: mergeListsById(base.works, saved.works),
     courses: mergeListsById(base.courses, saved.courses),
-    hire: Array.isArray(saved.hire) ? saved.hire : base.hire,
+    hire: mergeListsById(base.hire, saved.hire),
     faqs: Array.isArray(saved.faqs) ? saved.faqs : base.faqs,
   };
 }
 
+const DEPRECATED_WORK_IDS = new Set([
+  'model-lock',
+  'model',
+  'fixed-model',
+  'moose-model',
+  'model-lock-fit',
+  'mooseweb-saas',
+]);
+
+function isDeprecatedWork(w) {
+  if (!w || !w.id) return true;
+  const id = String(w.id || '').toLowerCase();
+  const blob = `${w.name || ''}${w.summary || ''}${w.href || ''}`;
+  if (DEPRECATED_WORK_IDS.has(w.id) || /model-lock|fixed-model/i.test(id)) return true;
+  if (w.kind === '付費工具') return true;
+  if (/固定模特/.test(blob)) return true;
+  if (String(w.href || '').replace(/\/$/, '') === '/model') return true;
+  if (/扣\s*2\s*點/.test(blob) && /模特/.test(blob)) return true;
+  return false;
+}
+
+function stripWorkLegacyFields(w) {
+  if (!w || typeof w !== 'object') return w;
+  const { image, ...rest } = w;
+  return rest;
+}
+
+function sanitizeWorks(works) {
+  return (works || []).filter((w) => !isDeprecatedWork(w)).map(stripWorkLegacyFields);
+}
+
+/** 前台作品／委託項目以 site.js 為準，避免 content.json 舊資料蓋掉程式更新。 */
+function canonicalWorks() {
+  return sanitizeWorks(loadSiteDefaults().works || []);
+}
+
+function canonicalHire() {
+  return clone(loadSiteDefaults().hire || []);
+}
+
+function stripDeprecatedFromSavedRaw(raw) {
+  if (!raw || !Array.isArray(raw.works)) return false;
+  const next = raw.works.filter((w) => !isDeprecatedWork(w));
+  if (next.length === raw.works.length) return false;
+  raw.works = next;
+  return true;
+}
+
 function loadContent() {
   try {
-    if (!fs.existsSync(FILE)) return emptyContent();
-    return mergeContent(JSON.parse(fs.readFileSync(FILE, 'utf8')));
+    if (!fs.existsSync(FILE)) return applyContentHygiene(emptyContent());
+    const raw = JSON.parse(fs.readFileSync(FILE, 'utf8'));
+    if (stripDeprecatedFromSavedRaw(raw)) {
+      fs.writeFileSync(FILE, JSON.stringify(raw, null, 2), 'utf8');
+    }
+    return applyContentHygiene(mergeContent(raw));
   } catch {
-    return emptyContent();
+    return applyContentHygiene(emptyContent());
   }
 }
 
 function saveContent(next) {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  const data = mergeContent(next);
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2), 'utf8');
+  const merged = mergeContent(next);
+  const data = applyContentHygiene(merged);
+  const raw = typeof next === 'object' && next ? { ...next, works: data.works } : data;
+  fs.writeFileSync(FILE, JSON.stringify(raw, null, 2), 'utf8');
   return data;
+}
+
+function applyContentHygiene(data) {
+  const works = sanitizeWorks(data.works);
+  return {
+    ...data,
+    works,
+    workKinds: sanitizeWorkKinds(data.workKinds, works),
+  };
+}
+
+function sanitizeWorkKinds(kinds, works) {
+  const used = new Set((works || []).map((w) => w.kind).filter(Boolean));
+  const preferred = ['品牌官網', 'SaaS', '智能體', '設計與自媒體'];
+  const list = preferred.filter((k) => used.has(k));
+  for (const k of kinds || []) {
+    if (k && k !== '付費工具' && used.has(k) && !list.includes(k)) list.push(k);
+  }
+  return list;
 }
 
 function publicConfig() {
@@ -94,11 +173,13 @@ function publicConfig() {
     lineUrl: normalizeLineUrl(data.lineUrl),
     heroTitle: data.heroTitle,
     heroLead: data.heroLead,
-    workKinds: data.workKinds,
+    workKinds: sanitizeWorkKinds(data.workKinds, canonicalWorks()),
     products: data.products,
-    works: data.works,
-    courses: (data.courses || []).map(({ notes, wave, status, ...row }) => row),
-    hire: data.hire,
+    works: canonicalWorks(),
+    courses: (data.courses || [])
+      .filter((row) => row.listed !== false)
+      .map(({ notes, wave, ...row }) => row),
+    hire: canonicalHire(),
     faqs: data.faqs,
     tree: accounts.publicTree(),
     pay: { ecpay: Boolean(process.env.ECPAY_MERCHANT_ID && process.env.ECPAY_HASH_KEY && process.env.ECPAY_HASH_IV) },

@@ -1,5 +1,42 @@
+const fs = require('fs');
+const path = require('path');
+
 function configured() {
   return Boolean(process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY);
+}
+
+const CACHE_FILE = path.join(process.env.DATA_DIR || path.join(__dirname, '..', 'data'), 'hot-cache.json');
+const CACHE_MS = 24 * 60 * 60 * 1000;
+const SEARCH_CAP = 40;
+
+function taipeiDay() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+
+function loadHotCache() {
+  try {
+    const data = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
+    if (!data || typeof data !== 'object') return { day: taipeiDay(), searches: 0, items: {} };
+    if (data.day !== taipeiDay()) return { day: taipeiDay(), searches: 0, items: data.items || {} };
+    return { day: data.day, searches: Number(data.searches || 0), items: data.items || {} };
+  } catch {
+    return { day: taipeiDay(), searches: 0, items: {} };
+  }
+}
+
+function saveHotCache(data) {
+  const dir = path.dirname(CACHE_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const now = Date.now();
+  const items = {};
+  Object.entries(data.items || {}).forEach(([key, row]) => {
+    if (row && now - Number(row.at || 0) < CACHE_MS) items[key] = row;
+  });
+  fs.writeFileSync(CACHE_FILE, JSON.stringify({ day: data.day, searches: data.searches, items }), 'utf8');
+}
+
+function hotCacheKey(topic, scope) {
+  return `${scope}:${String(topic || '').replace(/\s+/g, '').toLowerCase()}`;
 }
 
 const SYSTEM = [
@@ -124,8 +161,8 @@ async function askGemini(model, userText, useSearch, ms = 50000) {
     const payload = {
       contents: [{ role: 'user', parts: [{ text: `${SYSTEM}\n\n${userText}` }] }],
       generationConfig: /flash-lite/i.test(model)
-        ? { temperature: 0.4, maxOutputTokens: 8192 }
-        : { temperature: 0.4, maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 0 } },
+        ? { temperature: 0.4, maxOutputTokens: 4096 }
+        : { temperature: 0.4, maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 0 } },
     };
     if (useSearch) payload.tools = [{ googleSearch: {} }];
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
@@ -196,32 +233,49 @@ async function writeHot({ topic, scope }) {
     range === 'tw' ? '只要台灣熱問，foreign 給空陣列。' : range === 'foreign' ? '只要國外近一年商業思維改寫成短片題，taiwan 給空陣列。' : '台灣熱問與國外近一年商業思維都要，分開兩欄。',
     '請先搜尋公開網頁再整理。冷門行業公開討論少就少寫，不要編造排名。',
   ].join('\n');
+  const cache = loadHotCache();
+  const cached = cache.items[hotCacheKey(subject, range)];
+  if (cached && cached.pack && Date.now() - Number(cached.at || 0) < CACHE_MS) return cached.pack;
   const deadline = Date.now() + 75000;
   const left = () => deadline - Date.now();
+  async function once(model, useSearch) {
+    const raw = await askGemini(model, userText, useSearch, Math.min(40000, left()));
+    let pack;
+    try {
+      pack = parsePack(raw.text, range, subject);
+    } catch (err) {
+      console.error('[hot] raw', String(raw.text || '').replace(/\s+/g, ' ').slice(0, 280));
+      throw err;
+    }
+    pack.live = Boolean(useSearch && raw.searched);
+    pack.sources = useSearch ? raw.sources : [];
+    cache.items[hotCacheKey(subject, range)] = { at: Date.now(), pack };
+    saveHotCache(cache);
+    return pack;
+  }
   try {
     let lastErr;
     if (process.env.GEMINI_API_KEY) {
-      for (const model of ['gemini-flash-lite-latest', 'gemini-3.6-flash']) {
-        for (const useSearch of [true, false]) {
-          if (left() < 12000) break;
-          try {
-            const raw = await askGemini(model, userText, useSearch, Math.min(40000, left()));
-            let pack;
-            try {
-              pack = parsePack(raw.text, range, subject);
-            } catch (err) {
-              console.error('[hot] raw', String(raw.text || '').replace(/\s+/g, ' ').slice(0, 280));
-              throw err;
-            }
-            pack.live = raw.searched;
-            pack.sources = raw.sources;
-            if (!useSearch) pack.live = false;
-            return pack;
-          } catch (err) {
-            lastErr = err;
-            console.error('[hot]', model, useSearch ? 'search' : 'plain', err.message);
-            if (!busy(err) && !/熱問服務/.test(err.message)) throw err;
-          }
+      const model = 'gemini-flash-lite-latest';
+      if (cache.searches < SEARCH_CAP && left() >= 12000) {
+        cache.searches += 1;
+        saveHotCache(cache);
+        try {
+          return await once(model, true);
+        } catch (err) {
+          lastErr = err;
+          console.error('[hot]', model, 'search', err.message);
+          if (!busy(err) && !/熱問服務/.test(err.message)) throw err;
+        }
+      }
+      for (const plain of ['gemini-flash-lite-latest', 'gemini-3.6-flash']) {
+        if (left() < 12000) break;
+        try {
+          return await once(plain, false);
+        } catch (err) {
+          lastErr = err;
+          console.error('[hot]', plain, 'plain', err.message);
+          if (!busy(err) && !/熱問服務/.test(err.message)) throw err;
         }
       }
     }

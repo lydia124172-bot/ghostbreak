@@ -27,6 +27,7 @@ const liveScript = require('./services/live-script');
 const personaAgent = require('./services/persona-agent');
 const hotAgent = require('./services/hot-agent');
 const promptAgent = require('./services/prompt-agent');
+const hookAgent = require('./services/hook-agent');
 const dressAgent = require('./services/dress-agent');
 const modelLock = require('./services/model-lock');
 const accounts = require('./services/accounts');
@@ -54,6 +55,7 @@ const pages = {
   '/agents': 'agents.html',
   '/works': 'agents.html',
   '/courses': 'courses.html',
+  '/course': 'course.html',
   '/hire': 'hire.html',
   '/match': 'match.html',
   '/research': 'research.html',
@@ -68,6 +70,7 @@ const pages = {
   '/ip': 'ip.html',
   '/hot': 'hot.html',
   '/prompt': 'prompt.html',
+  '/hook': 'hook.html',
   '/dress': 'dress.html',
   '/model': 'model.html',
   '/account': 'account.html',
@@ -92,6 +95,7 @@ clipStore.pruneMedia(false);
 setInterval(() => clipStore.pruneMedia(false), 60 * 60 * 1000).unref();
 
 app.get('/api/config', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
   res.json(publicConfig());
 });
 
@@ -255,6 +259,7 @@ function sendPage(req, res, file, status = 200) {
   }
   const origin = requestOrigin(req);
   const html = withAnalytics(withSocialMeta(fs.readFileSync(full, 'utf8'), origin, req.path || '/', '/og.jpg'), file);
+  res.setHeader('Cache-Control', 'no-cache');
   res.status(status).type('html').send(html);
 }
 
@@ -303,6 +308,58 @@ function currentAccount(req) {
 function isOwner(req) {
   const cookie = parseCookies(req).moose_owner;
   return isValidToken(cookie) || isValidToken(readToken(req));
+}
+
+function hasPaidClipPlan(req) {
+  if (isOwner(req)) return true;
+  const row = currentAccount(req);
+  if (!row) return false;
+  const pub = accounts.publicAccount(row);
+  return Boolean(
+    pub.ok
+    && pub.plan !== 'free'
+    && pub.planExpires
+    && Date.parse(pub.planExpires) > Date.now()
+  );
+}
+
+function agentTrialBucket(req, res) {
+  const row = currentAccount(req);
+  if (row && row.id) return `acc:${row.id}`;
+  return `sid:${clipSid(req, res)}`;
+}
+
+function agentAccess(req, res, tool) {
+  if (isOwner(req) || hasPaidClipPlan(req)) {
+    return { unlimited: true, paid: true, tool };
+  }
+  const bucket = agentTrialBucket(req, res);
+  const trial = clipStore.guestAgentTrialState(bucket, tool);
+  return { unlimited: false, paid: false, bucket, tool, ...trial };
+}
+
+function agentStatusJson(req, res, tool, ready, extra = {}) {
+  const access = agentAccess(req, res, tool);
+  if (access.unlimited) {
+    return { ready, paid: true, unlimited: true, left: null, limit: null, ...extra };
+  }
+  return {
+    ready,
+    paid: false,
+    unlimited: false,
+    left: access.left,
+    limit: access.limit,
+    ...extra,
+  };
+}
+
+function denyAgentTrial(res) {
+  return res.status(402).json({
+    error: '此智能體試用已用完（各限 1 次）。購買付費工具方案後可不限次數使用。',
+    left: 0,
+    limit: clipStore.agentTrialLimit(),
+    needPlan: true,
+  });
 }
 
 function sendAccount(req, res, payload, sid) {
@@ -537,24 +594,12 @@ app.use([
 });
 
 app.get('/api/script/status', (req, res) => {
-  const sid = clipSid(req, res);
-  const guest = clipStore.guestScriptState(sid);
-  res.json({
-    ready: scriptAgent.configured(),
-    left: guest.left,
-    limit: guest.limit,
-  });
+  res.json(agentStatusJson(req, res, 'script', scriptAgent.configured()));
 });
 
 app.post('/api/script', express.json({ limit: '8mb' }), async (req, res) => {
-  const sid = clipSid(req, res);
-  const guest = clipStore.guestScriptState(sid);
-  if (!guest.left) {
-    return res.status(402).json({
-      error: `今日免費腳本已用完（${guest.limit} 則）。可明天再試，或使用付費工具做成短片。`,
-      left: 0,
-    });
-  }
+  const access = agentAccess(req, res, 'script');
+  if (!access.unlimited && access.left <= 0) return denyAgentTrial(res);
   try {
     const result = await scriptAgent.writeScript({
       product: String(req.body?.product || '').trim(),
@@ -562,8 +607,10 @@ app.post('/api/script', express.json({ limit: '8mb' }), async (req, res) => {
       mode: String(req.body?.mode || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
     });
-    const used = clipStore.consumeGuestScript(sid);
-    res.json({ ...result, left: used.left, limit: used.limit });
+    const extra = access.unlimited
+      ? { paid: true, unlimited: true }
+      : { left: clipStore.consumeGuestAgentTrial(access.bucket, 'script').left, limit: access.limit };
+    res.json({ ...result, ...extra });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請再試一次' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
@@ -571,32 +618,22 @@ app.post('/api/script', express.json({ limit: '8mb' }), async (req, res) => {
 });
 
 app.get('/api/live/status', (req, res) => {
-  const sid = clipSid(req, res);
-  const guest = clipStore.guestScriptState(sid);
-  res.json({
-    ready: liveScript.configured(),
-    left: guest.left,
-    limit: guest.limit,
-  });
+  res.json(agentStatusJson(req, res, 'live', liveScript.configured()));
 });
 
 app.post('/api/live', express.json({ limit: '200kb' }), async (req, res) => {
-  const sid = clipSid(req, res);
-  const guest = clipStore.guestScriptState(sid);
-  if (!guest.left) {
-    return res.status(402).json({
-      error: `今日免費腳本已用完（${guest.limit} 則）。可明天再試。`,
-      left: 0,
-    });
-  }
+  const access = agentAccess(req, res, 'live');
+  if (!access.unlimited && access.left <= 0) return denyAgentTrial(res);
   try {
     const result = await liveScript.writeLive({
       industry: String(req.body?.industry || '').trim(),
       product: String(req.body?.product || '').trim(),
       notes: String(req.body?.notes || '').trim(),
     });
-    const used = clipStore.consumeGuestScript(sid);
-    res.json({ ...result, left: used.left, limit: used.limit });
+    const extra = access.unlimited
+      ? { paid: true, unlimited: true }
+      : { left: clipStore.consumeGuestAgentTrial(access.bucket, 'live').left, limit: access.limit };
+    res.json({ ...result, ...extra });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請再試一次' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
@@ -604,32 +641,22 @@ app.post('/api/live', express.json({ limit: '200kb' }), async (req, res) => {
 });
 
 app.get('/api/ip/status', (req, res) => {
-  const sid = clipSid(req, res);
-  const guest = clipStore.guestScriptState(sid);
-  res.json({
-    ready: personaAgent.configured(),
-    left: guest.left,
-    limit: guest.limit,
-  });
+  res.json(agentStatusJson(req, res, 'ip', personaAgent.configured()));
 });
 
 app.post('/api/ip', express.json({ limit: '200kb' }), async (req, res) => {
-  const sid = clipSid(req, res);
-  const guest = clipStore.guestScriptState(sid);
-  if (!guest.left) {
-    return res.status(402).json({
-      error: `今日免費腳本已用完（${guest.limit} 則）。可明天再試。`,
-      left: 0,
-    });
-  }
+  const access = agentAccess(req, res, 'ip');
+  if (!access.unlimited && access.left <= 0) return denyAgentTrial(res);
   try {
     const result = await personaAgent.writePersona({
       bio: String(req.body?.bio || '').trim(),
       fans: String(req.body?.fans || '').trim(),
       goal: String(req.body?.goal || '').trim(),
     });
-    const used = clipStore.consumeGuestScript(sid);
-    res.json({ ...result, left: used.left, limit: used.limit });
+    const extra = access.unlimited
+      ? { paid: true, unlimited: true }
+      : { left: clipStore.consumeGuestAgentTrial(access.bucket, 'ip').left, limit: access.limit };
+    res.json({ ...result, ...extra });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請再試一次' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
@@ -637,55 +664,62 @@ app.post('/api/ip', express.json({ limit: '200kb' }), async (req, res) => {
 });
 
 app.get('/api/hot/status', (req, res) => {
-  const sid = clipSid(req, res);
-  const guest = clipStore.guestScriptState(sid);
-  res.json({
-    ready: hotAgent.configured(),
-    left: guest.left,
-    limit: guest.limit,
-  });
+  res.json(agentStatusJson(req, res, 'hot', hotAgent.configured()));
 });
 
 app.post('/api/hot', express.json({ limit: '200kb' }), async (req, res) => {
-  const sid = clipSid(req, res);
-  const guest = clipStore.guestScriptState(sid);
-  if (!guest.left) {
-    return res.status(402).json({
-      error: `今日免費腳本已用完（${guest.limit} 則）。可明天再試。`,
-      left: 0,
-    });
-  }
+  const access = agentAccess(req, res, 'hot');
+  if (!access.unlimited && access.left <= 0) return denyAgentTrial(res);
   try {
     const result = await hotAgent.writeHot({
       topic: String(req.body?.topic || '').trim(),
       scope: String(req.body?.scope || 'both').trim(),
     });
-    const used = clipStore.consumeGuestScript(sid);
-    res.json({ ...result, left: used.left, limit: used.limit });
+    const extra = access.unlimited
+      ? { paid: true, unlimited: true }
+      : { left: clipStore.consumeGuestAgentTrial(access.bucket, 'hot').left, limit: access.limit };
+    res.json({ ...result, ...extra });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請再試一次' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
   }
 });
 
+app.get('/api/hook/status', (req, res) => {
+  res.json(agentStatusJson(req, res, 'hook', hookAgent.configured()));
+});
+
+app.post('/api/hook', express.json({ limit: '4mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const access = agentAccess(req, res, 'hook');
+  if (!owner && !access.unlimited && access.left <= 0) return denyAgentTrial(res);
+  try {
+    const result = await hookAgent.writeHook({
+      note: String(req.body?.note || '').trim(),
+      image: String(req.body?.image || ''),
+      platforms: Array.isArray(req.body?.platforms) ? req.body.platforms : [],
+    });
+    let extra = {};
+    if (owner) extra = { owner: true };
+    else if (access.unlimited) extra = { paid: true, unlimited: true };
+    else extra = { left: clipStore.consumeGuestAgentTrial(access.bucket, 'hook').left, limit: access.limit };
+    res.json({ ...result, ...extra });
+  } catch (err) {
+    res.status(400).json({ error: err.message || '產出失敗' });
+  }
+});
+
 app.get('/api/prompt/status', (req, res) => {
-  const guest = clipStore.guestScriptState(clipSid(req, res));
-  res.json({
-    ready: promptAgent.configured(),
+  res.json(agentStatusJson(req, res, 'prompt', promptAgent.configured(), {
     owner: isOwner(req),
-    left: guest.left,
-    limit: guest.limit,
     kinds: promptAgent.publicKinds(),
-  });
+  }));
 });
 
 app.post('/api/prompt', express.json({ limit: '6mb' }), async (req, res) => {
   const owner = isOwner(req);
-  const sid = clipSid(req, res);
-  if (!owner && !clipStore.guestScriptState(sid).left) {
-    const guest = clipStore.guestScriptState(sid);
-    return res.status(402).json({ error: `今日免費次數已用完（${guest.limit} 則）。可明天再試。`, left: 0 });
-  }
+  const access = agentAccess(req, res, 'prompt');
+  if (!owner && !access.unlimited && access.left <= 0) return denyAgentTrial(res);
   try {
     const result = await promptAgent.writePrompt({
       kind: String(req.body?.kind || '').trim(),
@@ -693,7 +727,10 @@ app.post('/api/prompt', express.json({ limit: '6mb' }), async (req, res) => {
       picks: req.body?.picks && typeof req.body.picks === 'object' ? req.body.picks : {},
       images: Array.isArray(req.body?.images) ? req.body.images.filter((x) => typeof x === 'string') : [],
     });
-    const extra = owner ? { owner: true } : { left: clipStore.consumeGuestScript(sid).left };
+    let extra = {};
+    if (owner) extra = { owner: true };
+    else if (access.unlimited) extra = { paid: true, unlimited: true };
+    else extra = { left: clipStore.consumeGuestAgentTrial(access.bucket, 'prompt').left, limit: access.limit };
     res.json({ ...result, ...extra });
   } catch (err) {
     res.status(400).json({ error: err.message || '產出失敗' });
@@ -704,12 +741,14 @@ app.get('/api/dress/status', (req, res) => {
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
-  const videoCost = clipVideo.creditCost();
+  const videoCost = clipVideo.creditCost('5');
+  const videoCost10 = clipVideo.creditCost('10');
   const last = clipStore.getLastDress(clipSid(req, res));
   res.json({
     ready: dressAgent.configured(),
     videoReady: clipVideo.configured(),
     videoCost,
+    videoCost10,
     scenes: dressAgent.publicScenes(),
     owner,
     loggedIn: Boolean(paid && paid.ok),
@@ -732,6 +771,16 @@ function stashDressImage(req, res, dataUrl) {
     return '';
   }
 }
+
+app.post('/api/dress/stash', express.json({ limit: '8mb' }), (req, res) => {
+  const image = String(req.body?.image || '');
+  if (!image.startsWith('data:image/')) {
+    return res.status(400).json({ error: '請先產出換裝圖。' });
+  }
+  const mediaId = stashDressImage(req, res, image);
+  if (!mediaId) return res.status(400).json({ error: '換裝圖暫存失敗，請再試一次。' });
+  res.json({ ok: true, mediaId, imageUrl: `/api/clip/media/${mediaId}` });
+});
 
 app.get('/api/dress/last', (req, res) => {
   const row = clipStore.getLastDress(clipSid(req, res));
@@ -850,18 +899,18 @@ app.post('/api/dress/video', express.json({ limit: '8mb' }), async (req, res) =>
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
-  const cost = clipVideo.creditCost();
+  const wanted = String(req.body?.duration || '5').trim();
+  const duration = wanted === '10' ? '10' : '5';
+  const cost = clipVideo.creditCost(duration);
   if (!owner && (!paid || Number(paid.credits || 0) < cost)) {
     return res.status(402).json({
-      error: `讓圖動起來需方案剩餘 ${cost} 點以上。作者請先到後台登入。`,
+      error: `讓圖動起來（${duration} 秒）需方案剩餘 ${cost} 點以上。作者請先到後台登入。`,
     });
   }
   const image = String(req.body?.image || '');
   if (!image.startsWith('data:image/')) {
     return res.status(400).json({ error: '請先產出換裝圖，再讓圖動起來。' });
   }
-  const wanted = String(req.body?.duration || '5').trim();
-  const duration = wanted === '10' ? '10' : '5';
   const note = String(req.body?.note || '').replace(/\s+/g, ' ').trim().slice(0, 120);
   try {
     const prompt = [
@@ -915,10 +964,11 @@ app.get('/api/clip/status', (req, res) => {
     video: clipVideo.configured(),
     videoEngine: clipVideo.engine(),
     videoDuration: clipVideo.videoDuration(),
-    videoCredits: clipVideo.creditCost(),
+    videoCredits: clipVideo.creditCost('5'),
+    videoCredits10: clipVideo.creditCost('10'),
     talk: clipTalk.configured(),
     talkEngine: clipTalk.engine(),
-    talkCredits: clipTalk.creditCost(),
+    talkPerSecond: 1,
     tts: clipTts.configured(),
     owner: isOwner(req),
     guestEnhanceLeft: guest.left,
@@ -978,9 +1028,9 @@ app.post('/api/clip/enhance', express.json({ limit: '8mb' }), async (req, res) =
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
-  if (!owner && (!paid || !paid.credits)) {
+  if (!owner && (!hasPaidClipPlan(req) || !paid || !paid.credits)) {
     return res.status(402).json({
-      error: '進階生圖需購買方案。作者請先到後台登入，即可直接使用，不必再註冊方案。',
+      error: '進階生圖需購買付費工具方案並有點數。作者請先到後台登入。',
     });
   }
   try {
@@ -1017,8 +1067,8 @@ app.get('/api/clip/enhance/last', async (req, res) => {
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
-  if (!owner && (!paid || !paid.credits)) {
-    return res.status(402).json({ error: '進階生圖需購買方案。' });
+  if (!owner && (!hasPaidClipPlan(req) || !paid || !paid.credits)) {
+    return res.status(402).json({ error: '進階生圖需購買付費工具方案並有點數。' });
   }
   try {
     const recovered = await clipImage.recoverRecent();
@@ -1088,10 +1138,11 @@ app.post('/api/clip/video', express.json({ limit: '8mb' }), async (req, res) => 
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
-  const cost = clipVideo.creditCost();
+  const duration = clipVideo.videoDuration(String(req.body?.duration || '').trim());
+  const cost = clipVideo.creditCost(duration);
   if (!owner && (!paid || Number(paid.credits || 0) < cost)) {
     return res.status(402).json({
-      error: `小廣告需先到後台登入，或方案剩餘 ${cost} 點以上。`,
+      error: `小廣告（${duration} 秒）需先到後台登入，或方案剩餘 ${cost} 點以上。`,
     });
   }
   try {
@@ -1121,7 +1172,7 @@ app.post('/api/clip/video', express.json({ limit: '8mb' }), async (req, res) => 
       audioUrl: String(req.body?.audioUrl || '').trim(),
       voice,
       narration: String(req.body?.narration || '').trim(),
-      duration: String(req.body?.duration || '').trim(),
+      duration,
     });
     pruneVideoJobs();
     const job = {
@@ -1231,12 +1282,6 @@ app.post('/api/talk/video', express.json({ limit: '8mb' }), async (req, res) => 
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
-  const cost = clipTalk.creditCost();
-  if (!owner && (!paid || Number(paid.credits || 0) < cost)) {
-    return res.status(402).json({
-      error: `數字人出鏡需先到後台登入，或方案剩餘 ${cost} 點以上。`,
-    });
-  }
   try {
     const sid = clipSid(req, res);
     let voice;
@@ -1245,6 +1290,16 @@ app.post('/api/talk/video', express.json({ limit: '8mb' }), async (req, res) => 
       const media = clipStore.mediaOwned(voiceId, sid) ? clipStore.getMedia(voiceId) : null;
       if (!media) return res.status(400).json({ error: '找不到口播音檔，請重新選擇。' });
       voice = { buffer: fs.readFileSync(media.full), mime: media.mime };
+    }
+    const seconds = clipTalk.quoteSeconds({
+      narration: String(req.body?.narration || '').trim(),
+      voice,
+    });
+    const cost = clipTalk.creditCost(seconds);
+    if (!owner && (!paid || Number(paid.credits || 0) < cost)) {
+      return res.status(402).json({
+        error: `數字人約 ${seconds} 秒，需方案剩餘 ${cost} 點（每秒 1 點）。作者請先到後台登入。`,
+      });
     }
     const submitted = await clipTalk.submit({
       images: Array.isArray(req.body?.images) ? req.body.images : [],
@@ -1377,7 +1432,7 @@ app.use([
 app.get('/api/story/status', (req, res) => {
   const paid = currentAccount(req);
   const account = paid ? accounts.publicAccount(paid) : null;
-  const guest = clipStore.guestScriptState(clipSid(req, res));
+  const scriptAccess = agentAccess(req, res, 'story');
   res.json({
     open: STORY_OPEN,
     video: STORY_OPEN && storyVideo.configured(),
@@ -1386,8 +1441,9 @@ app.get('/api/story/status', (req, res) => {
     videoDuration: storyVideo.videoDuration(),
     videoCredits: storyVideo.creditCost(),
     script: storyScript.configured(),
-    scriptLeft: guest.left,
-    scriptLimit: guest.limit,
+    scriptPaid: scriptAccess.unlimited,
+    scriptLeft: scriptAccess.unlimited ? null : scriptAccess.left,
+    scriptLimit: scriptAccess.unlimited ? null : scriptAccess.limit,
     demoScript: storyVideo.DEMO_SCRIPT,
     owner: isOwner(req),
     storyPlan: account && account.storyPlan ? account.storyPlan : '',
@@ -1397,24 +1453,19 @@ app.get('/api/story/status', (req, res) => {
 
 app.post('/api/story/script', express.json({ limit: '8mb' }), async (req, res) => {
   const owner = isOwner(req);
-  const sid = clipSid(req, res);
-  if (!owner) {
-    const guest = clipStore.guestScriptState(sid);
-    if (!guest.left) {
-      return res.status(402).json({
-        error: `今日免費寫劇本已用完（${guest.limit} 則）。可明天再試，或自己貼上劇本。`,
-        left: 0,
-      });
-    }
-  }
+  const access = agentAccess(req, res, 'story');
+  if (!owner && !access.unlimited && access.left <= 0) return denyAgentTrial(res);
   try {
     const result = await storyScript.writeScript({
       product: String(req.body?.product || '').trim(),
       notes: String(req.body?.notes || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
     });
-    const extra = {};
-    if (!owner) extra.left = clipStore.consumeGuestScript(sid).left;
+    const extra = owner
+      ? {}
+      : access.unlimited
+        ? { paid: true, unlimited: true }
+        : { left: clipStore.consumeGuestAgentTrial(access.bucket, 'story').left };
     res.json({ script: result.script, ...extra });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '寫稿逾時，請再試一次' : (err.message || '寫稿失敗');
@@ -1584,7 +1635,7 @@ app.use([
 app.get('/api/drama/status', (req, res) => {
   const paid = currentAccount(req);
   const account = paid ? accounts.publicAccount(paid) : null;
-  const guest = clipStore.guestScriptState(clipSid(req, res));
+  const scriptAccess = agentAccess(req, res, 'drama');
   res.json({
     open: DRAMA_OPEN,
     video: DRAMA_OPEN && dramaVideo.configured(),
@@ -1592,8 +1643,9 @@ app.get('/api/drama/status', (req, res) => {
     scenes: dramaVideo.sceneCount(),
     duration: Number(dramaVideo.sceneDuration()) * dramaVideo.sceneCount(),
     videoCredits: dramaVideo.creditCost(),
-    scriptLeft: guest.left,
-    scriptLimit: guest.limit,
+    scriptPaid: scriptAccess.unlimited,
+    scriptLeft: scriptAccess.unlimited ? null : scriptAccess.left,
+    scriptLimit: scriptAccess.unlimited ? null : scriptAccess.limit,
     demoScript: dramaVideo.DEMO_SCRIPT,
     owner: isOwner(req),
     dramaPlan: account && account.dramaPlan ? account.dramaPlan : '',
@@ -1603,24 +1655,19 @@ app.get('/api/drama/status', (req, res) => {
 
 app.post('/api/drama/script', express.json({ limit: '8mb' }), async (req, res) => {
   const owner = isOwner(req);
-  const sid = clipSid(req, res);
-  if (!owner) {
-    const guest = clipStore.guestScriptState(sid);
-    if (!guest.left) {
-      return res.status(402).json({
-        error: `今日免費寫劇本已用完（${guest.limit} 則）。可明天再試，或自己貼上三鏡。`,
-        left: 0,
-      });
-    }
-  }
+  const access = agentAccess(req, res, 'drama');
+  if (!owner && !access.unlimited && access.left <= 0) return denyAgentTrial(res);
   try {
     const result = await dramaScript.writeScript({
       topic: String(req.body?.topic || '').trim(),
       notes: String(req.body?.notes || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
     });
-    const extra = {};
-    if (!owner) extra.left = clipStore.consumeGuestScript(sid).left;
+    const extra = owner
+      ? {}
+      : access.unlimited
+        ? { paid: true, unlimited: true }
+        : { left: clipStore.consumeGuestAgentTrial(access.bucket, 'drama').left };
     res.json({ script: result.script, ...extra });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '寫稿逾時，請再試一次' : (err.message || '寫稿失敗');

@@ -27,6 +27,9 @@ const state = {
   exportReady: false,
   musicPick: 'bright',
   duration: '5',
+  videoCredits5: 4,
+  videoCredits10: 7,
+  owner: false,
 };
 
 function selectedStyle() {
@@ -37,8 +40,13 @@ function selectedDuration() {
   return state.duration === '10' ? '10' : '5';
 }
 
+function videoPointCost() {
+  return selectedDuration() === '10' ? state.videoCredits10 : state.videoCredits5;
+}
+
 function makeBtnLabel() {
-  return `產出小廣告（約 ${selectedDuration()} 秒）`;
+  if (state.owner) return `產出小廣告（${selectedDuration()} 秒）`;
+  return `產出小廣告（${selectedDuration()} 秒，扣 ${videoPointCost()} 點）`;
 }
 
 function clipAuthHeaders(json) {
@@ -53,10 +61,43 @@ function loadImage(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('圖片讀取失敗'));
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('圖片讀取失敗。請重新上傳商品圖，或回換裝頁再按「接著做成商品短片」。'));
+    };
     img.src = url;
   });
+}
+
+function fileFromDataUrl(dataUrl, baseName = '換裝') {
+  const m = String(dataUrl || '').match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+=*)$/i);
+  if (!m) throw new Error('換裝圖格式不正確，請回換裝頁重新產出。');
+  const mime = m[1];
+  const bin = atob(m[2]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  if (bytes.length < 80) throw new Error('換裝圖是空的，請回換裝頁重新產出。');
+  const ext = /png/i.test(mime) ? 'png' : /webp/i.test(mime) ? 'webp' : 'jpg';
+  return new File([bytes], `${baseName}.${ext}`, { type: mime });
+}
+
+async function fileFromDressLast(body) {
+  if (body.image && /^data:image\//i.test(body.image)) {
+    return fileFromDataUrl(body.image);
+  }
+  const url = body.imageUrl;
+  if (!url) throw new Error('沒有換裝圖可帶入。');
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('換裝圖讀取失敗，請回換裝頁再按「接著做成商品短片」。');
+  const blob = await res.blob();
+  if (!blob || blob.size < 80) throw new Error('換裝圖是空的，請回換裝頁重新產出。');
+  const type = blob.type && blob.type.startsWith('image/') ? blob.type : 'image/jpeg';
+  const ext = /png/i.test(type) ? 'png' : /webp/i.test(type) ? 'webp' : 'jpg';
+  return new File([blob], `換裝.${ext}`, { type });
 }
 
 function coverDraw(ctx, img, w, h, zoom) {
@@ -382,12 +423,12 @@ async function makeLife(images, copy) {
   canvas.height = 1350;
   paintLife(canvas.getContext('2d'), images[0], copy);
   const posterBlob = await canvasBlob(canvas);
-  const videoBlob = await recordCanvas(1080, 1350, 4000, (ctx, t) => {
+  const videoBlob = await recordCanvas(1080, 1350, 4000, (ctx, _t) => {
     const w = 1080;
     const h = 1350;
     ctx.fillStyle = '#0c0b10';
     ctx.fillRect(0, 0, w, h);
-    coverDraw(ctx, images[0], w, h, 1.04 + t * 0.08);
+    coverDraw(ctx, images[0], w, h, 1);
     paintVignette(ctx, w, h);
     paintBottomFade(ctx, w, h, 820);
     const hook = usableHook(copy?.product, copy?.hook) || copy?.product || '';
@@ -417,13 +458,8 @@ async function makeGrid(images, copy) {
   canvas.height = 1350;
   paintGrid(canvas.getContext('2d'), images, copy);
   const posterBlob = await canvasBlob(canvas);
-  const videoBlob = await recordCanvas(1080, 1350, 4500, (ctx, t) => {
-    ctx.save();
-    ctx.translate(540, 675);
-    ctx.scale(1 + t * 0.08, 1 + t * 0.08);
-    ctx.translate(-540, -675);
+  const videoBlob = await recordCanvas(1080, 1350, 4500, (ctx) => {
     paintGrid(ctx, images, copy);
-    ctx.restore();
   });
   return { posterBlob, videoBlob, kind: 'video' };
 }
@@ -591,21 +627,18 @@ async function refreshPlan() {
   if (!bar) return;
   try {
     const st = await fetch('/api/clip/status', { headers: clipAuthHeaders() }).then((r) => r.json());
-    if (st.owner) {
-      const video = st.video
-        ? `小廣告走 Wan 圖生視頻，可選 5 或 10 秒。5 秒較快約 NT$16，10 秒約 NT$31。不扣方案點，仍扣 fal。`
-        : '圖生視頻尚未開通。';
-      const eng = `${video}換靜態圖走 Google。`;
-      bar.innerHTML = `作者已登入後台。排版與識圖免費。${eng}`;
-      return;
-    }
+    state.owner = Boolean(st.owner);
+    state.videoCredits5 = Number(st.videoCredits || 4) || 4;
+    state.videoCredits10 = Number(st.videoCredits10 || 7) || 7;
+    const make = document.getElementById('makeBtn');
+    if (make && !make.disabled) make.textContent = makeBtnLabel();
     const me = await fetch('/api/account/me').then((r) => r.json());
     if (me.ok && me.email) {
       const extra = me.credits ? ` · 剩餘 ${me.credits} 點（換靜態圖扣 1 點）` : ' · 換靜態圖需方案點數';
       const pending = me.pendingPlan ? ' · 方案確認中' : '';
-      bar.innerHTML = `目前方案：${me.planName}${extra}${pending}　小廣告一次扣 3 點　<a href="/account">管理方案</a>`;
+      bar.innerHTML = `目前方案：${me.planName}${extra}${pending}　小廣告 5 秒扣 ${state.videoCredits5} 點、10 秒扣 ${state.videoCredits10} 點　<a href="/account">管理方案</a>`;
     } else {
-      bar.innerHTML = '排版與識圖不必登入。小廣告需登入方案或後台。作者請先<a href="/admin">後台登入</a>。';
+      bar.innerHTML = '排版與識圖不必登入。小廣告與進階生圖需方案點數。　<a href="/account">看方案</a>';
     }
   } catch {
     bar.innerHTML = '排版與識圖不必登入。要會動請按「產出小廣告」。　<a href="/account">看方案</a>';
@@ -754,9 +787,11 @@ async function assertVideoAllowed() {
   if (!st.video) throw new Error('圖生視頻尚未開通。');
   if (st.owner) return;
   const me = await fetch('/api/account/me').then((r) => r.json()).catch(() => ({}));
-  const need = Number(st.videoCredits || 3);
+  state.videoCredits5 = Number(st.videoCredits || 4) || 4;
+  state.videoCredits10 = Number(st.videoCredits10 || 7) || 7;
+  const need = videoPointCost();
   if (!me.ok || Number(me.credits || 0) < need) {
-    throw new Error(`小廣告需先到後台登入，或方案剩餘 ${need} 點以上。`);
+    throw new Error(`小廣告（${selectedDuration()} 秒）需先到後台登入，或方案剩餘 ${need} 點以上。`);
   }
 }
 
@@ -850,6 +885,7 @@ async function fetchDemoFiles(names) {
   state.skipPhotoReset = true;
   document.getElementById('photos').files = dt.files;
   state.skipPhotoReset = false;
+  paintPhotosHint(dt.files);
   return files;
 }
 
@@ -863,6 +899,55 @@ function clearCopyFields() {
 }
 
 let captionSeq = 0;
+let photosPreviewUrl = '';
+
+function setDressProductBring(on) {
+  const box = document.getElementById('productBringBox');
+  const badge = document.getElementById('dressHandoffBadge');
+  const title = document.getElementById('productBringTitle');
+  if (box) box.classList.toggle('clip-product-bring--dress', Boolean(on));
+  if (badge) badge.classList.toggle('hidden', !on);
+  if (title) title.textContent = on ? '從換裝帶來的商品' : '商品圖與名稱';
+}
+
+function paintPhotosHint(files, note, previewDataUrl) {
+  const msg = document.getElementById('photosMsg');
+  const img = document.getElementById('photosPreview');
+  const placeholder = document.getElementById('photosPlaceholder');
+  if (!msg || !img) return;
+  const list = files && files.length ? [...files] : [];
+  if (!list.length && !previewDataUrl) {
+    msg.textContent = '';
+    msg.classList.add('hidden');
+    img.classList.add('hidden');
+    img.removeAttribute('src');
+    img.onerror = null;
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (photosPreviewUrl) {
+      URL.revokeObjectURL(photosPreviewUrl);
+      photosPreviewUrl = '';
+    }
+    return;
+  }
+  if (photosPreviewUrl) URL.revokeObjectURL(photosPreviewUrl);
+  photosPreviewUrl = '';
+  if (previewDataUrl && /^data:image\//i.test(previewDataUrl)) {
+    img.src = previewDataUrl;
+  } else if (list.length) {
+    photosPreviewUrl = URL.createObjectURL(list[0]);
+    img.src = photosPreviewUrl;
+  }
+  img.onerror = () => {
+    img.classList.add('hidden');
+    msg.textContent = '預覽讀取失敗。請用下方「上傳或更換商品圖」再選一次，或回換裝頁重新帶入。';
+    msg.classList.remove('hidden');
+  };
+  img.classList.remove('hidden');
+  if (placeholder) placeholder.classList.add('hidden');
+  const count = list.length > 1 ? `（共 ${list.length} 張，預覽第 1 張）` : '';
+  msg.textContent = note || `已選擇：${list[0]?.name || '商品圖'}${count}。檔案欄可能仍顯示「未選擇檔案」，左側預覽有圖即可產出。`;
+  msg.classList.remove('hidden');
+}
 
 async function writeCaptionFromFiles(files, { overwrite = true } = {}) {
   if (!files || !files.length) throw new Error('請先選商品圖');
@@ -898,9 +983,17 @@ async function writeCaptionFromFiles(files, { overwrite = true } = {}) {
 }
 
 document.getElementById('photos').addEventListener('change', async () => {
-  if (state.skipPhotoReset) return;
   const files = document.getElementById('photos').files;
-  if (!files.length) return;
+  if (!files.length) {
+    paintPhotosHint(null);
+    return;
+  }
+  if (state.skipPhotoReset) {
+    paintPhotosHint(files);
+    return;
+  }
+  paintPhotosHint(files);
+  setDressProductBring(false);
   clearCopyFields();
   showClipMsg('已換圖，上一筆文案已清掉。正在依新圖重寫…');
   try {
@@ -985,7 +1078,9 @@ document.querySelectorAll('#durationPicks .clip-type').forEach((btn) => {
     document.querySelectorAll('#durationPicks .clip-type').forEach((el) => el.classList.toggle('active', el === btn));
     const make = document.getElementById('makeBtn');
     if (make && !make.disabled) make.textContent = makeBtnLabel();
-    showClipMsg(state.duration === '5' ? '下次產出 5 秒，會比較快。' : '下次產出 10 秒，等待會比較久。');
+    showClipMsg(state.duration === '5'
+      ? `下次產出 5 秒，扣 ${state.videoCredits5} 點，會比較快。`
+      : `下次產出 10 秒，扣 ${state.videoCredits10} 點，等待會比較久。`);
   });
 });
 
@@ -1057,36 +1152,57 @@ document.getElementById('recoverVideoBtn').addEventListener('click', async () =>
   }
 });
 
-function fileToJpegDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const srcW = img.width || 0;
-      const srcH = img.height || 0;
-      if (srcW < 32 || srcH < 32) {
-        URL.revokeObjectURL(url);
-        reject(new Error('商品圖太小。請換一張至少 240×240 的清楚照片。'));
-        return;
-      }
-      const minSide = 720;
-      const maxSide = 1280;
-      let scale = 1;
-      if (Math.min(srcW, srcH) < minSide) scale = minSide / Math.min(srcW, srcH);
-      if (Math.max(srcW, srcH) * scale > maxSide) scale = maxSide / Math.max(srcW, srcH);
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.max(240, Math.round(srcW * scale));
-      canvas.height = Math.max(240, Math.round(srcH * scale));
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#111111';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, (canvas.width - srcW * scale) / 2, (canvas.height - srcH * scale) / 2, srcW * scale, srcH * scale);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.86));
-    };
-    img.onerror = () => reject(new Error('圖片讀取失敗'));
-    img.src = url;
-  });
+function imageToJpegDataUrl(img) {
+  const srcW = img.width || 0;
+  const srcH = img.height || 0;
+  if (srcW < 32 || srcH < 32) {
+    throw new Error('商品圖太小。請換一張至少 240×240 的清楚照片。');
+  }
+  const minSide = 720;
+  const maxSide = 1280;
+  let scale = 1;
+  if (Math.min(srcW, srcH) < minSide) scale = minSide / Math.min(srcW, srcH);
+  if (Math.max(srcW, srcH) * scale > maxSide) scale = maxSide / Math.max(srcW, srcH);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(240, Math.round(srcW * scale));
+  canvas.height = Math.max(240, Math.round(srcH * scale));
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#111111';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, (canvas.width - srcW * scale) / 2, (canvas.height - srcH * scale) / 2, srcW * scale, srcH * scale);
+  return canvas.toDataURL('image/jpeg', 0.86);
+}
+
+async function fileToJpegDataUrl(file) {
+  if (!file || !file.size) {
+    throw new Error('沒有商品圖。請在上方選圖，或回換裝頁再帶一次。');
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error('decode'));
+      el.src = url;
+    });
+    return imageToJpegDataUrl(img);
+  } catch {
+    if (typeof createImageBitmap === 'function') {
+      try {
+        const bmp = await createImageBitmap(file);
+        const canvas = document.createElement('canvas');
+        canvas.width = bmp.width;
+        canvas.height = bmp.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(bmp, 0, 0);
+        bmp.close();
+        return canvas.toDataURL('image/jpeg', 0.86);
+      } catch { /* 略過 */ }
+    }
+    throw new Error('圖片讀取失敗。請用「上傳或更換商品圖」重選 JPG／PNG，或回換裝頁再按「接著做成商品短片」。');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 document.getElementById('enhanceBtn').addEventListener('click', async () => {
@@ -1150,11 +1266,9 @@ document.getElementById('enhanceBtn').addEventListener('click', async () => {
       : body.engine === 'flux'
         ? '這張是 Flux 測試圖。請看商品是否還在、場景像不像廣告。'
         : '';
-    msg.textContent = body.owner
-      ? `已換成進階圖（作者不扣點）。${fluxNote}請再按「產出小廣告」。`
-      : body.credits != null
-        ? `已換成進階圖，剩餘 ${body.credits} 點。${fluxNote}請再按「產出小廣告」。`
-        : `已換成進階圖。${fluxNote}請再按「產出小廣告」。`;
+    msg.textContent = body.credits != null
+      ? `已換成進階圖，剩餘 ${body.credits} 點。${fluxNote}請再按「產出小廣告」。`
+      : `已換成進階圖。${fluxNote}請再按「產出小廣告」。`;
     refreshPlan();
   } catch (err) {
     msg.textContent = err.message || '生圖失敗';
@@ -1416,6 +1530,7 @@ document.getElementById('scheduleBtn')?.addEventListener('click', async () => {
   document.getElementById(id)?.addEventListener('change', checkFromLinks);
 });
 
+const DRESS_TO_CLIP_KEY = 'mooseDressToClip';
 const CLIP_DRAFT_KEY = 'moose_clip_draft';
 const CLIP_DRAFT_IDS = ['product', 'price', 'hook', 'narration', 'ownCopy', 'musicPrompt', 'musicUrl'];
 
@@ -1456,8 +1571,48 @@ CLIP_DRAFT_IDS.forEach((id) => {
 restoreClipDraft();
 window.addEventListener('pagehide', saveClipDraft);
 
+async function applyDressHandoff() {
+  let flagged = false;
+  try { flagged = sessionStorage.getItem(DRESS_TO_CLIP_KEY) === '1'; } catch { /* 略過 */ }
+  if (!flagged && new URLSearchParams(location.search).get('from') !== 'dress') return;
+  try { sessionStorage.removeItem(DRESS_TO_CLIP_KEY); } catch { /* 略過 */ }
+  if (location.search.includes('from=dress')) {
+    history.replaceState(null, '', '/clip');
+  }
+  showClipMsg('正在帶入換裝圖…');
+  try {
+    const res = await fetch('/api/dress/last');
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || '沒有換裝圖可帶入。請回換裝頁先產出一張。');
+    const file = await fileFromDressLast(body);
+    const previewDataUrl = /^data:image\//i.test(body.image || '') ? body.image : '';
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    state.skipPhotoReset = true;
+    document.getElementById('photos').files = dt.files;
+    state.skipPhotoReset = false;
+    setDressProductBring(true);
+    paintPhotosHint(dt.files, '圖已帶入左側預覽。請確認右邊名稱與賣點，再往下選配樂並產出小廣告。', previewDataUrl);
+    state.style = 'ugc';
+    document.querySelectorAll('#styleBtns .clip-type').forEach((el) => {
+      el.classList.toggle('active', el.dataset.style === 'ugc');
+    });
+    try {
+      await writeCaptionFromFiles([file], { overwrite: true });
+    } catch (capErr) {
+      const vis = document.getElementById('visionMsg');
+      if (vis) vis.textContent = capErr.message || '識圖失敗，請手動填名稱與賣點。';
+    }
+    document.getElementById('productBringBox')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    showClipMsg('換裝商品已帶到上方「從換裝帶來的商品」區。確認文案與配樂後按「產出小廣告」（會再扣點）。');
+  } catch (err) {
+    showClipMsg(err.message || '帶入換裝圖失敗');
+  }
+}
+
 defaultSendAt();
 refreshStatus();
+void applyDressHandoff();
 const clipParams = new URLSearchParams(location.search);
 const incomingShop = CLIP_CONNECT_OPEN ? (clipParams.get('shop') || '') : '';
 const shopJustInstalled = incomingShop === '1';
@@ -1613,6 +1768,7 @@ async function filesFromShop(product) {
   state.skipPhotoReset = true;
   document.getElementById('photos').files = dt.files;
   state.skipPhotoReset = false;
+  paintPhotosHint(dt.files);
   return files;
 }
 

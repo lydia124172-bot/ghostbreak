@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" role="img" aria-label="design-social.svg">
+  <rect width="400" height="250" fill="#f0ebe3"/>
+  <rect x="30" y="30" width="100" height="100" rx="8" fill="#fff" stroke="#ddd"/>
+  <rect x="30" y="30" width="100" height="55" fill="#c9a87c"/>
+  <text x="80" y="108" text-anchor="middle" fill="#333" font-family="Microsoft JhengHei, sans-serif" font-size="8">封面</text>
+  <rect x="150" y="30" width="100" height="100" rx="8" fill="#fff" stroke="#ddd"/>
+  <text x="200" y="78" text-anchor="middle" fill="#333" font-family="Microsoft JhengHei, sans-serif" font-size="11" font-weight="600">今日菜單</text>
+  <text x="200" y="98" text-anchor="middle" fill="#666" font-family="Microsoft JhengHei, sans-serif" font-size="8">同一套色</text>
+  <rect x="270" y="30" width="100" height="100" rx="8" fill="#fff" stroke="#ddd"/>
+  <circle cx="320" cy="70" r="22" fill="#e8dfd4"/>
+  <text x="320" y="112" text-anchor="middle" fill="#555" font-family="Microsoft JhengHei, sans-serif" font-size="8">限時</text>
+  <rect x="30" y="145" width="340" height="70" rx="10" fill="#fff" stroke="#e0d8ce"/>
+  <text x="48" y="175" fill="#333" font-family="Microsoft JhengHei, sans-serif" font-size="11" font-weight="600">系列圖同一套留白</text>
+  <text x="48" y="196" fill="#888" font-family="Microsoft JhengHei, sans-serif" font-size="9">IG / Threads</text>
+</svg>

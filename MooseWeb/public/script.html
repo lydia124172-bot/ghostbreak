@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>真人口播腳本 — 麋鹿網</title>
-  <meta name="description" content="免費智能體：可加商品帶貨，或只填主題純說話，產出約 30 秒真人口播腳本。" />
+  <meta name="description" content="免費 AI 智能體：可加商品帶貨，或只填主題純說話，AI 寫約 30 秒真人口播腳本。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=light1" />
+  <link rel="stylesheet" href="/css/site.css?v=fields2" />
 </head>
 <body>
   <header class="site-header">
@@ -30,14 +30,19 @@
 
   <main class="wrap">
     <section class="hero research-hero">
-      <p class="kicker">智能體　免費使用</p>
-      <h1>寫真人口播文案。可加商品，也可純說話。</h1>
-      <p class="lead">這一頁只出腳本，約 30 秒、130 至 150 字。要帶貨就填商品；只講理念就填主題。做成對嘴短片再到真人口播短片，出鏡請用人臉，不要用商品圖當臉。</p>
+      <p class="kicker">AI 智能體　免費使用</p>
+      <h1>真人口播：文案都在這一頁寫</h1>
+      <p class="lead">填商品或主題後按<strong>AI 寫腳本</strong>（免費智能體）。<strong>對嘴影片屬付費工具</strong>：選「做成對嘴影片」後在同一頁上傳人臉產出，扣點說明見 <a href="/saas">我做的付費工具</a>。口播約 10 秒、280 字內。</p>
       <p class="clip-plan" id="scriptPlan">每日可免費產出 20 則。</p>
     </section>
 
     <section class="panel clip-panel">
       <form id="scriptForm" class="skill-form">
+        <fieldset class="field-set">
+          <legend class="field">你要什麼</legend>
+          <label class="choice"><input type="radio" name="scriptGoal" value="script" checked /> 只要腳本（AI 寫稿免費，自己拍或複製）</label>
+          <label class="choice"><input type="radio" name="scriptGoal" value="talk" /> 做成對嘴影片（AI 寫稿免費；產出 MP4 付費扣點）</label>
+        </fieldset>
         <fieldset class="field-set">
           <legend class="field">口播類型</legend>
           <label class="choice"><input type="radio" name="scriptMode" value="sell" checked /> 帶貨：講商品</label>
@@ -56,7 +61,7 @@
           <textarea id="features" class="form-input" rows="5" maxlength="500" placeholder="帶貨寫賣點。純說話寫你想講的重點。"></textarea>
         </div>
         <div class="admin-actions">
-          <button class="btn btn-copper" type="submit" id="makeBtn">產出腳本</button>
+          <button class="btn btn-copper" type="submit" id="makeBtn">AI 寫腳本</button>
           <button class="btn btn-cream" type="button" id="demoBtn">用示範商品試</button>
           <button class="btn btn-cream" type="button" id="demoTalkBtn">用示範主題試</button>
         </div>
@@ -66,7 +71,7 @@
 
     <section class="panel clip-panel hidden" id="resultBox">
       <p class="kicker">產出結果</p>
-      <h2>先複製腳本，自己拍或做成對嘴</h2>
+      <h2 id="resultTitle">下一步</h2>
       <article class="script-out">
         <h3>一、影片視覺與鏡頭設計</h3>
         <p><strong>黃金前 3 秒</strong>　<span id="outOpen"></span></p>
@@ -79,12 +84,48 @@
         <p><strong>背景音樂</strong>　<span id="outBgm"></span></p>
         <p><strong>關鍵音效</strong>　<span id="outSfx"></span></p>
       </article>
-      <div class="admin-actions">
-        <button class="btn btn-copper" type="button" id="copyBtn">複製腳本</button>
-        <button class="btn btn-cream" type="button" id="copyVoiceBtn">只複製口播台詞</button>
-        <a class="btn btn-cream" href="/talk">做成對嘴短片</a>
+      <p class="combo-fit" id="resultHint"></p>
+      <div class="admin-actions" id="resultActions">
+        <button class="btn btn-cream hidden" type="button" id="toTalkBtn">往下：上傳人臉產出</button>
+        <button class="btn btn-copper hidden" type="button" id="copyBtn">複製完整腳本</button>
+        <button class="btn btn-cream" type="button" id="copyVoiceBtn">只複製口播</button>
       </div>
       <p id="copyMsg" class="combo-fit"></p>
+    </section>
+
+    <section class="panel clip-panel hidden" id="talkStepBox">
+      <p class="kicker">同一頁　上傳人臉產出對嘴</p>
+      <h2>確認口播、上傳正面照</h2>
+      <p class="clip-plan" id="talkPlan">對嘴為付費功能，方案見 <a href="/saas">我做的付費工具</a>。</p>
+      <form id="talkForm" class="skill-form">
+        <div>
+          <label class="field" for="narration">要念的話（最多 280 字，可改）</label>
+          <textarea id="narration" class="form-input" rows="5" maxlength="280" placeholder="AI 寫腳本後會自動填在這裡。"></textarea>
+        </div>
+        <div>
+          <label class="field" for="face">出鏡正面照（必填，人臉）</label>
+          <input id="face" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" required />
+        </div>
+        <div>
+          <label class="field" for="voice">或上傳已錄好的音檔（有音檔就不念上面的字）</label>
+          <input id="voice" class="form-input" type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,.mp3,.wav" />
+        </div>
+        <div class="admin-actions">
+          <button class="btn btn-copper" type="submit" id="talkBtn">產出對嘴短片</button>
+          <button class="btn btn-cream" type="button" id="recoverTalkBtn">取回剛才的對嘴（不新扣）</button>
+        </div>
+        <p id="talkMsg" class="combo-fit"></p>
+      </form>
+    </section>
+
+    <section class="panel clip-panel hidden" id="previewBox">
+      <p class="kicker">下載</p>
+      <h2>對嘴短片</h2>
+      <video id="preview" class="clip-video" controls playsinline></video>
+      <div class="admin-actions">
+        <a class="btn btn-copper" id="downloadBtn" href="#" download="talkclip.mp4">下載 MP4</a>
+        <a class="btn btn-cream" href="/clip">回商品小廣告</a>
+      </div>
     </section>
 
     <section class="panel clip-panel script-legal">
@@ -109,6 +150,7 @@
     </div>
   </footer>
   <script src="/js/site.js?v=nav6"></script>
-  <script src="/js/script.js?v=3"></script>
+  <script src="/js/talk-core.js?v=1"></script>
+  <script src="/js/script.js?v=7"></script>
 </body>
 </html>

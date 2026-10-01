@@ -430,6 +430,58 @@ async function writeMarks(bio, fans, goal) {
   }
 }
 
+const LATER_SYSTEM = `${WEEK_SYSTEM.replace('這一次只寫指定那一週的七天每日攻略', '這一次一次寫第2、第3、第4週，每週七天每日攻略').replace(/\{"days":\[[\s\S]*$/, '{"week2":[七天],"week3":[七天],"week4":[七天]}。每天欄位與第一週相同：day、title、type、seconds、place、hook、how、adapt。每週都要七天。')}`;
+
+function parseLaterJson(text) {
+  const data = extractJson(text);
+  const weeks = {};
+  [2, 3, 4].forEach((weekNo) => {
+    weeks[`week${weekNo}`] = parseDays(data[`week${weekNo}`]);
+  });
+  return weeks;
+}
+
+function laterUserText(core) {
+  const marks = core.marks || {};
+  const used = (core.week || []).map(dayLine);
+  return [
+    `簡介：${core.bio || ''}`,
+    `個人IP：${core.name}`,
+    `一句話：${core.oneLiner}`,
+    `給誰：${core.audience}`,
+    `提供：${core.offer}`,
+    `語氣：${core.voice}`,
+    `主場：${core.home}。${core.homeWhy}`,
+    `現在：${core.path.now} → 目標：${core.path.target}（${core.path.stage}）`,
+    `只有他能拍：地點「${marks.place}」、道具「${marks.prop}」、開頭句「${marks.line}」、找「${marks.people}」出鏡。禁止寫：${marks.forbid || '簡介沒有的場景'}。`,
+    `已經寫過、不要重複標題：${used.join('；')}`,
+    '一次寫第2、第3、第4週，每週七天。場景必須換成上面「只有他能拍」的地點與道具。',
+    `第2週：${WEEK_FOCUS[2].skill}`,
+    ...WEEK_FOCUS[2].beats.map((beat, i) => `第2週第${i + 1}天技能：${beat}`),
+    `第3週：${WEEK_FOCUS[3].skill}`,
+    ...WEEK_FOCUS[3].beats.map((beat, i) => `第3週第${i + 1}天技能：${beat}`),
+    `第4週：${WEEK_FOCUS[4].skill}`,
+    ...WEEK_FOCUS[4].beats.map((beat, i) => `第4週第${i + 1}天技能：${beat}`),
+  ].join('\n');
+}
+
+async function writeLaterWeeks(core) {
+  const weeks = {};
+  try {
+    const packed = await askParsed(LATER_SYSTEM, laterUserText(core), parseLaterJson);
+    Object.assign(weeks, packed);
+  } catch (err) {
+    console.error('[ip] weeks', err.message);
+  }
+  core.weeks = {};
+  for (const weekNo of [2, 3, 4]) {
+    const key = `week${weekNo}`;
+    if (!Array.isArray(weeks[key])) weeks[key] = await writeWeekDays(core, weekNo);
+    core.weeks[key] = weeks[key];
+  }
+  return core.weeks;
+}
+
 async function writeWeekDays(core, weekNo) {
   const focus = WEEK_FOCUS[weekNo];
   const marks = core.marks || {};
@@ -508,10 +560,7 @@ async function writePersona({ bio, fans, goal }) {
     if (!core.marks.place || core.marks.place === '他日常工作的現場') core.marks = seed.marks;
     if (!(core.next || []).length) core.next = seed.next;
     if (leakedIndustry(intro, personaBlob(core))) throw new Error('沒有產出完整個人IP');
-    core.weeks = {};
-    for (const weekNo of [2, 3, 4]) {
-      core.weeks[`week${weekNo}`] = await writeWeekDays(core, weekNo);
-    }
+    core.weeks = await writeLaterWeeks(core);
     if (leakedIndustry(intro, personaBlob(core))) throw new Error('沒有產出完整個人IP');
     delete core.bio;
     return core;

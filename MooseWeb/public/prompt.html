@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=light1" />
+  <link rel="stylesheet" href="/css/site.css?v=fields2" />
 </head>
 <body>
   <header class="site-header">
@@ -70,7 +70,7 @@
     <section class="panel clip-panel hidden" id="resultBox">
       <p class="kicker" id="outKind">產出結果</p>
       <h2 id="outName">提示詞</h2>
-      <p class="lead hidden" id="refNote"><strong>要保留同一張臉或同一個商品：</strong>生圖時請把剛才的原圖和提示詞一起上傳到 Gemini 或 ChatGPT。只貼文字，AI 會畫出長得像但不是同一個的人或商品。要換衣服可用<a href="/dress">模特兒換裝</a>；要同一張臉換場景、換動作，可用<a href="/model">固定模特兒</a>。</p>
+      <p class="lead hidden" id="refNote"><strong>要保留同一張臉或同一個商品：</strong>生圖時請把剛才的原圖和提示詞一起上傳到 Gemini 或 ChatGPT。只貼文字，AI 會畫出長得像但不是同一個的人或商品。要試穿衣服並盡量維持同一張臉，請到<a href="/dress">模特兒換裝</a>。</p>
       <article class="script-out">
         <section class="live-ep hidden" id="partBox">
           <h3>拆解（想改哪段就直接改）</h3>
@@ -80,7 +80,7 @@
         <section class="live-ep">
           <h3>中文提示詞（Gemini、ChatGPT、可靈可直接用）</h3>
           <p id="outZh"></p>
-          <div class="admin-actions"><button class="btn btn-copper" type="button" data-copy="zh">複製中文提示詞</button><button class="btn btn-cream hidden" type="button" id="toModelBtn">用這段提示詞生成固定模特兒照片</button></div>
+          <div class="admin-actions"><button class="btn btn-copper" type="button" data-copy="zh">複製中文提示詞</button><button class="btn btn-cream hidden" type="button" id="toModelBtn">帶到換裝頁補充說明</button></div>
         </section>
         <section class="live-ep">
           <h3>英文提示詞（Midjourney、Runway 等國外工具效果較好）</h3>

@@ -1,7 +1,12 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const tree = require('../data/tree');
+const TREE_PATH = require.resolve('../data/tree');
+
+function treeData() {
+  delete require.cache[TREE_PATH];
+  return require(TREE_PATH);
+}
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const FILE = path.join(DATA_DIR, 'accounts.json');
@@ -92,6 +97,7 @@ function normalizeEmail(email) {
 }
 
 function planOf(id) {
+  const tree = treeData();
   return tree.plans.find((p) => p.id === id) || tree.plans[0];
 }
 
@@ -104,10 +110,12 @@ function isDramaPlan(plan) {
 }
 
 function storyPlanOf(id) {
+  const tree = treeData();
   return tree.plans.find((p) => p.id === id && p.product === 'storyclip') || null;
 }
 
 function dramaPlanOf(id) {
+  const tree = treeData();
   return tree.plans.find((p) => p.id === id && p.product === 'dramaclip') || null;
 }
 
@@ -248,7 +256,7 @@ function applyPlan(row, plan) {
 }
 
 function requestPlan(account, planId) {
-  const plan = tree.plans.find((p) => p.id === planId);
+  const plan = treeData().plans.find((p) => p.id === planId);
   if (!plan) throw new Error('沒有這個方案');
   const store = loadStore();
   const row = store.accounts.find((item) => item.id === account.id);
@@ -271,7 +279,7 @@ function requestPlan(account, planId) {
 }
 
 function grantPlan(email, planId) {
-  const plan = tree.plans.find((p) => p.id === planId);
+  const plan = treeData().plans.find((p) => p.id === planId);
   if (!plan) throw new Error('沒有這個方案');
   const store = loadStore();
   const row = store.accounts.find((item) => item.email === normalizeEmail(email));
@@ -282,7 +290,7 @@ function grantPlan(email, planId) {
 }
 
 function grantPlanById(accountId, planId) {
-  const plan = tree.plans.find((p) => p.id === planId);
+  const plan = treeData().plans.find((p) => p.id === planId);
   if (!plan) throw new Error('沒有這個方案');
   const store = loadStore();
   const row = store.accounts.find((item) => item.id === accountId);
@@ -299,7 +307,7 @@ function consumeCredit(accountId, amount = 1) {
   if (!row) throw new Error('請先登入');
   const expired = Boolean(row.planExpires && Date.parse(row.planExpires) < Date.now());
   if (expired || row.plan === 'free') throw new Error('進階生圖需有效方案。請先選擇方案。');
-  if (Number(row.credits || 0) < n) throw new Error('點數不足。每張進階生圖扣 1 點。');
+  if (Number(row.credits || 0) < n) throw new Error('點數不足。');
   row.credits = Number(row.credits || 0) - n;
   saveStore(store);
   return publicAccount(row);
@@ -340,6 +348,7 @@ function listAccounts() {
 }
 
 function publicTree() {
+  const tree = treeData();
   return {
     family: tree.family,
     products: tree.products,
@@ -351,6 +360,7 @@ function publicTree() {
 }
 
 function adminNotes() {
+  const tree = treeData();
   return Array.isArray(tree.adminNotes) ? tree.adminNotes.slice() : [];
 }
 

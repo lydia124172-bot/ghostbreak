@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=light1" />
+  <link rel="stylesheet" href="/css/site.css?v=fields3" />
 </head>
 <body>
   <header class="site-header">
@@ -37,9 +37,37 @@
     </section>
 
     <section class="panel clip-panel">
-      <p class="kicker">01 上傳　02 文案或靜態圖　03 產出小廣告</p>
+      <p class="kicker">01 商品　02 類型與配樂　03 產出小廣告</p>
       <h2>上傳商品圖，做成小廣告或圖文</h2>
       <form id="clipForm" class="skill-form">
+        <div id="productBringBox" class="clip-product-bring">
+          <p class="kicker">01 商品</p>
+          <h3 class="clip-product-bring-title" id="productBringTitle">商品圖與名稱</h3>
+          <p id="dressHandoffBadge" class="clip-handoff-badge hidden">已從換裝頁帶入試衣成品圖（不是原始模特兒照或衣服圖）</p>
+          <div class="clip-product-bring-row">
+            <div class="clip-product-bring-visual">
+              <img id="photosPreview" class="clip-still clip-product-thumb hidden" alt="商品圖預覽" />
+              <p id="photosPlaceholder" class="clip-product-placeholder">尚未選圖。可在此上傳，或到換裝頁產出後按「接著做成商品短片」。</p>
+            </div>
+            <div class="skill-fields clip-product-meta">
+              <div>
+                <label class="field" for="product">作品／商品名稱</label>
+                <input id="product" class="form-input" maxlength="40" placeholder="例如：手沖咖啡豆 200g" />
+              </div>
+              <div>
+                <label class="field" for="price">價格或賣點</label>
+                <input id="price" class="form-input" maxlength="40" placeholder="例如：特價 380 元" />
+              </div>
+              <div>
+                <label class="field" for="hook">封面句（選填）</label>
+                <input id="hook" class="form-input" maxlength="24" placeholder="例如：今天下單今晚烘" />
+              </div>
+            </div>
+          </div>
+          <label class="field" for="photos">上傳或更換商品圖（1 至 5 張。太小會自動放大，換圖會重寫文案）</label>
+          <input id="photos" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" multiple required />
+          <p id="photosMsg" class="combo-fit hidden"></p>
+        </div>
         <div>
           <p class="field">選擇作品類型</p>
           <div class="clip-types" id="styleBtns">
@@ -87,24 +115,6 @@
           </div>
           <audio id="musicPreview" class="music-preview" controls preload="auto" playsinline></audio>
         </div>
-        <div class="skill-fields">
-          <div>
-            <label class="field" for="product">作品／商品名稱</label>
-            <input id="product" class="form-input" maxlength="40" placeholder="例如：手沖咖啡豆 200g" />
-          </div>
-          <div>
-            <label class="field" for="price">價格或賣點</label>
-            <input id="price" class="form-input" maxlength="40" placeholder="例如：特價 380 元" />
-          </div>
-          <div>
-            <label class="field" for="hook">封面句（選填）</label>
-            <input id="hook" class="form-input" maxlength="24" placeholder="例如：今天下單今晚烘" />
-          </div>
-        </div>
-        <div>
-          <label class="field" for="photos">商品圖（1 至 5 張。太小會自動放大，換圖會重寫文案）</label>
-          <input id="photos" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" multiple required />
-        </div>
         <div>
           <label class="field" for="music">自己的配樂（只接受 .mp3 或 .wav，小於 8MB）</label>
           <input id="music" class="form-input" type="file" accept=".mp3,.wav,audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/wave" />
@@ -123,7 +133,10 @@
           <textarea id="ownCopy" class="form-input" rows="6" maxlength="2000" placeholder="可貼上要發的全文，含標籤。也可按「AI 識圖寫文案」。空白則由系統依商品名稱撰寫。"></textarea>
         </div>
         <div>
-          <label class="field" for="musicPrompt">Suno 配樂風格（可複製後貼上編輯）</label>
+          <div class="field-label-row">
+            <label class="field" for="musicPrompt">Suno 配樂風格（可複製後貼上編輯）</label>
+            <a class="btn btn-cream clip-field-btn" href="https://suno.com" target="_blank" rel="noopener noreferrer">打開 Suno</a>
+          </div>
           <textarea id="musicPrompt" class="form-input" rows="4" maxlength="800" placeholder="按「寫配樂風格」後會出現可貼進 Suno 的英文提示。"></textarea>
         </div>
         <div>
@@ -136,7 +149,6 @@
           <button class="btn btn-cream" type="button" id="enhanceBtn">換靜態圖（扣 1 點）</button>
           <button class="btn btn-cream" type="button" id="musicStyleBtn">寫配樂風格</button>
           <button class="btn btn-cream" type="button" id="copyMusicBtn">複製風格</button>
-          <a class="btn btn-cream" href="https://suno.com" target="_blank" rel="noopener">打開 Suno</a>
           <button class="btn btn-cream" type="button" id="musicBtn">選自己的 MP3／WAV</button>
           <button class="btn btn-copper" type="submit" id="makeBtn">產出小廣告（約 5 秒）</button>
           <button class="btn btn-cream" type="button" id="recoverVideoBtn">取回剛才的小廣告（不新扣）</button>
@@ -191,6 +203,6 @@
     </div>
   </footer>
   <script src="/js/site.js?v=nav5"></script>
-  <script src="/js/clip.js?v=51"></script>
+  <script src="/js/clip.js?v=59"></script>
 </body>
 </html>

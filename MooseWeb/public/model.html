@@ -2,114 +2,11 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>固定模特兒 — 麋鹿網</title>
-  <meta name="description" content="上傳同一位模特兒的照片與商品照，寫下場景，產出同一張臉、同一個商品的新照片。" />
-  <link rel="icon" href="/images/logo.png" type="image/png" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=light1" />
+  <meta http-equiv="refresh" content="0;url=/dress" />
+  <title>模特兒換裝 — 麋鹿網</title>
+  <script>location.replace('/dress');</script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap header-row">
-      <a class="brand" href="/">
-        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
-        <span>麋鹿網<small>MooseWeb</small></span>
-      </a>
-      <button class="menu-btn" id="menuBtn" type="button">選單</button>
-      <nav class="nav" id="nav">
-        <a href="/">首頁</a>
-        <a href="/works">看作品</a>
-        <a href="/courses">上課</a>
-        <a href="/hire">做網站</a>
-        <a href="/saas" class="active">我做的付費工具</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <section class="hero research-hero">
-      <p class="kicker">智能體　方案點數</p>
-      <h1>同一張臉，換場景、換動作。</h1>
-      <p class="lead">上傳同一位模特兒的照片，再放要搭配的商品，寫下想要的場景與動作。AI 會鎖定臉部特徵與商品外觀，產出新照片，適合做系列商品圖。</p>
-      <p class="clip-plan" id="modelPlan">載入中…</p>
-    </section>
-
-    <section class="panel clip-panel">
-      <form id="modelForm" class="skill-form" novalidate>
-        <div>
-          <label class="field" for="faceImg">模特兒照片（必填，一到三張，同一個人）</label>
-          <input id="faceImg" class="form-input" type="file" multiple accept="image/jpeg,image/png,image/webp" />
-          <p class="combo-fit">建議放清楚的正面照，加一張側面或半身照效果更穩。請勿戴墨鏡、口罩，臉不要太小。</p>
-          <div id="facePreview" class="hidden" style="display:flex;flex-wrap:wrap;gap:16px;"></div>
-        </div>
-        <div>
-          <label class="field" for="itemImg">商品照片（選填，最多兩張）</label>
-          <input id="itemImg" class="form-input" type="file" multiple accept="image/jpeg,image/png,image/webp" />
-          <p class="combo-fit">包包、衣服、飾品等。越清楚、背景越乾淨，商品越不容易變形。</p>
-          <div id="itemPreview" class="hidden" style="display:flex;flex-wrap:wrap;gap:16px;"></div>
-        </div>
-        <div>
-          <label class="field" for="scene">場景與動作</label>
-          <textarea id="scene" class="form-input" rows="4" maxlength="600" placeholder="例如：坐在咖啡廳窗邊，揹著包包，轉頭對鏡頭微笑，午後自然光"></textarea>
-          <p class="combo-fit">也可以把「提示詞產生器」看圖反推出來的中文提示詞貼進來。</p>
-        </div>
-        <div>
-          <label class="field" for="scenePick">背景風格（選填）</label>
-          <select id="scenePick" class="form-input"><option value="">照上面的描述</option></select>
-        </div>
-        <div>
-          <label class="field" for="ratioPick">圖片比例</label>
-          <select id="ratioPick" class="form-input">
-            <option value="3:4">3:4 直式</option>
-            <option value="4:5">4:5 IG 貼文</option>
-            <option value="9:16">9:16 限動、短影音</option>
-            <option value="1:1">1:1 方形</option>
-            <option value="16:9">16:9 橫式</option>
-          </select>
-        </div>
-        <div class="admin-actions">
-          <button class="btn btn-copper" type="button" id="makeBtn">產出照片</button>
-        </div>
-        <p id="modelMsg" class="combo-fit"></p>
-      </form>
-    </section>
-
-    <section class="panel clip-panel hidden" id="resultBox">
-      <p class="kicker">產出結果</p>
-      <h2>固定模特兒照片</h2>
-      <img id="outImg" alt="產出照片" style="display:block;max-width:100%;max-height:80vh;margin:0 auto 16px;border-radius:16px;" />
-      <div class="admin-actions">
-        <a class="btn btn-copper" id="downloadBtn" href="#" download="moose-model.jpg">下載照片</a>
-        <button class="btn btn-cream" type="button" id="againBtn">同樣設定再產一張</button>
-        <a class="btn btn-cream" href="/dress">拿去換裝或做成影片</a>
-      </div>
-      <p class="combo-fit">AI 是重新畫一張，不是修圖，無法保證百分之百一樣。臉不像時可多放一張不同角度的照片，或再產一張挑最像的。</p>
-    </section>
-
-    <section class="panel clip-panel script-legal">
-      <p class="kicker">版權與法律聲明</p>
-      <h2>使用前請閱讀</h2>
-      <ol>
-        <li><strong>所有權歸屬</strong>：本智能體及其底層指令邏輯之所有權歸屬於「Lydia Global Company」（麋鹿網）。</li>
-        <li><strong>肖像授權</strong>：僅可上傳本人或已取得肖像授權之模特兒照片。嚴禁上傳他人照片冒用、製作不實或不雅內容。</li>
-        <li><strong>使用責任</strong>：產出照片之合法使用由使用者自行負責；請勿侵害他人肖像、商標或著作權。</li>
-      </ol>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="wrap">
-      <span>© 麋鹿網　版權由 Lydia Global Company 所有</span>
-      <nav class="footer-links">
-        <a href="/privacy">隱私權政策</a>
-        <a href="/terms">服務條款</a>
-        <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
-      </nav>
-    </div>
-  </footer>
-  <script src="/js/site.js?v=nav13"></script>
-  <script src="/js/model.js?v=1"></script>
+  <p>固定模特兒已併入 <a href="/dress">模特兒換裝</a>，請使用換裝並盡量維持同一張臉。</p>
 </body>
 </html>

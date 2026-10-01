@@ -1,6 +1,6 @@
 const LIMITS = { face: 3, item: 2 };
 const pics = { face: [], item: [] };
-let cost = 2;
+let modelCost = 2;
 
 function fileToJpegDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -25,6 +25,7 @@ function fileToJpegDataUrl(file) {
 
 function paint(type) {
   const box = document.getElementById(`${type}Preview`);
+  if (!box) return;
   const label = type === 'face' ? '模特兒' : '商品';
   box.innerHTML = pics[type].map((src, i) => `
     <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
@@ -37,23 +38,26 @@ function paint(type) {
 }
 
 function bindPicker(type) {
-  document.getElementById(`${type}Img`).addEventListener('change', async (e) => {
+  const input = document.getElementById(`${type}Img`);
+  const preview = document.getElementById(`${type}Preview`);
+  if (!input || !preview) return;
+  input.addEventListener('change', async (e) => {
     const files = Array.from(e.target.files || []);
     const msg = document.getElementById('modelMsg');
     e.target.value = '';
     if (!files.length) return;
     const room = LIMITS[type] - pics[type].length;
-    msg.textContent = files.length > room ? `這裡最多 ${LIMITS[type]} 張，多的已略過。` : '';
+    if (msg) msg.textContent = files.length > room ? `這裡最多 ${LIMITS[type]} 張，多的已略過。` : '';
     try {
       for (const file of files.slice(0, Math.max(0, room))) {
         pics[type].push(await fileToJpegDataUrl(file));
       }
     } catch (err) {
-      msg.textContent = err.message;
+      if (msg) msg.textContent = err.message;
     }
     paint(type);
   });
-  document.getElementById(`${type}Preview`).addEventListener('click', (e) => {
+  preview.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-remove]');
     if (!btn) return;
     pics[type].splice(Number(btn.dataset.remove), 1);
@@ -61,41 +65,38 @@ function bindPicker(type) {
   });
 }
 
-async function refreshPlan() {
-  const bar = document.getElementById('modelPlan');
+async function refreshModelPlan() {
+  const bar = document.getElementById('dressPlan') || document.getElementById('modelPlan');
+  if (!bar) return null;
   try {
     const data = await fetch('/api/model/status').then((r) => r.json());
-    cost = data.cost || 2;
+    modelCost = data.cost || 2;
     const pick = document.getElementById('scenePick');
-    if (pick.options.length <= 1) {
+    if (pick && pick.options.length <= 1) {
       (data.scenes || []).forEach((s) => pick.add(new Option(`${s.name}（${s.hint}）`, s.id)));
     }
-    if (!data.ready) {
-      bar.textContent = '固定模特兒暫時無法使用，請稍後再試。';
-      return;
-    }
-    if (data.owner) bar.textContent = '管理者模式：不限次數。';
-    else if (data.loggedIn) bar.textContent = `每張扣 ${cost} 點，目前剩 ${data.credits} 點。`;
-    else bar.textContent = `每張扣 ${cost} 點，需購買方案點數後使用。`;
+    const makeBtn = document.getElementById('modelMakeBtn');
+    if (makeBtn) makeBtn.textContent = `產出照片（扣 ${modelCost} 點）`;
+    return data;
   } catch {
-    bar.textContent = `每張扣 ${cost} 點。`;
+    return null;
   }
 }
 
 async function makePhoto() {
   const msg = document.getElementById('modelMsg');
-  const btns = [document.getElementById('makeBtn'), document.getElementById('againBtn')];
-  const scene = document.getElementById('scene').value.trim();
+  const btns = [document.getElementById('modelMakeBtn'), document.getElementById('modelAgainBtn')];
+  const scene = document.getElementById('scene')?.value.trim() || '';
   if (!pics.face.length) {
-    msg.textContent = '請先上傳至少一張模特兒照片。';
+    if (msg) msg.textContent = '請先上傳至少一張模特兒照片。';
     return;
   }
   if (scene.length < 2) {
-    msg.textContent = '請寫場景或動作。';
+    if (msg) msg.textContent = '請寫場景或動作。';
     return;
   }
-  msg.textContent = '正在產出，約 30 到 60 秒，請不要重按或離開。';
-  btns.forEach((b) => { b.disabled = true; });
+  if (msg) msg.textContent = '正在產出，約 30 到 60 秒，請不要重按或離開。';
+  btns.forEach((b) => { if (b) b.disabled = true; });
   try {
     const res = await fetch('/api/model', {
       method: 'POST',
@@ -104,8 +105,8 @@ async function makePhoto() {
         faces: pics.face,
         items: pics.item,
         scene,
-        sceneId: document.getElementById('scenePick').value,
-        ratio: document.getElementById('ratioPick').value,
+        sceneId: document.getElementById('scenePick')?.value || '',
+        ratio: document.getElementById('ratioPick')?.value || '3:4',
       }),
     });
     const text = await res.text();
@@ -113,34 +114,78 @@ async function makePhoto() {
     try {
       body = JSON.parse(text);
     } catch {
-      throw new Error('連線中斷。請不要重按，稍等一下到「模特兒換裝」頁取回結果。');
+      throw new Error('連線中斷。請稍後再試，不要連續重按。');
     }
     if (!res.ok) throw new Error(body.error || '產出失敗');
-    document.getElementById('outImg').src = body.image;
-    document.getElementById('downloadBtn').href = body.mediaId ? `/api/clip/media/${body.mediaId}` : body.image;
-    document.getElementById('resultBox').classList.remove('hidden');
-    document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth' });
-    msg.textContent = '';
-    refreshPlan();
+    const out = document.getElementById('modelOutImg');
+    const dl = document.getElementById('modelDownloadBtn');
+    if (out) out.src = body.image;
+    if (dl) dl.href = body.mediaId ? `/api/clip/media/${body.mediaId}` : body.image;
+    document.getElementById('modelResultBox')?.classList.remove('hidden');
+    document.getElementById('modelResultBox')?.scrollIntoView({ behavior: 'smooth' });
+    if (body.image) {
+      try {
+        await fetch('/api/dress/stash', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: body.image }),
+        });
+      } catch { /* 略過 */ }
+    }
+    if (msg) msg.textContent = '';
+    if (typeof window.refreshFitPlan === 'function') window.refreshFitPlan();
+    else refreshModelPlan();
   } catch (err) {
-    msg.textContent = err.message || '產出失敗';
+    if (msg) msg.textContent = err.message || '產出失敗';
   } finally {
-    btns.forEach((b) => { b.disabled = false; });
+    btns.forEach((b) => { if (b) b.disabled = false; });
   }
 }
 
-bindPicker('face');
-bindPicker('item');
-document.getElementById('makeBtn').addEventListener('click', makePhoto);
-document.getElementById('againBtn').addEventListener('click', makePhoto);
-document.getElementById('modelForm').addEventListener('submit', (e) => {
-  e.preventDefault();
-  makePhoto();
-});
-
-const handoff = sessionStorage.getItem('moosePromptToModel');
-if (handoff) {
-  document.getElementById('scene').value = handoff.slice(0, 600);
-  sessionStorage.removeItem('moosePromptToModel');
+function initModelPage() {
+  if (!document.getElementById('modelForm')) return;
+  bindPicker('face');
+  bindPicker('item');
+  document.getElementById('modelMakeBtn')?.addEventListener('click', makePhoto);
+  document.getElementById('modelAgainBtn')?.addEventListener('click', makePhoto);
+  document.getElementById('modelForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    makePhoto();
+  });
+  document.getElementById('modelToDressBtn')?.addEventListener('click', () => {
+    if (typeof window.setFitMode === 'function') window.setFitMode('dress');
+  });
+  document.getElementById('modelToClipBtn')?.addEventListener('click', async () => {
+    const src = document.getElementById('modelOutImg')?.src || '';
+    if (!src.startsWith('data:image/') && !src.includes('/api/clip/media/')) {
+      const msg = document.getElementById('modelMsg');
+      if (msg) msg.textContent = '請先產出一張照片。';
+      return;
+    }
+    try {
+      let image = src;
+      if (!image.startsWith('data:image/')) {
+        const blob = await fetch(src).then((r) => r.blob());
+        image = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = () => reject(new Error('讀取失敗'));
+          reader.readAsDataURL(blob);
+        });
+      }
+      await fetch('/api/dress/stash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image }),
+      });
+      sessionStorage.setItem('mooseDressToClip', '1');
+      location.href = '/clip';
+    } catch (err) {
+      const msg = document.getElementById('modelMsg');
+      if (msg) msg.textContent = err.message || '無法接到商品短片';
+    }
+  });
+  refreshModelPlan();
 }
-refreshPlan();
+
+initModelPage();

@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=light1" />
+  <link rel="stylesheet" href="/css/site.css?v=fields2" />
 </head>
 <body>
   <header class="site-header">
@@ -49,16 +49,32 @@
   </footer>
   <script src="/js/site.js?v=nav5"></script>
   <script>
+    function esc(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     fetch('/api/config').then((r) => r.json()).then((data) => {
-      document.getElementById('courses').innerHTML = (data.courses || []).map((c) => `
+      const rows = data.courses || [];
+      document.getElementById('courses').innerHTML = rows.length
+        ? rows.map((c) => {
+          const price = c.priceLabel
+            ? `<p class="meta"><strong>${esc(c.priceLabel)}</strong>${c.earlyBirdLabel ? `　${esc(c.earlyBirdLabel)}` : ''}</p>`
+            : '';
+          const meta = [c.sessionLabel || (c.sessions ? `${c.sessions} 堂` : ''), c.format].filter(Boolean).join('　');
+          return `
         <article class="item">
           <div>
-            <h3>${c.title}</h3>
-            <p class="audience">${c.audience ? `適合對象：${c.audience}` : ''}</p>
-            <p>${c.summary}</p>
+            <p class="meta">${esc(c.status || '開放諮詢')}${meta ? `　${esc(meta)}` : ''}</p>
+            <h3>${esc(c.title)}</h3>
+            <p class="audience">${c.audience ? `適合對象：${esc(c.audience)}` : ''}</p>
+            <p>${esc(c.summary)}</p>
+            ${price}
           </div>
-        </article>
-      `).join('');
+          <a class="btn btn-copper" href="/course?id=${encodeURIComponent(c.id)}">查看課程內容</a>
+        </article>`;
+        }).join('')
+        : '<p class="lead">課程列表準備中，請稍後再來或透過 LINE 諮詢。</p>';
     });
   </script>
 </body>

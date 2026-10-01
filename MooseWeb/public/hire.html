@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=light1" />
+  <link rel="stylesheet" href="/css/site.css?v=hire2" />
 </head>
 <body>
   <header class="site-header">
@@ -32,7 +32,7 @@
     <section class="page-head">
       <p class="kicker">委託</p>
       <h1>找我做網站</h1>
-      <p class="lead">請點選項目查看可提供的功能，並透過表單提出諮詢。確認範圍後再提供報價與時程。</p>
+      <p class="lead">點卡片可看完整功能與參考連結，再透過下方表單提出諮詢。</p>
     </section>
     <section class="list" id="hire"></section>
 
@@ -105,12 +105,31 @@
       document.getElementById('inqName').focus();
     }
 
-    fetch('/api/config').then((r) => r.json()).then((data) => {
+    fetch('/api/config?t=' + Date.now()).then((r) => r.json()).then((data) => {
       const items = data.hire || [];
       const select = document.getElementById('inqService');
       select.innerHTML = '<option value="">請選擇項目</option>' + items.map((h) =>
         `<option value="${escapeHtml(h.id)}">${escapeHtml(h.name)}</option>`
       ).join('');
+
+      function renderExamples(list) {
+        if (!list || !list.length) return '';
+        const cards = list.map((ex) => {
+          const inner = `
+            <div class="hire-example-card">
+              <figcaption>
+                <strong>${escapeHtml(ex.title)}</strong>
+                <span class="meta">${escapeHtml(ex.caption || '')}</span>
+              </figcaption>
+            </div>`;
+          if (ex.href) {
+            const ext = /^https?:\/\//i.test(ex.href);
+            return `<a class="hire-example-link" href="${escapeHtml(ex.href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>${inner}</a>`;
+          }
+          return inner;
+        }).join('');
+        return `<div class="hire-examples"><p class="field">參考案例</p><div class="hire-examples-grid">${cards}</div></div>`;
+      }
 
       document.getElementById('hire').innerHTML = items.map((h) => {
         const features = (h.features || []).map((f) => `<li>${escapeHtml(f)}</li>`).join('');
@@ -119,7 +138,9 @@
             <h3>${escapeHtml(h.name)}</h3>
             <p>${escapeHtml(h.summary || '')}</p>
             <p class="consult-detail">${escapeHtml(h.detail || '')}</p>
-            ${features ? `<ul class="feature-list">${features}</ul>` : ''}
+            ${features ? `<ul class="feature-list consult-detail">${features}</ul>` : ''}
+            ${renderExamples(h.examples)}
+            <p class="consult-detail meta">點卡片空白處可看完整功能列表。</p>
           </div>
           <button type="button" class="btn btn-copper" data-consult="${escapeHtml(h.id)}">提出諮詢</button>
         </article>`;
@@ -133,10 +154,12 @@
       `).join('');
 
       const wanted = new URLSearchParams(location.search).get('service');
-      if (wanted) selectService(wanted);
+      const service = wanted === 'leads' ? 'site' : wanted;
+      if (service) selectService(service);
     });
 
     document.getElementById('hire').addEventListener('click', (e) => {
+      if (e.target.closest('.hire-example-link')) return;
       const consultId = e.target.getAttribute('data-consult');
       if (consultId) {
         e.stopPropagation();

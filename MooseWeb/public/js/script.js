@@ -13,6 +13,60 @@ function selectedMode() {
   return document.querySelector('input[name="scriptMode"]:checked')?.value || 'sell';
 }
 
+function selectedGoal() {
+  return document.querySelector('input[name="scriptGoal"]:checked')?.value || 'script';
+}
+
+function setGoal(value) {
+  const el = document.querySelector(`input[name="scriptGoal"][value="${value}"]`);
+  if (el) el.checked = true;
+  updateResultActions();
+}
+
+function narrationFromScript(data) {
+  let text = voiceOnly(data);
+  let trimmed = false;
+  if (text.length > 280) {
+    text = text.slice(0, 280);
+    trimmed = true;
+  }
+  return { text, trimmed };
+}
+
+function resultIsVisible() {
+  return !document.getElementById('resultBox')?.classList.contains('hidden');
+}
+
+function showTalkStep(scroll) {
+  const box = document.getElementById('talkStepBox');
+  if (!box) return;
+  box.classList.remove('hidden');
+  if (typeof mooseBindTalkUi === 'function') mooseBindTalkUi();
+  if (typeof talkRefreshPlan === 'function') talkRefreshPlan();
+  if (scroll) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+
+function updateResultActions() {
+  const goal = selectedGoal();
+  const talkStep = document.getElementById('talkStepBox');
+  const toTalk = document.getElementById('toTalkBtn');
+  const copyFull = document.getElementById('copyBtn');
+  const title = document.getElementById('resultTitle');
+  const hint = document.getElementById('resultHint');
+  const isTalk = goal === 'talk';
+  const showTalk = isTalk && (resultIsVisible() || location.hash === '#talk');
+  talkStep?.classList.toggle('hidden', !showTalk);
+  toTalk?.classList.toggle('hidden', !isTalk || !resultIsVisible());
+  copyFull?.classList.toggle('hidden', isTalk);
+  if (title) title.textContent = isTalk ? '腳本好了，往下同一頁產出對嘴' : '複製腳本，自己拍或後製';
+  if (hint) {
+    hint.textContent = isTalk
+      ? '改好下方「要念的話」、上傳正面照後按產出（付費扣點），不必離開本頁。'
+      : '完整腳本含鏡頭建議；若要數字人對嘴，請回到上方改選「做成對嘴短片」再產出一次。';
+  }
+  if (showTalk && typeof mooseBindTalkUi === 'function') mooseBindTalkUi();
+}
+
 function setMode(value) {
   const el = document.querySelector(`input[name="scriptMode"][value="${value}"]`);
   if (el) el.checked = true;
@@ -57,6 +111,18 @@ function paintResult(data) {
   setText('outSfx', data.audio?.sfx);
   document.getElementById('resultBox').classList.remove('hidden');
   window.lastScript = data;
+  const { text, trimmed } = narrationFromScript(data);
+  const nar = document.getElementById('narration');
+  if (nar) nar.value = text;
+  window.lastTalkTrimmed = trimmed;
+  updateResultActions();
+  if (selectedGoal() === 'talk') {
+    const note = trimmed ? '口播已裁到 280 字內，可在下方再改。' : '';
+    if (typeof talkShowMsg === 'function') talkShowMsg(note);
+    showTalkStep(true);
+  } else {
+    document.getElementById('resultBox').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
 }
 
 function fileToJpegDataUrl(file) {
@@ -97,13 +163,9 @@ async function refreshPlan() {
   if (!bar) return;
   try {
     const data = await fetch('/api/script/status').then((r) => r.json());
-    if (!data.ready) {
-      bar.textContent = '腳本暫時無法使用，請稍後再試。';
-      return;
-    }
-    bar.textContent = `今日尚可免費產出 ${data.left}／${data.limit} 則。做成短片請用法付費工具。`;
+    setAgentPlanBar(bar, data, { notReady: '腳本暫時無法使用，請稍後再試。' });
   } catch {
-    bar.textContent = '每日可免費產出 20 則。';
+    bar.textContent = '未購方案者，各智能體可試用 1 次。';
   }
 }
 
@@ -126,7 +188,7 @@ async function makeScript() {
     msg.textContent = '純說話請填主題，或要講的內容。';
     return;
   }
-  msg.textContent = '產出中…';
+  msg.textContent = 'AI 寫稿中…';
   btn.disabled = true;
   try {
     const images = [];
@@ -181,10 +243,27 @@ function voiceOnly(data) {
   return [s.hook, s.pain, s.cta].filter(Boolean).join('');
 }
 
+const SCRIPT_TO_TALK_KEY = 'mooseScriptToTalk';
+
+function goToTalk() {
+  const note = document.getElementById('copyMsg');
+  if (!window.lastScript) {
+    if (note) note.textContent = '請先按 AI 寫腳本。';
+    return;
+  }
+  if (!document.getElementById('narration')?.value.trim()) {
+    const { text } = narrationFromScript(window.lastScript);
+    const nar = document.getElementById('narration');
+    if (nar) nar.value = text;
+  }
+  showTalkStep(true);
+  if (note) note.textContent = '';
+}
+
 document.getElementById('copyVoiceBtn')?.addEventListener('click', async () => {
   const note = document.getElementById('copyMsg');
   if (!window.lastScript) {
-    note.textContent = '請先產出腳本。';
+    note.textContent = '請先按 AI 寫腳本。';
     return;
   }
   try {
@@ -195,10 +274,12 @@ document.getElementById('copyVoiceBtn')?.addEventListener('click', async () => {
   }
 });
 
+document.getElementById('toTalkBtn')?.addEventListener('click', goToTalk);
+
 document.getElementById('copyBtn').addEventListener('click', async () => {
   const note = document.getElementById('copyMsg');
   if (!window.lastScript) {
-    note.textContent = '請先產出腳本。';
+    note.textContent = '請先按 AI 寫腳本。';
     return;
   }
   try {
@@ -209,4 +290,35 @@ document.getElementById('copyBtn').addEventListener('click', async () => {
   }
 });
 
+document.querySelectorAll('input[name="scriptGoal"]').forEach((el) => {
+  el.addEventListener('change', updateResultActions);
+});
+
+function applyTalkHandoffFromStorage() {
+  let data;
+  try {
+    data = JSON.parse(sessionStorage.getItem(SCRIPT_TO_TALK_KEY) || '');
+    sessionStorage.removeItem(SCRIPT_TO_TALK_KEY);
+  } catch {
+    return;
+  }
+  if (!data?.narration) return;
+  setGoal('talk');
+  const nar = document.getElementById('narration');
+  if (nar) nar.value = String(data.narration).slice(0, 280);
+  showTalkStep(true);
+  const trimmedNote = data.trimmed ? '口播已裁短，可在下方再改。' : '';
+  if (typeof talkShowMsg === 'function') talkShowMsg(`已帶入口播。請上傳正面照後產出。${trimmedNote}`);
+}
+
+if (location.hash === '#talk' || new URLSearchParams(location.search).get('goal') === 'talk') {
+  setGoal('talk');
+}
+
+applyTalkHandoffFromStorage();
+if (selectedGoal() === 'talk') {
+  showTalkStep(false);
+}
+
+updateResultActions();
 refreshPlan();

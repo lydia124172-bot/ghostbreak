@@ -154,11 +154,9 @@ async function refreshPlan() {
       bar.textContent = '提示詞產生器暫時無法使用，請稍後再試。';
       return;
     }
-    bar.textContent = data.owner
-      ? '管理者模式：不限次數。'
-      : `今日尚可免費產出 ${data.left}／${data.limit} 則。與口播腳本、熱問等智能體共用次數。`;
+    setAgentPlanBar(bar, data);
   } catch {
-    bar.textContent = '每日可免費產出 20 則。';
+    bar.textContent = '未購方案者，各智能體可試用 1 次。';
   }
 }
 
@@ -233,7 +231,8 @@ document.getElementById('rebuildBtn').addEventListener('click', rebuildFromParts
 document.getElementById('toModelBtn').addEventListener('click', () => {
   if (!last || !last.zh) return;
   sessionStorage.setItem('moosePromptToModel', last.zh.replace(/避免：[\s\S]*$/, '').trim());
-  location.href = '/model';
+  sessionStorage.setItem('moosePromptToDress', last.zh.replace(/避免：[\s\S]*$/, '').trim());
+  location.href = '/dress';
 });
 document.getElementById('makeBtn').addEventListener('click', makePrompt);
 document.getElementById('againBtn').addEventListener('click', makePrompt);

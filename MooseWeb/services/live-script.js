@@ -93,7 +93,7 @@ async function withTimeout(ms, fn) {
   }
 }
 
-async function viaOpenAI(userText) {
+async function viaOpenAI(userText, startNo, count) {
   const body = await withTimeout(50000, async (signal) => {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -115,7 +115,7 @@ async function viaOpenAI(userText) {
     if (!res.ok) throw new Error(json.error?.message || `直播稿服務 ${res.status}`);
     return json;
   });
-  return parseModelJson(body.choices?.[0]?.message?.content, 1, 4);
+  return parseModelJson(body.choices?.[0]?.message?.content, startNo, count);
 }
 
 async function callGemini(model, userText, startNo, count) {
@@ -128,8 +128,8 @@ async function callGemini(model, userText, startNo, count) {
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: `${SYSTEM}\n\n${userText}` }] }],
         generationConfig: /flash-lite/i.test(model)
-          ? { temperature: 0.7, maxOutputTokens: 3500 }
-          : { temperature: 0.7, maxOutputTokens: 3500, thinkingConfig: { thinkingBudget: 0 } },
+          ? { temperature: 0.7, maxOutputTokens: count > 4 ? 6200 : 3500 }
+          : { temperature: 0.7, maxOutputTokens: count > 4 ? 6200 : 3500, thinkingConfig: { thinkingBudget: 0 } },
       }),
     });
     const json = await res.json();
@@ -167,7 +167,7 @@ async function writeBatch(baseText, startNo, beats) {
     ...beats.map((beat, i) => `${padNo(startNo + i)} 角度：${beat}`),
   ].join('\n');
   if (process.env.OPENAI_API_KEY) {
-    const data = await viaOpenAI(userText);
+    const data = await viaOpenAI(userText, startNo, count);
     return {
       ...data,
       episodes: data.episodes.slice(0, count).map((row, i) => ({ ...row, no: padNo(startNo + i) })),
@@ -204,9 +204,8 @@ async function writeLive({ industry, product, notes }) {
   ].filter(Boolean).join('\n');
   try {
     const batches = [
-      { start: 1, beats: BEATS.slice(0, 4) },
-      { start: 5, beats: BEATS.slice(4, 8) },
-      { start: 9, beats: BEATS.slice(8, 12) },
+      { start: 1, beats: BEATS.slice(0, 6) },
+      { start: 7, beats: BEATS.slice(6, 12) },
     ];
     const parts = [];
     for (const batch of batches) parts.push(await writeBatch(userText, batch.start, batch.beats));

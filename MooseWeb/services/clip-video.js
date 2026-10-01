@@ -64,8 +64,11 @@ function engine() {
   return configured() ? 'wan' : '';
 }
 
-function creditCost() {
-  return Number(process.env.FAL_VIDEO_CREDITS || 3) || 3;
+function creditCost(duration) {
+  const sec = videoDuration(duration);
+  if (sec === '15') return 10;
+  if (sec === '10') return 7;
+  return 4;
 }
 
 function parseDataUrl(url) {
@@ -79,17 +82,33 @@ function parseDataUrl(url) {
 function motionPrompt({ product, price, hook, style }) {
   const name = product || 'the product in the first frame';
   const offer = [price, hook].filter(Boolean).join(', ');
+  const sec = videoDuration();
   const scene = style === 'life'
-    ? 'Slow luxury lifestyle move: soft window light, shallow depth of field, the product stays sharp and recognizable.'
-    : 'Vertical 9:16 product ad like Minta/Magik: gentle handheld camera, the product is held or sits on a counter, natural motion, premium UGC feel.';
+    ? 'Soft window light, shallow depth of field. Motion comes from environment (steam, pour, fabric, leaves) not from punching the camera forward.'
+    : 'Authentic UGC product ad: phone-held feel with a slow side arc or orbit (about 15–30 degrees), light parallax between product and background.';
   return [
-    `Animate this still into a ${videoDuration()}-second photoreal product commercial.`,
+    `Photoreal ${sec}-second vertical 9:16 ad. The input image is the first frame; match it exactly.`,
     scene,
-    `Keep the exact same product: ${name}. Do not change packaging, logo, colors, or printed text.`,
+    'Camera must NOT do a simple zoom in/out, Ken Burns, or dolly push on a face. Prefer lateral move, orbit, or locked tripod with only the scene animating.',
+    `Hero product: ${name}. Packaging, logo, colors, and on-pack text stay pixel-stable.`,
     offer ? `Selling point: ${offer}.` : '',
-    'No extra captions, subtitles, prices, watermarks, or new logos on screen.',
-    'Single continuous shot. Cinematic lighting. No talking-head lip sync.',
+    'If a person is visible: keep the same face and identity—no morphing, no beauty retouch, no face swap. Animate product and background; person only subtle natural motion (blink/hair) if needed.',
+    'No new captions, subtitles, prices, watermarks, or logos. Single continuous shot. No lip-sync talking head.',
   ].filter(Boolean).join(' ');
+}
+
+function negativeMotionPrompt() {
+  return [
+    'zoom in, zoom out, ken burns, dolly zoom, push in, pull back only',
+    'face morphing, identity change, different person, distorted face, warped eyes, extra teeth',
+    'subtitles, captions, watermark, extra logos, on-screen text',
+    'warped packaging, melted label, low quality, blurry product',
+    'extra hands, extra fingers, deformed hands',
+  ].join(', ');
+}
+
+function promptExpansionEnabled() {
+  return String(process.env.FAL_VIDEO_PROMPT_EXPANSION || '').trim() === '1';
 }
 
 function falMessage(body, status) {
@@ -251,9 +270,9 @@ async function submit({ images, product, price, hook, style, audio, audioUrl, vo
     image_url: imageUrl,
     resolution: '720p',
     duration,
-    enable_prompt_expansion: true,
+    enable_prompt_expansion: promptExpansionEnabled(),
     multi_shots: false,
-    negative_prompt: 'subtitles, captions, watermark, extra logos, warped packaging, extra hands, low quality',
+    negative_prompt: negativeMotionPrompt(),
   };
   let music = audio && audio.buffer && audio.buffer.length ? audio : null;
   if (!music && audioUrl) music = await fetchPublicAudio(audioUrl);
@@ -389,9 +408,9 @@ async function render({ images, product, price, hook, style }) {
     image_url: imageUrl,
     resolution: '720p',
     duration,
-    enable_prompt_expansion: true,
+    enable_prompt_expansion: promptExpansionEnabled(),
     multi_shots: false,
-    negative_prompt: 'subtitles, captions, watermark, extra logos, warped packaging, extra hands, low quality',
+    negative_prompt: negativeMotionPrompt(),
   };
   let json;
   try {

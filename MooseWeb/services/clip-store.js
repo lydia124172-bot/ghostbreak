@@ -297,8 +297,40 @@ function consumeGuestEnhance(sid) {
   return { ok: true, ...guestEnhanceState(sid) };
 }
 
+const AGENT_TRIAL_TOOLS = ['script', 'live', 'ip', 'hot', 'prompt', 'hook', 'story', 'drama'];
+
+function agentTrialLimit() {
+  const n = Number(process.env.GUEST_AGENT_TRIAL || 1);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 1;
+}
+
+function ensureAgentTrialBucket(data, bucketKey) {
+  if (!data.agentTrials) data.agentTrials = {};
+  if (!data.agentTrials[bucketKey]) data.agentTrials[bucketKey] = {};
+  return data.agentTrials[bucketKey];
+}
+
+function guestAgentTrialState(bucketKey, tool) {
+  const limit = agentTrialLimit();
+  const data = load();
+  const bucket = ensureAgentTrialBucket(data, bucketKey);
+  const count = Number(bucket[tool] || 0);
+  const used = Math.min(count, limit);
+  return { tool, limit, used, left: Math.max(0, limit - used) };
+}
+
+function consumeGuestAgentTrial(bucketKey, tool) {
+  const state = guestAgentTrialState(bucketKey, tool);
+  if (state.left <= 0) return { ok: false, ...state };
+  const data = load();
+  const bucket = ensureAgentTrialBucket(data, bucketKey);
+  bucket[tool] = Number(bucket[tool] || 0) + 1;
+  save(data);
+  return { ok: true, ...guestAgentTrialState(bucketKey, tool) };
+}
+
 function guestScriptLimit() {
-  const n = Number(process.env.GUEST_SCRIPT_DAILY || 20);
+  const n = Number(process.env.GUEST_SCRIPT_DAILY || 5);
   return Number.isFinite(n) && n > 0 ? n : 20;
 }
 
@@ -358,4 +390,8 @@ module.exports = {
   guestScriptLimit,
   guestScriptState,
   consumeGuestScript,
+  AGENT_TRIAL_TOOLS,
+  agentTrialLimit,
+  guestAgentTrialState,
+  consumeGuestAgentTrial,
 };

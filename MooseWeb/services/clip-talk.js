@@ -1,3 +1,7 @@
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { spawnSync } = require('child_process');
 const clipVideo = require('./clip-video');
 const clipTts = require('./clip-tts');
 
@@ -9,8 +13,43 @@ function talkModel() {
   return process.env.FAL_TALK_MODEL || 'fal-ai/sync-lipsync/v3/image-to-video';
 }
 
-function creditCost() {
-  return Number(process.env.FAL_TALK_CREDITS || 5) || 5;
+function creditCost(seconds) {
+  const n = Math.ceil(Number(seconds));
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return n;
+}
+
+function ffmpegBin() {
+  try {
+    const bin = require('ffmpeg-static');
+    if (bin && fs.existsSync(bin)) return bin;
+  } catch {
+    /* 略過 */
+  }
+  return '';
+}
+
+function audioSeconds(buffer) {
+  const bin = ffmpegBin();
+  if (!bin) throw new Error('讀不到口播長度。請改填旁白文字。');
+  const src = path.join(os.tmpdir(), `moose-talk-${Date.now()}.audio`);
+  fs.writeFileSync(src, buffer);
+  const probe = spawnSync(bin, ['-i', src, '-f', 'null', '-'], { windowsHide: true, encoding: 'utf8' });
+  try { fs.unlinkSync(src); } catch { /* 略過 */ }
+  const text = `${probe.stdout || ''}\n${probe.stderr || ''}`;
+  const match = text.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/);
+  if (!match) throw new Error('讀不到口播長度。請改傳 MP3 或 WAV。');
+  const sec = (Number(match[1]) * 3600) + (Number(match[2]) * 60) + Number(match[3]);
+  if (!Number.isFinite(sec) || sec < 0.4) throw new Error('口播太短。');
+  if (sec > 180) throw new Error('口播請短於 3 分鐘。請剪短再傳。');
+  return Math.ceil(sec);
+}
+
+function quoteSeconds({ narration, voice }) {
+  if (voice && voice.buffer && voice.buffer.length) return audioSeconds(voice.buffer);
+  const chars = String(narration || '').replace(/\s+/g, '').length;
+  if (!chars) throw new Error('請填旁白，或上傳口播音檔');
+  return Math.max(1, Math.ceil(chars / 3.5));
 }
 
 function engine() {
@@ -52,4 +91,4 @@ async function submit({ images, narration, voice }) {
   };
 }
 
-module.exports = { configured, engine, creditCost, submit };
+module.exports = { configured, engine, creditCost, quoteSeconds, submit };

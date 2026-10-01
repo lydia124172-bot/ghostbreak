@@ -26,7 +26,7 @@ function creditCost() {
 function videoDuration() {
   const raw = String(process.env.FAL_STORY_DURATION || '10').trim();
   const n = Number(raw);
-  if (n >= 4 && n <= 15) return String(n);
+  if (n >= 4 && n <= 10) return String(Math.round(n));
   return '10';
 }
 
