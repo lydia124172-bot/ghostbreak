@@ -764,6 +764,18 @@ app.get('/chinese-check/order', (_req, res) => {
   res.type('html').send(renderPublicHtml('chinese-check-order.html'));
 });
 
+const NC_GUIDE_PAGES = {
+  '/chinese-check/tattoo-chinese-meaning': 'chinese-check/tattoo-chinese-meaning.html',
+  '/chinese-check/chinese-for-meeting-parents': 'chinese-check/chinese-for-meeting-parents.html',
+  '/chinese-check/google-translate-chinese-wrong': 'chinese-check/google-translate-chinese-wrong.html',
+};
+Object.entries(NC_GUIDE_PAGES).forEach(([route, file]) => {
+  app.get(route, (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.type('html').send(renderPublicHtml(file));
+  });
+});
+
 function getGaMeasurementId() {
   return String(process.env.GA_MEASUREMENT_ID || '').trim();
 }

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Native Chinese Check">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1613"/>
+      <stop offset="100%" stop-color="#3d2518"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <text x="80" y="280" fill="#fbf8f3" font-family="Georgia, serif" font-size="56" font-weight="700">Native Chinese Check</text>
+  <text x="80" y="360" fill="#e8dfd4" font-family="system-ui, sans-serif" font-size="32">Make your Chinese sound natural  Taiwan Traditional Chinese</text>
+  <text x="80" y="430" fill="#b4552d" font-family="system-ui, sans-serif" font-size="26">Free AI check · Human proofreading from $9</text>
+  <text x="80" y="540" fill="#8a7f72" font-family="system-ui, sans-serif" font-size="22">bafuholdings.com/chinese-check</text>
+</svg>
