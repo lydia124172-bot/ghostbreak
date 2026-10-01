@@ -1867,6 +1867,10 @@ app.get('/robots.txt', (_req, res) => {
   res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin.html\n\nUser-agent: Linespider\nAllow: /\n');
 });
 
+app.get(['/dongli', '/dongli/'], (_req, res) => {
+  res.redirect(302, '/dongli/view.html');
+});
+
 app.use(express.static(PUBLIC, { index: false }));
 
 app.use((req, res) => {
