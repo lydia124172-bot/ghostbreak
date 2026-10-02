@@ -261,17 +261,15 @@ if (menuBtn && nav) {
 
 fetch('/api/config').then((r) => r.json()).then((data) => {
   applyLineLinks(data.lineUrl);
-  const room = document.getElementById('liveRoom');
-  if (room) {
-    const url = String(data.liveUrl || '').trim();
-    room.textContent = '進蝦皮賣場';
-    room.classList.toggle('hidden', !url);
-    if (url) {
-      room.href = url;
-      room.target = '_blank';
-      room.rel = 'noopener noreferrer';
-    }
-  }
+  const url = String(data.liveUrl || '').trim();
+  ['liveRoom', 'livePhoto'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el || !url) return;
+    el.href = url;
+    el.target = '_blank';
+    el.rel = 'noopener noreferrer';
+    el.classList.remove('hidden');
+  });
   [
     'heroTitle', 'heroLead', 'coverLabel', 'coverEnglish', 'pullQuote',
     'countryHead', 'countryLead', 'shopLead', 'col1Title', 'col1Body',
@@ -282,8 +280,8 @@ fetch('/api/config').then((r) => r.json()).then((data) => {
     if (!el) return;
     const value = String(data[id] || '').trim();
     if (value) el.textContent = value;
-    if (id === 'liveWhen' && value) el.textContent = `直播時間：${value}`;
-    if (['countryLead', 'liveNote', 'liveWhen', 'col1Title', 'col1Body', 'col2Title', 'col2Body', 'col3Title', 'col3Body', 'coverEnglish', 'pullQuote', 'archiveNote', 'shopLead', 'wishLead'].includes(id)) {
+    if (id === 'liveWhen') el.textContent = value ? `直播時間：${value}` : '直播時間：每週兩場，每場一次';
+    if (['countryLead', 'liveNote', 'col1Title', 'col1Body', 'col2Title', 'col2Body', 'col3Title', 'col3Body', 'coverEnglish', 'pullQuote', 'archiveNote', 'shopLead', 'wishLead'].includes(id)) {
       el.classList.toggle('hidden', !value);
     }
   });

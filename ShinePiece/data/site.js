@@ -9,7 +9,7 @@ module.exports = {
   categories: [],
   products: [],
   monthLabel: '',
-  liveWhen: '',
+  liveWhen: '每週兩場，每場一次',
   liveNote: '',
   liveUrl: 'https://s.shopee.tw/W77I6hhQ2',
   themeTitle: '',
