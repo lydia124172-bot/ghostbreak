@@ -4,6 +4,7 @@ const HOOKS = [
   { key: 'story', label: '✍️ 故事／沉浸感型', hint: '帶入畫面感或情境' },
   { key: 'value', label: '⚡ 乾貨／實用價值型', hint: '直接給予好處或解決方案' },
   { key: 'quote', label: '🎯 金句／情感共鳴型', hint: '高質感、適合 IG 排版的短句' },
+  { key: 'comment', label: '💬 留言／互動型', hint: '用問句或二選一，引客人在下面留言' },
 ];
 
 const TAGS = [
@@ -28,7 +29,7 @@ function formatPlatform(pack) {
   const tags = TAGS.map((row) => `* **${row.label}**: ${hashLine(pack.tags[row.key])}`).join('\n');
   return [
     `## ${pack.name}`,
-    '### 🪝 爆款鉤子標題（5種風格）',
+    '### 🪝 爆款鉤子標題（6種風格）',
     hooks,
     '',
     '### 🏷️ 流量 Hashtags 組合',
