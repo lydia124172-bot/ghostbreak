@@ -49,14 +49,16 @@ app.use(express.json({
   verify: (req, _res, buf) => { if (req.url === '/api/line/webhook') req.rawBody = buf; },
 }));
 
+const STUDIO_ORIGIN = 'https://bafuholdings.com';
+
+function redirectStudio(req, res, path) {
+  const q = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  res.redirect(301, `${STUDIO_ORIGIN}${path}${q}`);
+}
+
 const pages = {
   '/': 'index.html',
   '/saas': 'saas.html',
-  '/agents': 'agents.html',
-  '/works': 'agents.html',
-  '/courses': 'courses.html',
-  '/course': 'course.html',
-  '/hire': 'hire.html',
   '/match': 'match.html',
   '/research': 'research.html',
   '/ai': 'research.html',
@@ -262,6 +264,11 @@ function sendPage(req, res, file, status = 200) {
   res.setHeader('Cache-Control', 'no-cache');
   res.status(status).type('html').send(html);
 }
+
+app.get(['/works', '/agents'], (req, res) => redirectStudio(req, res, '/works'));
+app.get('/courses', (req, res) => redirectStudio(req, res, '/courses'));
+app.get('/course', (req, res) => redirectStudio(req, res, '/course'));
+app.get('/hire', (req, res) => redirectStudio(req, res, '/hire'));
 
 Object.entries(pages).forEach(([route, file]) => {
   app.get(route, (req, res) => sendPage(req, res, file));

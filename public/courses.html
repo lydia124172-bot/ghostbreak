@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>課程 — 麋鹿網工作室</title>
+  <meta name="description" content="BAFU 課程：AI 架站、自媒體、短影音電商、帶貨實戰與接案交付。" />
+  <link rel="canonical" href="https://bafuholdings.com/courses" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/studio.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="logo" href="/">麋鹿網工作室<small>MOOSEWEB STUDIO</small></a>
+      <nav>
+        <a href="/works">作品</a>
+        <a href="/courses" class="active">課程</a>
+        <a href="/hire">做網站</a>
+        <a href="https://moose.bafuholdings.com/saas">麋鹿工具包</a>
+      </nav>
+    </header>
+    <main class="page">
+      <p class="kicker">課程</p>
+      <h1>上課</h1>
+      <p class="lead">品牌官網、自媒體、短影音電商、帶貨實戰與接案交付。付費工具請到麋鹿網自己用。</p>
+      <section class="list" id="courses"></section>
+    </main>
+    <footer>
+      <div class="row">
+        <span>© 麋鹿網工作室</span>
+        <span><a href="/">首頁</a> · <a href="/hire">做網站</a> · <a href="https://moose.bafuholdings.com/">麋鹿網</a></span>
+      </div>
+    </footer>
+  </div>
+  <script src="/js/studio.js"></script>
+  <script>
+    const { escapeHtml, studioConfig } = window.studio;
+    studioConfig().then((data) => {
+      const rows = data.courses || [];
+      document.getElementById('courses').innerHTML = rows.length
+        ? rows.map((c) => {
+          const price = c.priceLabel ? `<p class="meta"><strong>${escapeHtml(c.priceLabel)}</strong>${c.earlyBirdLabel ? `　${escapeHtml(c.earlyBirdLabel)}` : ''}</p>` : '';
+          const meta = [c.sessionLabel || (c.sessions ? `${c.sessions} 堂` : ''), c.format].filter(Boolean).join('　');
+          return `<article class="item"><div><p class="meta">${escapeHtml(c.status || '開放諮詢')}${meta ? `　${escapeHtml(meta)}` : ''}</p><h3>${escapeHtml(c.title)}</h3><p>${c.audience ? `適合對象：${escapeHtml(c.audience)}` : ''}</p><p>${escapeHtml(c.summary)}</p>${price}</div><a class="btn" href="/course?id=${encodeURIComponent(c.id)}">查看課程內容</a></article>`;
+        }).join('')
+        : '<p class="lead">課程列表準備中。可先到做網站頁留下聯絡方式。</p>';
+    }).catch((err) => {
+      document.getElementById('courses').innerHTML = `<p class="lead">${escapeHtml(err.message)}</p>`;
+    });
+  </script>
+</body>
+</html>

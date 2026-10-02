@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BAFU HOLDINGS — 牛排館、選物店、中文修改與店家數位工具</title>
-  <meta name="description" content="一個真的在開店的老闆，四個品牌：八斧牛排、瑄品集選、麋鹿網、Native Chinese Check。我們把開店經驗做成網站與 AI 工具，也幫外國人把中文改成台灣人會說的話。" />
+  <title>麋鹿網工作室 — MOOSEWEB STUDIO</title>
+  <meta name="description" content="麋鹿網工作室：作品、課程與做網站。付費工具在麋鹿工具包（MOOSE WEB KIT）。" />
   <link rel="canonical" href="https://bafuholdings.com/" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="BAFU HOLDINGS — 牛排館、選物店、中文修改與店家數位工具" />
-  <meta property="og:description" content="八斧牛排、瑄品集選、麋鹿網、Native Chinese Check。真的在開店的人，做給店家用的網站與工具。" />
+  <meta property="og:title" content="麋鹿網工作室 — MOOSEWEB STUDIO" />
+  <meta property="og:description" content="作品、課程與做網站。付費工具請到麋鹿工具包。" />
   <meta property="og:url" content="https://bafuholdings.com/" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet" />
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Organization","name":"BAFU HOLDINGS","url":"https://bafuholdings.com/",
+  {"@context":"https://schema.org","@type":"Organization","name":"麋鹿網工作室","alternateName":"MOOSEWEB STUDIO","url":"https://bafuholdings.com/",
    "subOrganization":[
      {"@type":"Restaurant","name":"八斧牛排 BUFF STEAK","url":"https://steak.bafuholdings.com/"},
      {"@type":"Store","name":"瑄品集選","url":"https://shine.bafuholdings.com/"},
-     {"@type":"Organization","name":"麋鹿網","url":"https://moose.bafuholdings.com/"},
+     {"@type":"SoftwareApplication","name":"麋鹿工具包","alternateName":"MOOSE WEB KIT","url":"https://moose.bafuholdings.com/saas"},
      {"@type":"Service","name":"Native Chinese Check","url":"https://bafuholdings.com/chinese-check"}]}
   </script>
   <style>
@@ -27,7 +27,8 @@
     a { color:inherit; }
     .wrap { max-width:1080px; margin:0 auto; padding:0 22px; }
     header.top { display:flex; justify-content:space-between; align-items:center; padding:18px 0; }
-    .logo { font-weight:700; letter-spacing:.18em; text-decoration:none; }
+    .logo { font-weight:700; letter-spacing:.06em; text-decoration:none; }
+    .logo small { display:block; font-weight:500; letter-spacing:.22em; font-size:11px; color:var(--muted); }
     .top nav a { margin-left:18px; text-decoration:none; color:var(--muted); font-size:15px; }
     .top nav a:hover { color:var(--ink); }
     .hero { background:var(--dark); color:#f5efe6; padding:96px 0 88px; }
@@ -63,22 +64,22 @@
 <body>
   <div class="wrap">
     <header class="top">
-      <a class="logo" href="/">BAFU HOLDINGS</a>
+      <a class="logo" href="/">麋鹿網工作室<small>MOOSEWEB STUDIO</small></a>
       <nav>
+        <a href="/works">作品</a>
+        <a href="/courses">課程</a>
+        <a href="/hire">做網站</a>
         <a href="#brands">品牌</a>
-        <a href="#services">服務</a>
-        <a href="#why">為什麼找我們</a>
-        <a href="https://moose.bafuholdings.com/hire">聯絡</a>
       </nav>
     </header>
   </div>
 
   <div class="hero">
     <div class="wrap">
-      <p class="kicker">BAFU HOLDINGS</p>
+      <p class="kicker">MOOSEWEB STUDIO</p>
       <h1>真的在開店的人，<br />做給店家用的網站與工具。</h1>
       <p class="lead">教了二十六年英文，開了牛排館，又做了選物店。我們把每天開店遇到的問題，做成網站和 AI 工具，幫你把生意做起來。</p>
-      <a class="btn btn-main" href="https://moose.bafuholdings.com/hire">我想做網站</a>
+      <a class="btn btn-main" href="/hire">我想做網站</a>
       <a class="btn btn-ghost" href="#brands">看看我們的品牌</a>
     </div>
   </div>
@@ -100,11 +101,11 @@
           <p>月刊生活指南。每個月開箱一個國家的生活好物，老闆親自試用、線上直接下單。</p>
           <span class="go">逛選物店 →</span>
         </a>
-        <a class="card" href="https://moose.bafuholdings.com/">
-          <p class="tag">FOR BUSINESS</p>
-          <h3>麋鹿網</h3>
-          <p>幫店家做官網，提供 AI 商品短片、模特換裝等付費工具，也開設實戰課程。</p>
-          <span class="go">了解麋鹿網 →</span>
+        <a class="card" href="https://moose.bafuholdings.com/saas">
+          <p class="tag">MOOSE WEB KIT</p>
+          <h3>麋鹿工具包</h3>
+          <p>MOOSE WEB KIT。商品短片、模特換裝、真人口播對嘴。用點數，排版可先試。</p>
+          <span class="go">打開麋鹿工具包 →</span>
         </a>
         <a class="card" href="/chinese-check">
           <p class="tag">CHINESE</p>
@@ -118,9 +119,11 @@
 
   <section id="services" class="band">
     <div class="wrap" style="text-align:center">
-      <h2>想做網站，或學用 AI 做生意？</h2>
-      <p class="sub">做官網、AI 行銷工具、實戰課程，都在麋鹿網。</p>
-      <a class="btn btn-main" href="https://moose.bafuholdings.com/">到麋鹿網看看 →</a>
+      <h2>做網站、上課，或直接用工具？</h2>
+      <p class="sub">作品、課程與委託在麋鹿網工作室。商品短片等在麋鹿工具包。</p>
+      <a class="btn btn-main" href="/works">看作品</a>
+      <a class="btn btn-main" href="/courses" style="margin-left:10px">看課程</a>
+      <a class="btn btn-main" href="https://moose.bafuholdings.com/saas" style="margin-left:10px;background:#191512">麋鹿工具包</a>
     </div>
   </section>
 
@@ -140,17 +143,17 @@
     <div class="cta">
       <h2>想讓你的店也有一個會賺錢的網站？</h2>
       <p>留下你的需求，我們會親自回覆你。</p>
-      <a class="btn btn-main" href="https://moose.bafuholdings.com/hire">免費諮詢</a>
+      <a class="btn btn-main" href="/hire">免費諮詢</a>
     </div>
   </div>
 
   <footer>
     <div class="wrap row">
-      <span>© BAFU HOLDINGS</span>
+      <span>© 麋鹿網工作室</span>
       <span>
         <a href="https://steak.bafuholdings.com/">八斧牛排</a> ·
         <a href="https://shine.bafuholdings.com/">瑄品集選</a> ·
-        <a href="https://moose.bafuholdings.com/">麋鹿網</a> ·
+        <a href="https://moose.bafuholdings.com/saas">麋鹿工具包</a> ·
         <a href="/chinese-check">Native Chinese Check</a>
       </span>
     </div>

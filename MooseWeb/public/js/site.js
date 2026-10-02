@@ -10,10 +10,7 @@ function applyPublicNav() {
   const path = pathOf();
   const items = [
     { href: '/', label: '首頁', on: path === '/' },
-    { href: '/works', label: '過往案例', on: path === '/works' || path === '/agents' || path === '/script' || path === '/live' || path === '/ip' || path === '/hot' || path === '/prompt' || path === '/hook' },
-    { href: '/courses', label: '線上課程', on: path === '/courses' || path === '/course' },
-    { href: '/hire', label: '官網代做', on: path === '/hire' },
-    { href: '/saas', label: '付費工具', on: path === '/saas' || path === '/clip' || path === '/story' || path === '/talk' || path === '/drama' || path === '/dress' || path === '/model' },
+    { href: '/saas', label: '麋鹿工具包', on: path === '/saas' || path === '/clip' || path === '/story' || path === '/talk' || path === '/drama' || path === '/dress' || path === '/model' || path === '/script' || path === '/live' || path === '/ip' || path === '/hot' || path === '/prompt' || path === '/hook' },
   ];
   nav.innerHTML = items.map((item) =>
     `<a href="${item.href}"${item.on ? ' class="active"' : ''}>${item.label}</a>`
@@ -31,9 +28,9 @@ function applyFooterExtras() {
   if (!box || box.dataset.extra) return;
   box.dataset.extra = '1';
   [
-    { href: '/skills', label: '獲客地圖' },
-    { href: '/research', label: 'AI 研究' },
-    { href: '/match', label: '找人幫忙' },
+    { href: 'https://bafuholdings.com/works', label: '作品' },
+    { href: 'https://bafuholdings.com/courses', label: '課程' },
+    { href: 'https://bafuholdings.com/hire', label: '做網站' },
   ].forEach((item) => {
     if (box.querySelector(`a[href="${item.href}"]`)) return;
     const a = document.createElement('a');

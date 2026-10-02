@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>課程 — 麋鹿網工作室</title>
+  <meta name="description" content="課程內容、堂數、費用與諮詢。" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/studio.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="logo" href="/">麋鹿網工作室<small>MOOSEWEB STUDIO</small></a>
+      <nav>
+        <a href="/works">作品</a>
+        <a href="/courses" class="active">課程</a>
+        <a href="/hire">做網站</a>
+        <a href="https://moose.bafuholdings.com/saas">麋鹿工具包</a>
+      </nav>
+    </header>
+    <main class="page" id="main">
+      <p class="lead"><a href="/courses">← 回所有課程</a></p>
+      <section id="head"></section>
+      <section class="panel" id="facts"></section>
+      <h2>課程說明</h2>
+      <p class="lead" id="detail"></p>
+      <h2>你會帶走什麼</h2>
+      <ul class="feature-list" id="outcomes"></ul>
+      <h2>包含內容</h2>
+      <ul class="feature-list" id="features"></ul>
+      <h2>課程大綱</h2>
+      <ol class="lesson-outline" id="lessons"></ol>
+      <h2 id="consult">預約諮詢</h2>
+      <p class="lead">留下聯絡方式，我們會回覆開課時間與付款方式。</p>
+      <form id="inquireForm" class="panel form-grid">
+        <div class="form-2">
+          <div><label for="inqName">姓名</label><input id="inqName" required maxlength="40" /></div>
+          <div><label for="inqPhone">電話</label><input id="inqPhone" maxlength="30" /></div>
+        </div>
+        <div><label for="inqEmail">Email</label><input id="inqEmail" type="email" maxlength="120" /></div>
+        <div><label for="inqMessage">想問的事</label><textarea id="inqMessage" rows="4" maxlength="2000"></textarea></div>
+        <p id="inqError" class="err hidden"></p>
+        <p id="inqOk" class="ok hidden"></p>
+        <button class="btn" type="submit" id="inqBtn">送出報名諮詢</button>
+      </form>
+    </main>
+    <footer>
+      <div class="row">
+        <span>© 麋鹿網工作室</span>
+        <span><a href="/courses">課程</a> · <a href="/hire">做網站</a></span>
+      </div>
+    </footer>
+  </div>
+  <script src="/js/studio.js"></script>
+  <script>
+    const { escapeHtml, studioConfig, studioInquire } = window.studio;
+    const id = new URLSearchParams(location.search).get('id');
+    let courseTitle = '';
+    studioConfig().then((data) => {
+      const course = (data.courses || []).find((c) => c.id === id);
+      if (!course) {
+        document.getElementById('main').innerHTML = '<h1>找不到這門課</h1><p class="lead"><a href="/courses">回課程列表</a></p>';
+        return;
+      }
+      courseTitle = course.title;
+      document.title = `${course.title} — 麋鹿網工作室`;
+      document.getElementById('head').innerHTML = `<p class="kicker">${escapeHtml(course.status || '開放諮詢')}</p><h1>${escapeHtml(course.title)}</h1><p class="lead">${escapeHtml(course.audience ? `適合對象：${course.audience}` : '')}</p><p>${escapeHtml(course.summary || '')}</p>`;
+      document.getElementById('facts').innerHTML = `<p><strong>堂數</strong>　${escapeHtml(course.sessionLabel || `${course.sessions || ''} 堂`)}</p><p><strong>單堂</strong>　${escapeHtml(course.duration || '')}</p><p><strong>形式</strong>　${escapeHtml(course.format || '')}</p><p><strong>費用</strong>　${escapeHtml(course.priceLabel || '')}${course.earlyBirdLabel ? `　${escapeHtml(course.earlyBirdLabel)}` : ''}</p>`;
+      document.getElementById('detail').textContent = course.detail || course.summary || '';
+      const li = (items) => (items || []).map((t) => `<li>${escapeHtml(t)}</li>`).join('');
+      document.getElementById('outcomes').innerHTML = li(course.outcomes);
+      document.getElementById('features').innerHTML = li(course.features);
+      document.getElementById('lessons').innerHTML = (course.lessons || []).map((row) => `<li><strong>第 ${escapeHtml(row.no)} 堂　${escapeHtml(row.title)}</strong><br><span class="meta">${escapeHtml(row.summary || '')}</span></li>`).join('');
+      const msg = document.getElementById('inqMessage');
+      if (!msg.value) msg.value = `我想諮詢課程：${course.title}`;
+    }).catch(() => {
+      document.getElementById('main').innerHTML = '<h1>暫時無法載入</h1><p class="lead"><a href="/courses">回課程列表</a></p>';
+    });
+
+    document.getElementById('inquireForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('inqError');
+      const ok = document.getElementById('inqOk');
+      const btn = document.getElementById('inqBtn');
+      err.classList.add('hidden');
+      ok.classList.add('hidden');
+      btn.disabled = true;
+      try {
+        await studioInquire({
+          name: document.getElementById('inqName').value.trim(),
+          phone: document.getElementById('inqPhone').value.trim(),
+          email: document.getElementById('inqEmail').value.trim(),
+          service: `課程：${courseTitle || id || ''}`,
+          message: document.getElementById('inqMessage').value.trim(),
+        });
+        ok.textContent = '已送出，我們會盡快與你聯繫。';
+        ok.classList.remove('hidden');
+        e.target.reset();
+      } catch (ex) {
+        err.textContent = ex.message;
+        err.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

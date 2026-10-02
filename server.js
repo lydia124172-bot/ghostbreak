@@ -764,6 +764,83 @@ app.get('/chinese-check/order', (_req, res) => {
   res.type('html').send(renderPublicHtml('chinese-check-order.html'));
 });
 
+const MOOSE_ORIGIN = (process.env.MOOSE_ORIGIN || 'https://moose.bafuholdings.com').replace(/\/$/, '');
+const STUDIO_INQUIRE_TO = process.env.INQUIRE_EMAIL || 'lydia3530@gmail.com';
+let studioConfigCache = { at: 0, data: null };
+
+app.get('/api/studio/config', async (_req, res) => {
+  try {
+    if (studioConfigCache.data && Date.now() - studioConfigCache.at < 60000) {
+      return res.json(studioConfigCache.data);
+    }
+    const upstream = await fetch(`${MOOSE_ORIGIN}/api/config`);
+    if (!upstream.ok) throw new Error(`config ${upstream.status}`);
+    const data = await upstream.json();
+    const slim = {
+      email: data.email || '',
+      lineUrl: data.lineUrl || '',
+      works: data.works || [],
+      courses: data.courses || [],
+      hire: data.hire || [],
+      faqs: data.faqs || [],
+    };
+    studioConfigCache = { at: Date.now(), data: slim };
+    res.json(slim);
+  } catch (err) {
+    console.error('[studio config]', err.message);
+    if (studioConfigCache.data) return res.json(studioConfigCache.data);
+    res.status(502).json({ error: '暫時讀不到作品與課程，請稍後再試。' });
+  }
+});
+
+app.post('/api/studio/inquire', async (req, res) => {
+  const name = String(req.body?.name || '').trim();
+  const phone = String(req.body?.phone || '').trim();
+  const email = String(req.body?.email || '').trim();
+  const service = String(req.body?.service || '').trim();
+  const message = String(req.body?.message || '').trim();
+  if (!name) return res.status(400).json({ error: '請填寫姓名' });
+  if (!phone && !email) return res.status(400).json({ error: '請留下電話或 Email' });
+  if (!service) return res.status(400).json({ error: '請選擇項目' });
+  if (!message) return res.status(400).json({ error: '請填寫內容' });
+  if (message.length > 2000) return res.status(400).json({ error: '內容過長' });
+  const text = `BAFU 諮詢\n項目：${service}\n姓名：${name}\n電話：${phone || '—'}\nEmail：${email || '—'}\n\n${message}`;
+  try {
+    if (!resendConfigured()) {
+      console.warn('[studio inquire] 未設定寄信', { service, name });
+      return res.status(503).json({ error: '寄信尚未設定，請改用 LINE 或 Email 聯絡。' });
+    }
+    const { Resend } = require('resend');
+    const client = new Resend(String(process.env.RESEND_API_KEY || '').trim());
+    const payload = {
+      from: `BAFU HOLDINGS <noreply@${getDomainName()}>`,
+      to: [STUDIO_INQUIRE_TO],
+      subject: `BAFU 諮詢：${service}`.slice(0, 120),
+      text,
+    };
+    if (email) payload.replyTo = email;
+    const result = await client.emails.send(payload);
+    if (result.error) throw new Error(result.error.message || '寄信失敗');
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[studio inquire]', err.message);
+    res.status(502).json({ error: '送出失敗，請稍後再試。' });
+  }
+});
+
+const STUDIO_PAGES = {
+  '/works': 'works.html',
+  '/courses': 'courses.html',
+  '/course': 'course.html',
+  '/hire': 'hire.html',
+};
+Object.entries(STUDIO_PAGES).forEach(([route, file]) => {
+  app.get(route, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.type('html').send(renderPublicHtml(file));
+  });
+});
+
 const NC_GUIDE_PAGES = {
   '/chinese-check/tattoo-chinese-meaning': 'chinese-check/tattoo-chinese-meaning.html',
   '/chinese-check/chinese-for-meeting-parents': 'chinese-check/chinese-for-meeting-parents.html',

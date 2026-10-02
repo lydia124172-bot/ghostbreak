@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>作品 — 麋鹿網工作室</title>
+  <meta name="description" content="BAFU 做過的官網、SaaS 與設計案例。付費工具在麋鹿網。" />
+  <link rel="canonical" href="https://bafuholdings.com/works" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/studio.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="logo" href="/">麋鹿網工作室<small>MOOSEWEB STUDIO</small></a>
+      <nav>
+        <a href="/works" class="active">作品</a>
+        <a href="/courses">課程</a>
+        <a href="/hire">做網站</a>
+        <a href="https://moose.bafuholdings.com/saas">麋鹿工具包</a>
+      </nav>
+    </header>
+    <main class="page">
+      <p class="kicker">案例</p>
+      <h1>作品</h1>
+      <p class="lead">官網、設計與做過的案子。商品短片、換裝、口播等付費工具在麋鹿網。</p>
+      <div class="filters" id="filters"></div>
+      <section class="list" id="works"></section>
+    </main>
+    <footer>
+      <div class="row">
+        <span>© 麋鹿網工作室</span>
+        <span><a href="/">首頁</a> · <a href="/hire">做網站</a> · <a href="https://moose.bafuholdings.com/">麋鹿網</a></span>
+      </div>
+    </footer>
+  </div>
+  <script src="/js/studio.js"></script>
+  <script>
+    const { escapeHtml, studioHref, studioConfig } = window.studio;
+    let allWorks = [];
+    let current = '全部';
+
+    function deprecated(w) {
+      const blob = `${w.name || ''}${w.summary || ''}${w.href || ''}`;
+      if (!w || w.kind === '付費工具') return true;
+      if (/固定模特/.test(blob)) return true;
+      if (String(w.href || '').replace(/\/$/, '') === '/model') return true;
+      return false;
+    }
+
+    function render() {
+      const pool = allWorks.filter((w) => !deprecated(w));
+      const rows = current === '全部' ? pool : pool.filter((w) => w.kind === current);
+      document.getElementById('works').innerHTML = rows.length
+        ? rows.map((w) => {
+          const href = studioHref(w.href);
+          const ext = href && /^https?:\/\//i.test(href);
+          const label = w.cta || (ext ? '打開看看' : '查看');
+          const btn = href ? `<a class="btn btn-ghost" href="${escapeHtml(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>${escapeHtml(label)}</a>` : '';
+          const feats = (w.features || []).map((f) => `<li>${escapeHtml(f)}</li>`).join('');
+          return `<article class="item"><div><p class="meta">${escapeHtml(w.kind || '')}</p><h3>${escapeHtml(w.name)}</h3><p>${escapeHtml(w.summary)}</p>${feats ? `<ul class="feature-list">${feats}</ul>` : ''}</div>${btn}</article>`;
+        }).join('')
+        : '<p class="lead">這個分類之後會補作品。</p>';
+    }
+
+    studioConfig().then((data) => {
+      allWorks = data.works || [];
+      const kindSet = new Set(allWorks.filter((w) => !deprecated(w)).map((w) => w.kind).filter(Boolean));
+      const kinds = ['全部', ...['品牌官網', 'SaaS', '智能體', '設計與自媒體'].filter((k) => kindSet.has(k))];
+      document.getElementById('filters').innerHTML = kinds.map((k) =>
+        `<button type="button" class="filter-btn${k === '全部' ? ' active' : ''}" data-kind="${escapeHtml(k)}">${escapeHtml(k)}</button>`
+      ).join('');
+      document.getElementById('filters').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-kind]');
+        if (!btn) return;
+        current = btn.getAttribute('data-kind');
+        document.querySelectorAll('.filter-btn').forEach((el) => el.classList.toggle('active', el === btn));
+        render();
+      });
+      render();
+    }).catch((err) => {
+      document.getElementById('works').innerHTML = `<p class="lead">${escapeHtml(err.message)}</p>`;
+    });
+  </script>
+</body>
+</html>

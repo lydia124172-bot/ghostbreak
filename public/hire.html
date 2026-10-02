@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>做網站 — 麋鹿網工作室</title>
+  <meta name="description" content="委託 BAFU 製作品牌官網、落地頁與視覺。獲客助理有案子再接。付費工具在麋鹿網。" />
+  <link rel="canonical" href="https://bafuholdings.com/hire" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/studio.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="logo" href="/">麋鹿網工作室<small>MOOSEWEB STUDIO</small></a>
+      <nav>
+        <a href="/works">作品</a>
+        <a href="/courses">課程</a>
+        <a href="/hire" class="active">做網站</a>
+        <a href="https://moose.bafuholdings.com/saas">麋鹿工具包</a>
+      </nav>
+    </header>
+    <main class="page">
+      <p class="kicker">委託</p>
+      <h1>做網站</h1>
+      <p class="lead">品牌官網、落地頁與視覺。獲客助理不做成現成產品，有案子再接。商品短片等付費工具在麋鹿網。</p>
+      <section class="list" id="hire"></section>
+      <h2 id="consult">提出諮詢</h2>
+      <p class="lead">選擇項目並留下電話或 Email。</p>
+      <form id="inquireForm" class="panel form-grid">
+        <div class="form-2">
+          <div><label for="inqName">姓名</label><input id="inqName" required maxlength="40" /></div>
+          <div><label for="inqService">諮詢項目</label><select id="inqService" required></select></div>
+        </div>
+        <div class="form-2">
+          <div><label for="inqPhone">電話</label><input id="inqPhone" maxlength="30" /></div>
+          <div><label for="inqEmail">Email</label><input id="inqEmail" type="email" maxlength="120" /></div>
+        </div>
+        <div><label for="inqMessage">需求說明</label><textarea id="inqMessage" rows="5" required maxlength="2000" placeholder="例如：產業、是否需要訂位或表單、希望上線時間、參考網站。"></textarea></div>
+        <p id="inqError" class="err hidden"></p>
+        <p id="inqOk" class="ok hidden"></p>
+        <button class="btn" type="submit" id="inqBtn">送出諮詢</button>
+      </form>
+      <h2>常見問題</h2>
+      <section class="list" id="faqs"></section>
+    </main>
+    <footer>
+      <div class="row">
+        <span>© 麋鹿網工作室</span>
+        <span><a href="/works">作品</a> · <a href="/courses">課程</a> · <a href="https://moose.bafuholdings.com/">麋鹿網</a></span>
+      </div>
+    </footer>
+  </div>
+  <script src="/js/studio.js"></script>
+  <script>
+    const { escapeHtml, studioHref, studioConfig, studioInquire } = window.studio;
+
+    function selectService(id) {
+      const select = document.getElementById('inqService');
+      if (id && [...select.options].some((o) => o.value === id)) select.value = id;
+      document.getElementById('consult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    studioConfig().then((data) => {
+      const items = data.hire || [];
+      const select = document.getElementById('inqService');
+      select.innerHTML = '<option value="">請選擇項目</option>' + items.map((h) =>
+        `<option value="${escapeHtml(h.id)}">${escapeHtml(h.name)}</option>`
+      ).join('');
+      document.getElementById('hire').innerHTML = items.map((h) => {
+        const features = (h.features || []).map((f) => `<li>${escapeHtml(f)}</li>`).join('');
+        const examples = (h.examples || []).map((ex) => {
+          const card = `<div class="hire-example-card"><strong>${escapeHtml(ex.title)}</strong><br><span class="meta">${escapeHtml(ex.caption || '')}</span></div>`;
+          if (!ex.href) return card;
+          const href = studioHref(ex.href);
+          const ext = /^https?:\/\//i.test(href);
+          return `<a class="hire-example-link" href="${escapeHtml(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>${card}</a>`;
+        }).join('');
+        return `<article class="item item-click" data-id="${escapeHtml(h.id)}"><div><h3>${escapeHtml(h.name)}</h3><p>${escapeHtml(h.summary || '')}</p><p class="consult-detail">${escapeHtml(h.detail || '')}</p>${features ? `<ul class="feature-list consult-detail">${features}</ul>` : ''}${examples ? `<div class="hire-examples consult-detail"><div class="hire-examples-grid">${examples}</div></div>` : ''}<p class="consult-detail meta">點卡片可看完整說明。</p></div><button type="button" class="btn" data-consult="${escapeHtml(h.id)}">提出諮詢</button></article>`;
+      }).join('');
+      document.getElementById('faqs').innerHTML = (data.faqs || []).map((f) =>
+        `<article class="faq-item"><button type="button">${escapeHtml(f.q || '')}</button><p class="faq-a">${escapeHtml(f.a || '')}</p></article>`
+      ).join('');
+      const wanted = new URLSearchParams(location.search).get('service');
+      if (wanted) selectService(wanted === 'leads' ? 'site' : wanted);
+    }).catch((err) => {
+      document.getElementById('hire').innerHTML = `<p class="lead">${escapeHtml(err.message)}</p>`;
+    });
+
+    document.getElementById('hire').addEventListener('click', (e) => {
+      if (e.target.closest('.hire-example-link')) return;
+      const consultId = e.target.getAttribute('data-consult');
+      if (consultId) {
+        selectService(consultId);
+        return;
+      }
+      const card = e.target.closest('.item-click');
+      if (card) card.classList.toggle('open');
+    });
+    document.getElementById('faqs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.faq-item button');
+      if (btn) btn.parentElement.classList.toggle('open');
+    });
+    document.getElementById('inquireForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('inqError');
+      const ok = document.getElementById('inqOk');
+      const btn = document.getElementById('inqBtn');
+      err.classList.add('hidden');
+      ok.classList.add('hidden');
+      btn.disabled = true;
+      const select = document.getElementById('inqService');
+      const label = select.options[select.selectedIndex]?.text || select.value;
+      try {
+        await studioInquire({
+          name: document.getElementById('inqName').value.trim(),
+          phone: document.getElementById('inqPhone').value.trim(),
+          email: document.getElementById('inqEmail').value.trim(),
+          service: label,
+          message: document.getElementById('inqMessage').value.trim(),
+        });
+        ok.textContent = '已收到諮詢，我們會再與您聯繫。';
+        ok.classList.remove('hidden');
+        e.target.reset();
+      } catch (ex) {
+        err.textContent = ex.message;
+        err.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
