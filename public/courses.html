@@ -24,7 +24,7 @@
     <main class="page">
       <p class="kicker">課程</p>
       <h1>上課</h1>
-      <p class="lead">品牌官網、自媒體、短影音電商、帶貨實戰與接案交付。付費工具請到麋鹿網自己用。</p>
+      <p class="lead">品牌官網、自媒體、短影音電商、帶貨實戰與接案交付。要自己做短片，請到麋鹿工具包。</p>
       <section class="list" id="courses"></section>
     </main>
     <footer>
@@ -35,20 +35,5 @@
     </footer>
   </div>
   <script src="/js/studio.js"></script>
-  <script>
-    const { escapeHtml, studioConfig } = window.studio;
-    studioConfig().then((data) => {
-      const rows = data.courses || [];
-      document.getElementById('courses').innerHTML = rows.length
-        ? rows.map((c) => {
-          const price = c.priceLabel ? `<p class="meta"><strong>${escapeHtml(c.priceLabel)}</strong>${c.earlyBirdLabel ? `　${escapeHtml(c.earlyBirdLabel)}` : ''}</p>` : '';
-          const meta = [c.sessionLabel || (c.sessions ? `${c.sessions} 堂` : ''), c.format].filter(Boolean).join('　');
-          return `<article class="item"><div><p class="meta">${escapeHtml(c.status || '開放諮詢')}${meta ? `　${escapeHtml(meta)}` : ''}</p><h3>${escapeHtml(c.title)}</h3><p>${c.audience ? `適合對象：${escapeHtml(c.audience)}` : ''}</p><p>${escapeHtml(c.summary)}</p>${price}</div><a class="btn" href="/course?id=${encodeURIComponent(c.id)}">查看課程內容</a></article>`;
-        }).join('')
-        : '<p class="lead">課程列表準備中。可先到做網站頁留下聯絡方式。</p>';
-    }).catch((err) => {
-      document.getElementById('courses').innerHTML = `<p class="lead">${escapeHtml(err.message)}</p>`;
-    });
-  </script>
 </body>
 </html>

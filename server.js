@@ -768,24 +768,103 @@ const MOOSE_ORIGIN = (process.env.MOOSE_ORIGIN || 'https://moose.bafuholdings.co
 const STUDIO_INQUIRE_TO = process.env.INQUIRE_EMAIL || 'lydia3530@gmail.com';
 let studioConfigCache = { at: 0, data: null };
 
+function studioEsc(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function studioHref(href) {
+  const value = String(href || '');
+  if (!value || /^https?:\/\//i.test(value) || value.startsWith('#')) return value;
+  if (/^\/(works|courses|course|hire)(\?|$|\/)/.test(value)) return value;
+  if (value.startsWith('/')) return `${MOOSE_ORIGIN}${value}`;
+  return value;
+}
+
+function workHidden(work) {
+  const blob = `${work?.name || ''}${work?.summary || ''}${work?.href || ''}`;
+  if (!work || work.kind === '付費工具') return true;
+  if (/固定模特/.test(blob)) return true;
+  return String(work.href || '').replace(/\/$/, '') === '/model';
+}
+
+async function loadStudioConfig() {
+  if (studioConfigCache.data && Date.now() - studioConfigCache.at < 60000) return studioConfigCache.data;
+  const upstream = await fetch(`${MOOSE_ORIGIN}/api/config`);
+  if (!upstream.ok) throw new Error(`config ${upstream.status}`);
+  const data = await upstream.json();
+  const slim = {
+    email: data.email || '',
+    lineUrl: data.lineUrl || '',
+    works: data.works || [],
+    courses: data.courses || [],
+    hire: data.hire || [],
+    faqs: data.faqs || [],
+  };
+  studioConfigCache = { at: Date.now(), data: slim };
+  return slim;
+}
+
+function renderStudioWorks(works) {
+  const rows = (works || []).filter((work) => !workHidden(work));
+  if (!rows.length) return '<p class="lead">作品整理中。</p>';
+  return rows.map((work) => {
+    const href = studioHref(work.href);
+    const ext = /^https?:\/\//i.test(href);
+    const label = work.cta || (ext ? '打開看看' : '查看');
+    const btn = href
+      ? `<a class="btn btn-ghost" href="${studioEsc(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>${studioEsc(label)}</a>`
+      : '';
+    const feats = (work.features || []).map((item) => `<li>${studioEsc(item)}</li>`).join('');
+    return `<article class="item" data-kind="${studioEsc(work.kind || '')}"><div><p class="meta">${studioEsc(work.kind || '')}</p><h3>${studioEsc(work.name)}</h3><p>${studioEsc(work.summary)}</p>${feats ? `<ul class="feature-list">${feats}</ul>` : ''}</div>${btn}</article>`;
+  }).join('');
+}
+
+function renderStudioFilters(works) {
+  const kinds = ['全部'];
+  for (const name of ['品牌官網', 'SaaS', '智能體', '設計與自媒體']) {
+    if ((works || []).some((work) => !workHidden(work) && work.kind === name)) kinds.push(name);
+  }
+  return kinds.map((name) => `<button type="button" class="filter-btn${name === '全部' ? ' active' : ''}" data-kind="${studioEsc(name)}">${studioEsc(name)}</button>`).join('');
+}
+
+function renderStudioCourses(courses) {
+  const rows = courses || [];
+  if (!rows.length) return '<p class="lead">課程列表準備中。可先到做網站頁留下聯絡方式。</p>';
+  return rows.map((course) => {
+    const price = course.priceLabel
+      ? `<p class="meta"><strong>${studioEsc(course.priceLabel)}</strong>${course.earlyBirdLabel ? `　${studioEsc(course.earlyBirdLabel)}` : ''}</p>`
+      : '';
+    const meta = [course.sessionLabel || (course.sessions ? `${course.sessions} 堂` : ''), course.format].filter(Boolean).join('　');
+    return `<article class="item"><div><p class="meta">${studioEsc(course.status || '開放諮詢')}${meta ? `　${studioEsc(meta)}` : ''}</p><h3>${studioEsc(course.title)}</h3><p>${course.audience ? `適合對象：${studioEsc(course.audience)}` : ''}</p><p>${studioEsc(course.summary)}</p>${price}</div><a class="btn" href="/course?id=${encodeURIComponent(course.id)}">查看課程內容</a></article>`;
+  }).join('');
+}
+
+function renderStudioHire(items) {
+  return (items || []).map((item) => {
+    const features = (item.features || []).map((line) => `<li>${studioEsc(line)}</li>`).join('');
+    const examples = (item.examples || []).map((ex) => {
+      const card = `<div class="hire-example-card"><strong>${studioEsc(ex.title)}</strong><br><span class="meta">${studioEsc(ex.caption || '')}</span></div>`;
+      if (!ex.href) return card;
+      const href = studioHref(ex.href);
+      const ext = /^https?:\/\//i.test(href);
+      return `<a class="hire-example-link" href="${studioEsc(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>${card}</a>`;
+    }).join('');
+    return `<article class="item item-click open" data-id="${studioEsc(item.id)}"><div><h3>${studioEsc(item.name)}</h3><p>${studioEsc(item.summary || '')}</p><p class="consult-detail">${studioEsc(item.detail || '')}</p>${features ? `<ul class="feature-list consult-detail">${features}</ul>` : ''}${examples ? `<div class="hire-examples consult-detail"><div class="hire-examples-grid">${examples}</div></div>` : ''}</div><button type="button" class="btn" data-consult="${studioEsc(item.id)}">提出諮詢</button></article>`;
+  }).join('');
+}
+
+function renderStudioFaqs(faqs) {
+  return (faqs || []).map((faq) => `<article class="faq-item"><button type="button">${studioEsc(faq.q || '')}</button><p class="faq-a">${studioEsc(faq.a || '')}</p></article>`).join('');
+}
+
+function renderStudioOptions(items) {
+  return `<option value="">請選擇項目</option>${(items || []).map((item) => `<option value="${studioEsc(item.id)}">${studioEsc(item.name)}</option>`).join('')}`;
+}
+
 app.get('/api/studio/config', async (_req, res) => {
   try {
-    if (studioConfigCache.data && Date.now() - studioConfigCache.at < 60000) {
-      return res.json(studioConfigCache.data);
-    }
-    const upstream = await fetch(`${MOOSE_ORIGIN}/api/config`);
-    if (!upstream.ok) throw new Error(`config ${upstream.status}`);
-    const data = await upstream.json();
-    const slim = {
-      email: data.email || '',
-      lineUrl: data.lineUrl || '',
-      works: data.works || [],
-      courses: data.courses || [],
-      hire: data.hire || [],
-      faqs: data.faqs || [],
-    };
-    studioConfigCache = { at: Date.now(), data: slim };
-    res.json(slim);
+    res.json(await loadStudioConfig());
   } catch (err) {
     console.error('[studio config]', err.message);
     if (studioConfigCache.data) return res.json(studioConfigCache.data);
@@ -835,9 +914,41 @@ const STUDIO_PAGES = {
   '/hire': 'hire.html',
 };
 Object.entries(STUDIO_PAGES).forEach(([route, file]) => {
-  app.get(route, (_req, res) => {
+  app.get(route, async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
-    res.type('html').send(renderPublicHtml(file));
+    let html = renderPublicHtml(file);
+    try {
+      const data = await loadStudioConfig();
+      if (route === '/works') {
+        html = html.replace('<div class="filters" id="filters"></div>', `<div class="filters" id="filters">${renderStudioFilters(data.works)}</div>`);
+        html = html.replace('<section class="list" id="works"></section>', `<section class="list" id="works">${renderStudioWorks(data.works)}</section>`);
+      } else if (route === '/courses') {
+        html = html.replace('<section class="list" id="courses"></section>', `<section class="list" id="courses">${renderStudioCourses(data.courses)}</section>`);
+      } else if (route === '/hire') {
+        html = html.replace('<section class="list" id="hire"></section>', `<section class="list" id="hire">${renderStudioHire(data.hire)}</section>`);
+        html = html.replace('<section class="list" id="faqs"></section>', `<section class="list" id="faqs">${renderStudioFaqs(data.faqs)}</section>`);
+        html = html.replace('<select id="inqService" required></select>', `<select id="inqService" required>${renderStudioOptions(data.hire)}</select>`);
+      } else if (route === '/course') {
+        const course = (data.courses || []).find((row) => row.id === String(req.query.id || ''));
+        if (!course) {
+          html = html.replace('<section id="head"></section>', '<section id="head"><h1>找不到這門課</h1><p class="lead"><a href="/courses">回課程列表</a></p></section>');
+        } else {
+          const lessons = (course.lessons || []).map((row) => `<li><strong>第 ${studioEsc(row.no)} 堂　${studioEsc(row.title)}</strong><br><span class="meta">${studioEsc(row.summary || '')}</span></li>`).join('');
+          const bullets = (items) => (items || []).map((line) => `<li>${studioEsc(line)}</li>`).join('');
+          html = html.replace('<title>課程 — 麋鹿網工作室</title>', `<title>${studioEsc(course.title)} — 麋鹿網工作室</title>`);
+          html = html.replace('<section id="head"></section>', `<section id="head"><p class="kicker">${studioEsc(course.status || '開放諮詢')}</p><h1>${studioEsc(course.title)}</h1><p class="lead">${studioEsc(course.audience ? `適合對象：${course.audience}` : '')}</p><p>${studioEsc(course.summary || '')}</p></section>`);
+          html = html.replace('<section class="panel" id="facts"></section>', `<section class="panel" id="facts"><p><strong>堂數</strong>　${studioEsc(course.sessionLabel || `${course.sessions || ''} 堂`)}</p><p><strong>單堂</strong>　${studioEsc(course.duration || '')}</p><p><strong>形式</strong>　${studioEsc(course.format || '')}</p><p><strong>費用</strong>　${studioEsc(course.priceLabel || '')}${course.earlyBirdLabel ? `　${studioEsc(course.earlyBirdLabel)}` : ''}</p></section>`);
+          html = html.replace('<p class="lead" id="detail"></p>', `<p class="lead" id="detail">${studioEsc(course.detail || course.summary || '')}</p>`);
+          html = html.replace('<ul class="feature-list" id="outcomes"></ul>', `<ul class="feature-list" id="outcomes">${bullets(course.outcomes)}</ul>`);
+          html = html.replace('<ul class="feature-list" id="features"></ul>', `<ul class="feature-list" id="features">${bullets(course.features)}</ul>`);
+          html = html.replace('<ol class="lesson-outline" id="lessons"></ol>', `<ol class="lesson-outline" id="lessons">${lessons}</ol>`);
+          html = html.replace('<textarea id="inqMessage" rows="4" maxlength="2000"></textarea>', `<textarea id="inqMessage" rows="4" maxlength="2000">我想諮詢課程：${studioEsc(course.title)}</textarea>`);
+        }
+      }
+    } catch (err) {
+      console.error('[studio page]', err.message);
+    }
+    res.type('html').send(html);
   });
 });
 

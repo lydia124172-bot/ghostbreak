@@ -54,57 +54,5 @@
     </footer>
   </div>
   <script src="/js/studio.js"></script>
-  <script>
-    const { escapeHtml, studioConfig, studioInquire } = window.studio;
-    const id = new URLSearchParams(location.search).get('id');
-    let courseTitle = '';
-    studioConfig().then((data) => {
-      const course = (data.courses || []).find((c) => c.id === id);
-      if (!course) {
-        document.getElementById('main').innerHTML = '<h1>找不到這門課</h1><p class="lead"><a href="/courses">回課程列表</a></p>';
-        return;
-      }
-      courseTitle = course.title;
-      document.title = `${course.title} — 麋鹿網工作室`;
-      document.getElementById('head').innerHTML = `<p class="kicker">${escapeHtml(course.status || '開放諮詢')}</p><h1>${escapeHtml(course.title)}</h1><p class="lead">${escapeHtml(course.audience ? `適合對象：${course.audience}` : '')}</p><p>${escapeHtml(course.summary || '')}</p>`;
-      document.getElementById('facts').innerHTML = `<p><strong>堂數</strong>　${escapeHtml(course.sessionLabel || `${course.sessions || ''} 堂`)}</p><p><strong>單堂</strong>　${escapeHtml(course.duration || '')}</p><p><strong>形式</strong>　${escapeHtml(course.format || '')}</p><p><strong>費用</strong>　${escapeHtml(course.priceLabel || '')}${course.earlyBirdLabel ? `　${escapeHtml(course.earlyBirdLabel)}` : ''}</p>`;
-      document.getElementById('detail').textContent = course.detail || course.summary || '';
-      const li = (items) => (items || []).map((t) => `<li>${escapeHtml(t)}</li>`).join('');
-      document.getElementById('outcomes').innerHTML = li(course.outcomes);
-      document.getElementById('features').innerHTML = li(course.features);
-      document.getElementById('lessons').innerHTML = (course.lessons || []).map((row) => `<li><strong>第 ${escapeHtml(row.no)} 堂　${escapeHtml(row.title)}</strong><br><span class="meta">${escapeHtml(row.summary || '')}</span></li>`).join('');
-      const msg = document.getElementById('inqMessage');
-      if (!msg.value) msg.value = `我想諮詢課程：${course.title}`;
-    }).catch(() => {
-      document.getElementById('main').innerHTML = '<h1>暫時無法載入</h1><p class="lead"><a href="/courses">回課程列表</a></p>';
-    });
-
-    document.getElementById('inquireForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const err = document.getElementById('inqError');
-      const ok = document.getElementById('inqOk');
-      const btn = document.getElementById('inqBtn');
-      err.classList.add('hidden');
-      ok.classList.add('hidden');
-      btn.disabled = true;
-      try {
-        await studioInquire({
-          name: document.getElementById('inqName').value.trim(),
-          phone: document.getElementById('inqPhone').value.trim(),
-          email: document.getElementById('inqEmail').value.trim(),
-          service: `課程：${courseTitle || id || ''}`,
-          message: document.getElementById('inqMessage').value.trim(),
-        });
-        ok.textContent = '已送出，我們會盡快與你聯繫。';
-        ok.classList.remove('hidden');
-        e.target.reset();
-      } catch (ex) {
-        err.textContent = ex.message;
-        err.classList.remove('hidden');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  </script>
 </body>
 </html>
