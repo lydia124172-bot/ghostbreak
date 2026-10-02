@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="icon" href="/images/logo-circle-dark.png" type="image/png" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/css/site.css?v=cal2" />
+  <link rel="stylesheet" href="/css/site.css?v=cal3" />
 </head>
 <body class="buff-page min-h-screen">
   <header class="buff-header sticky top-0 z-50">
@@ -44,8 +44,8 @@
         <label class="block text-xs text-mist mb-2 uppercase tracking-wider">分店 *</label>
         <select id="locationId" class="form-input" required>
           <option value="">請選擇</option>
-          <option value="shenkeng">八斧深坑店（每週三公休）</option>
-          <option value="shilin">八斧士林店（每週一、二公休）</option>
+          <option value="shenkeng">八斧深坑店（每週三公休，只開放 1 個月內）</option>
+          <option value="shilin">八斧士林店（每週一、二公休，只開放 2 星期內）</option>
         </select>
         <p id="restHint" class="text-[11px] text-mist mt-2 hidden"></p>
         <p id="onlineFullHint" class="text-gold text-sm font-semibold mt-3 hidden"></p>
@@ -112,6 +112,6 @@
   <footer class="border-t border-line py-8 text-center text-xs text-mist">© 八斧牛排</footer>
   <div id="toast"></div>
   <script src="/js/site.js"></script>
-  <script src="/js/reserve-page.js?v=past1"></script>
+  <script src="/js/reserve-page.js?v=window30"></script>
 </body>
 </html>

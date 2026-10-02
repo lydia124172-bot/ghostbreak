@@ -104,6 +104,8 @@ app.get('/api/config', (_req, res) => {
       address: loc.address,
       hours: loc.hours,
       closedWeekdays: loc.closedWeekdays || [],
+      maxAdvanceDays: Number(loc.maxAdvanceDays) > 0 ? Math.floor(Number(loc.maxAdvanceDays)) : null,
+      maxAdvanceLabel: loc.maxAdvanceLabel || '',
       closedLabel: loc.hours?.find((h) => String(h).includes('公休')) || '',
       mapQuery: loc.mapQuery,
       capacity: loc.capacity,
@@ -512,7 +514,10 @@ app.post('/api/admin/reservations', requireAdmin, async (req, res) => {
     if (err) return res.status(400).json({ error: err });
 
     const { loc, date, time, guestsNum, name, phone, email, notes, status } = fields;
-    const capacityCheck = checkReservationCapacity(loc, date, time, guestsNum, { skipLeadTime: true });
+    const capacityCheck = checkReservationCapacity(loc, date, time, guestsNum, {
+      skipLeadTime: true,
+      skipBookingWindow: true,
+    });
     if (!capacityCheck.ok) {
       return res.status(400).json({ error: capacityCheck.message, code: capacityCheck.code });
     }
@@ -566,6 +571,7 @@ app.patch('/api/admin/reservations/:id', requireAdmin, async (req, res) => {
       const sameSlot = current.date === date && current.time === time;
       const capacityCheck = checkReservationCapacity(loc, date, time, guestsNum, {
         skipLeadTime: true,
+        skipBookingWindow: true,
         excludeId: current.id,
         allowPast: sameSlot,
       });

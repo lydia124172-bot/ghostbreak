@@ -2,7 +2,13 @@ const { loadReservations } = require('./mail');
 const site = require('../data/site');
 const { isHolidayDate, getHolidayReason } = require('./holidays');
 const { isLocationClosed, getClosedMessage } = require('./store-hours');
-const { isTooSoon, isPastSlot, getLeadTimeMessage } = require('./lead-time');
+const {
+  isTooSoon,
+  isPastSlot,
+  getLeadTimeMessage,
+  isBeyondBookingWindow,
+  getBookingWindowMessage,
+} = require('./lead-time');
 const { getTimeSlots } = require('./time-slots');
 
 const WEEKDAY_MINUTES = 120;
@@ -58,6 +64,26 @@ function getAvailability(loc, date, time, opts = {}) {
   const excludeId = opts.excludeId;
   const skipLeadTime = Boolean(opts.skipLeadTime);
 
+  if (!opts.skipBookingWindow && isBeyondBookingWindow(loc, date)) {
+    const capacity = getLocationCapacity(loc);
+    return {
+      locationId: loc.id,
+      locationName: loc.name,
+      date,
+      time,
+      capacity,
+      booked: 0,
+      remaining: 0,
+      available: false,
+      tooFar: true,
+      tooFarMessage: getBookingWindowMessage(loc),
+      diningMinutes: getDiningDurationMinutes(date),
+      diningLabel: getDiningLabel(date),
+      holidayReason: getHolidayReason(date),
+      isHoliday: isHolidayDateForDining(date),
+    };
+  }
+
   if (isLocationClosed(loc, date)) {
     const capacity = getLocationCapacity(loc);
     return {
@@ -98,6 +124,7 @@ function getAvailability(loc, date, time, opts = {}) {
     past,
     tooSoon,
     tooSoonMessage: tooSoon ? getLeadTimeMessage(loc) : null,
+    tooFar: false,
     diningMinutes: duration,
     diningLabel: getDiningLabel(date),
     holidayReason: getHolidayReason(date),
@@ -106,6 +133,14 @@ function getAvailability(loc, date, time, opts = {}) {
 }
 
 function checkReservationCapacity(loc, date, time, guests, opts = {}) {
+  if (!opts.skipBookingWindow && isBeyondBookingWindow(loc, date)) {
+    return {
+      ok: false,
+      message: getBookingWindowMessage(loc),
+      code: 'TOO_FAR',
+    };
+  }
+
   if (isLocationClosed(loc, date)) {
     return {
       ok: false,
@@ -187,6 +222,8 @@ function getDayAvailability(loc, date, opts = {}) {
       past: info.past,
       tooSoon: info.tooSoon,
       tooSoonMessage: info.tooSoonMessage,
+      tooFar: info.tooFar,
+      tooFarMessage: info.tooFarMessage,
       diningLabel: info.diningLabel,
     };
   });

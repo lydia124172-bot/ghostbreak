@@ -410,7 +410,12 @@ body.buff-page {
   cursor: pointer;
 }
 
-.cal-nav button:hover { border-color: #8a6914; color: #8a6914; }
+.cal-nav button:hover:not(:disabled) { border-color: #8a6914; color: #8a6914; }
+
+.cal-nav button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 
 .cal-weekdays,
 .cal-grid {
@@ -458,11 +463,14 @@ body.buff-page {
   pointer-events: none;
 }
 
-.cal-cell.past {
+.cal-cell.past,
+.cal-cell.beyond {
   background: #ece8e1;
   color: #9a958c;
   cursor: not-allowed;
 }
+
+.cal-cell.beyond small { color: #9a958c; }
 
 .cal-cell.closed {
   background: #c8c3bb;

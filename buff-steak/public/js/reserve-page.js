@@ -41,6 +41,17 @@ function todayYmd() {
   return ymd(new Date());
 }
 
+function addDaysYmd(dateStr, days) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return ymd(new Date(y, m - 1, d + days));
+}
+
+function bookingWindowEnd(locationId) {
+  const days = Number(getLocationConfig(locationId)?.maxAdvanceDays);
+  if (!Number.isFinite(days) || days <= 0) return '';
+  return addDaysYmd(todayYmd(), days);
+}
+
 function getLocationConfig(locationId) {
   return siteConfig?.locations?.find((l) => l.id === locationId);
 }
@@ -102,8 +113,15 @@ function updateRestHint() {
     return;
   }
   const note = loc.hours?.find((h) => String(h).includes('公休')) || '';
-  restHint.textContent = note ? `※ 固定公休：${note}` : '';
-  restHint.classList.toggle('hidden', !note);
+  const windowDays = Number(loc.maxAdvanceDays);
+  const windowLabel = loc.maxAdvanceLabel ? `（${loc.maxAdvanceLabel}）` : '';
+  const windowNote = windowDays > 0 ? `線上訂位只開放今天起 ${windowDays} 天內${windowLabel}` : '';
+  const parts = [
+    note ? `※ 固定公休：${note}` : '',
+    windowNote ? `※ ${windowNote}` : '',
+  ].filter(Boolean);
+  restHint.textContent = parts.join('。');
+  restHint.classList.toggle('hidden', !parts.length);
   applyOnlineFullState(loc.onlineFull, loc);
 }
 
@@ -116,8 +134,20 @@ function groupSlots(slots) {
   return groups;
 }
 
+function clampCalendarView() {
+  const end = bookingWindowEnd(locationSelect.value);
+  if (!end) return;
+  const monthStart = ymd(new Date(viewYear, viewMonth, 1));
+  if (monthStart > end) {
+    const now = new Date();
+    viewYear = now.getFullYear();
+    viewMonth = now.getMonth();
+  }
+}
+
 function renderCalendar() {
   if (!calendarGrid || !calMonthLabel) return;
+  clampCalendarView();
   calMonthLabel.textContent = `${viewYear}年${viewMonth + 1}月`;
   const locationId = locationSelect.value;
   const selected = dateInput.value;
@@ -125,7 +155,13 @@ function renderCalendar() {
   const startWeekday = first.getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const today = todayYmd();
+  const windowEnd = bookingWindowEnd(locationId);
   const cells = [];
+  const nextBtn = document.getElementById('calNext');
+  if (nextBtn) {
+    const nextMonthStart = ymd(new Date(viewYear, viewMonth + 1, 1));
+    nextBtn.disabled = Boolean(windowEnd) && nextMonthStart > windowEnd;
+  }
 
   const weekEl = document.getElementById('calWeekdays');
   if (weekEl) weekEl.innerHTML = WEEKDAYS.map((w) => `<span>${w}</span>`).join('');
@@ -138,12 +174,17 @@ function renderCalendar() {
     const dateStr = ymd(new Date(viewYear, viewMonth, day));
     const status = locationId ? dayStatus(locationId, dateStr) : { closed: false, kind: 'none' };
     const isPast = dateStr < today;
+    const isBeyond = Boolean(windowEnd) && dateStr > windowEnd;
     const classes = ['cal-cell'];
     let label = '';
     let disabled = false;
 
     if (isPast) {
       classes.push('past');
+      disabled = true;
+    } else if (isBeyond) {
+      classes.push('beyond');
+      label = '未開放';
       disabled = true;
     } else if (!locationId) {
       disabled = true;
@@ -234,6 +275,15 @@ async function loadDaySlots() {
       return;
     }
     applyOnlineFullState(false, loc);
+    if (data.tooFar || daySlots.some((s) => s.tooFar)) {
+      capacityHint.textContent = data.tooFarMessage || daySlots.find((s) => s.tooFarMessage)?.tooFarMessage || '此日期尚未開放線上訂位。';
+      capacityHint.classList.remove('hidden');
+      capacityHint.classList.add('capacity-hint-full');
+      submitBtn.disabled = true;
+      slotBoard.innerHTML = '<p class="slot-placeholder">此日期尚未開放線上訂位</p>';
+      timeInput.value = '';
+      return;
+    }
     if (data.closed) {
       capacityHint.textContent = data.closedMessage || '此日公休，請選擇其他日期。';
       capacityHint.classList.remove('hidden');
@@ -308,6 +358,15 @@ async function updateCapacityHint() {
       capacityHint.textContent = data.onlineFullMessage || '線上訂位已滿，請致電各店詢問現場保留位';
       capacityHint.classList.remove('hidden');
       capacityHint.classList.add('capacity-hint-full');
+      submitBtn.disabled = true;
+      return;
+    }
+
+    if (data.tooFar) {
+      capacityHint.textContent = data.tooFarMessage || '此日期尚未開放線上訂位。';
+      capacityHint.classList.remove('hidden');
+      capacityHint.classList.add('capacity-hint-full');
+      guestsInput.max = 1;
       submitBtn.disabled = true;
       return;
     }
@@ -420,6 +479,13 @@ document.getElementById('reserveForm').addEventListener('submit', async (e) => {
     showToast(loc?.onlineFullMessage || '線上訂位已滿，請致電各店詢問現場保留位', false);
     return;
   }
+  const windowEnd = bookingWindowEnd(locationId);
+  if (windowEnd && date > windowEnd) {
+    const loc = getLocationConfig(locationId);
+    const days = Number(loc?.maxAdvanceDays) || 0;
+    showToast(`${loc?.name || '此分店'}線上訂位只開放今天起 ${days} 天內。`, false);
+    return;
+  }
   const status = dayStatus(locationId, date);
   if (status.closed || dayClosed) {
     showToast(status.note === '公休' ? '此日為固定公休，無法訂位。' : '此日暫停線上訂位，請選擇其他日期。', false);
@@ -468,7 +534,7 @@ document.getElementById('reserveForm').addEventListener('submit', async (e) => {
     });
   } catch (err) {
     showToast(err.message, false);
-    if (err.message.includes('已滿') || err.message.includes('僅剩') || err.message.includes('公休') || err.message.includes('提前') || err.message.includes('暫停')) {
+    if (err.message.includes('已滿') || err.message.includes('僅剩') || err.message.includes('公休') || err.message.includes('提前') || err.message.includes('暫停') || err.message.includes('天內')) {
       loadDaySlots();
     }
     submitBtn.disabled = false;
