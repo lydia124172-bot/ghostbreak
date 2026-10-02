@@ -181,7 +181,7 @@ module.exports = {
       id: 'ugc-script',
       name: '真人口播腳本',
       kind: '智能體',
-      summary: 'AI 寫約 30 秒口播（免費智能體，未購方案可試用 1 次）。對嘴影片請到付費工具。',
+      summary: 'AI 寫約 30 秒口播（免費智能體，未購方案可試用 1 次）。對嘴影片請到麋鹿工具包。',
       href: '/script',
     },
     {

@@ -815,8 +815,12 @@ function renderStudioWorks(works) {
     const btn = href
       ? `<a class="btn btn-ghost" href="${studioEsc(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>${studioEsc(label)}</a>`
       : '';
+    const kit = work.kind === '智能體'
+      ? '<a class="btn" href="https://moose.bafuholdings.com/saas">到麋鹿工具包</a>'
+      : '';
     const feats = (work.features || []).map((item) => `<li>${studioEsc(item)}</li>`).join('');
-    return `<article class="item" data-kind="${studioEsc(work.kind || '')}"><div><p class="meta">${studioEsc(work.kind || '')}</p><h3>${studioEsc(work.name)}</h3><p>${studioEsc(work.summary)}</p>${feats ? `<ul class="feature-list">${feats}</ul>` : ''}</div>${btn}</article>`;
+    const actions = (kit || btn) ? `<div class="work-actions">${kit}${btn}</div>` : '';
+    return `<article class="item" data-kind="${studioEsc(work.kind || '')}"><div><p class="meta">${studioEsc(work.kind || '')}</p><h3>${studioEsc(work.name)}</h3><p>${studioEsc(work.summary)}</p>${feats ? `<ul class="feature-list">${feats}</ul>` : ''}</div>${actions}</article>`;
   }).join('');
 }
 
