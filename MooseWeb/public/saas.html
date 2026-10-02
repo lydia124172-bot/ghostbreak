@@ -47,23 +47,9 @@
     <section class="page-head">
       <p class="kicker">方案與點數</p>
       <h2>月費點數</h2>
-      <p class="lead">下列月費購買點數，供<strong>商品短片進階生圖、模特兒換裝、真人口播對嘴</strong>共用（成功才扣）。排版與 AI 識圖可免費試用。登入後可線上付款。劇本廣告與 AI短劇方案另列、建置中。</p>
+      <p class="lead">下列月費購買點數，供<strong>商品短片進階生圖、模特兒換裝、真人口播對嘴</strong>共用（成功才扣）。排版與 AI 識圖可免費試用。登入後可線上付款。</p>
     </section>
     <section class="plan-grid" id="planGrid"></section>
-
-    <section class="page-head">
-      <p class="kicker">另一項　建置中</p>
-      <h2>劇本廣告方案（籌備）</h2>
-      <p class="lead">劇本廣告尚未開放，現在不能申請或購買。</p>
-    </section>
-    <section class="plan-grid plan-grid-2" id="storyPlanGrid"></section>
-
-    <section class="page-head">
-      <p class="kicker">再一項　建置中</p>
-      <h2>AI短劇方案（籌備）</h2>
-      <p class="lead">AI短劇尚未開放，現在不能申請或購買。</p>
-    </section>
-    <section class="plan-grid plan-grid-2" id="dramaPlanGrid"></section>
     <p class="lead" id="billingNote"></p>
   </main>
 
@@ -144,20 +130,6 @@
         plan.id === 'free' ? '/clip' : '/account',
         plan.id === 'free' ? '直接使用' : '選擇方案'
       )).join('');
-      document.getElementById('storyPlanGrid').innerHTML = `
-        <article class="plan-card">
-          <p class="meta">建置中</p>
-          <h3>劇本廣告</h3>
-          <p class="plan-scope">寫稿與出片尚未開放，方案暫不販售。</p>
-          <a class="btn btn-cream" href="/story">查看說明</a>
-        </article>`;
-      document.getElementById('dramaPlanGrid').innerHTML = `
-        <article class="plan-card">
-          <p class="meta">建置中</p>
-          <h3>AI短劇</h3>
-          <p class="plan-scope">寫三鏡與出片尚未開放，方案暫不販售。</p>
-          <a class="btn btn-cream" href="/drama">查看說明</a>
-        </article>`;
       document.getElementById('billingNote').textContent = tree.billingNote || '';
     });
   </script>
