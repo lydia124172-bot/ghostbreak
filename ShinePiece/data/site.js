@@ -11,7 +11,7 @@ module.exports = {
   monthLabel: '',
   liveWhen: '',
   liveNote: '',
-  liveUrl: '',
+  liveUrl: 'https://s.shopee.tw/W77I6hhQ2',
   themeTitle: '',
   themeOrigin: '',
   themeVisual: '/images/hero-tea.jpg',
