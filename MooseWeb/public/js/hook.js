@@ -4,7 +4,6 @@ const HOOKS = [
   { key: 'story', label: '✍️ 故事／沉浸感型', hint: '帶入畫面感或情境' },
   { key: 'value', label: '⚡ 乾貨／實用價值型', hint: '直接給予好處或解決方案' },
   { key: 'quote', label: '🎯 金句／情感共鳴型', hint: '高質感、適合 IG 排版的短句' },
-  { key: 'comment', label: '💬 留言／互動型', hint: '' },
 ];
 
 const TAGS = [
@@ -26,11 +25,15 @@ function hashLine(list) {
 
 function formatPlatform(pack) {
   const hooks = HOOKS.map((row) => `* **${row.label}**\n  * 「${pack.hooks[row.key]}」`).join('\n');
+  const comments = (pack.comments || []).map((line, i) => `${i + 1}. 「${line}」`).join('\n');
   const tags = TAGS.map((row) => `* **${row.label}**: ${hashLine(pack.tags[row.key])}`).join('\n');
   return [
     `## ${pack.name}`,
-    '### 🪝 爆款鉤子標題（6種風格）',
+    '### 🪝 爆款鉤子標題（5種風格）',
     hooks,
+    '',
+    '### 💬 留言鉤子（3句）',
+    comments,
     '',
     '### 🏷️ 流量 Hashtags 組合',
     tags,
@@ -91,6 +94,13 @@ function paintPack(pack) {
     </section>
   `;
   }).join('');
+  const comments = (pack.comments || []).map((line, i) => `
+    <section class="live-ep">
+      <h3>💬 留言鉤子 ${i + 1}</h3>
+      <p>「${escapeHtml(line)}」</p>
+      <div class="admin-actions"><button class="btn btn-cream" type="button" data-copy-comment="${escapeHtml(pack.id)}:${i}">複製這句</button></div>
+    </section>
+  `).join('');
   const tags = TAGS.map((row) => `
     <p><strong>${escapeHtml(row.label)}</strong><br />${escapeHtml(hashLine(pack.tags[row.key]))}</p>
   `).join('');
@@ -100,6 +110,7 @@ function paintPack(pack) {
       <div class="admin-actions"><button class="btn btn-copper" type="button" data-copy-platform="${escapeHtml(pack.id)}">複製${escapeHtml(pack.name)}</button></div>
     </section>
     ${hooks}
+    ${comments}
     <section class="live-ep">
       <h3>🏷️ ${escapeHtml(pack.name)} Hashtags</h3>
       ${tags}
@@ -206,7 +217,8 @@ document.getElementById('outBody').addEventListener('click', async (e) => {
   const note = document.getElementById('copyMsg');
   const platformBtn = e.target.closest('[data-copy-platform]');
   const hookBtn = e.target.closest('[data-copy-hook]');
-  if ((!platformBtn && !hookBtn) || !last) return;
+  const commentBtn = e.target.closest('[data-copy-comment]');
+  if ((!platformBtn && !hookBtn && !commentBtn) || !last) return;
   let text = '';
   let done = '';
   if (platformBtn) {
@@ -214,11 +226,17 @@ document.getElementById('outBody').addEventListener('click', async (e) => {
     if (!pack) return;
     text = formatPlatform(pack);
     done = `已複製${pack.name}。`;
-  } else {
+  } else if (hookBtn) {
     const [id, key] = String(hookBtn.dataset.copyHook || '').split(':');
     const pack = findPack(id);
     if (!pack) return;
     text = pack.hooks[key] || '';
+    done = '已複製這句。';
+  } else {
+    const [id, index] = String(commentBtn.dataset.copyComment || '').split(':');
+    const pack = findPack(id);
+    if (!pack) return;
+    text = (pack.comments || [])[Number(index)] || '';
     done = '已複製這句。';
   }
   try {
