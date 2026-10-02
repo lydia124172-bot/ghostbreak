@@ -4,7 +4,7 @@ const HOOKS = [
   { key: 'story', label: '✍️ 故事／沉浸感型', hint: '帶入畫面感或情境' },
   { key: 'value', label: '⚡ 乾貨／實用價值型', hint: '直接給予好處或解決方案' },
   { key: 'quote', label: '🎯 金句／情感共鳴型', hint: '高質感、適合 IG 排版的短句' },
-  { key: 'comment', label: '💬 留言／互動型', hint: '用問句或二選一，引客人在下面留言' },
+  { key: 'comment', label: '💬 留言／互動型', hint: '' },
 ];
 
 const TAGS = [
@@ -25,7 +25,7 @@ function hashLine(list) {
 }
 
 function formatPlatform(pack) {
-  const hooks = HOOKS.map((row) => `* **${row.label}**（${row.hint}）:\n  * 「${pack.hooks[row.key]}」`).join('\n');
+  const hooks = HOOKS.map((row) => `* **${row.label}**\n  * 「${pack.hooks[row.key]}」`).join('\n');
   const tags = TAGS.map((row) => `* **${row.label}**: ${hashLine(pack.tags[row.key])}`).join('\n');
   return [
     `## ${pack.name}`,
@@ -80,14 +80,17 @@ function paintPhoto() {
 }
 
 function paintPack(pack) {
-  const hooks = HOOKS.map((row) => `
+  const hooks = HOOKS.map((row) => {
+    const line = String((pack.hooks && pack.hooks[row.key]) || '').trim();
+    if (!line) return '';
+    return `
     <section class="live-ep">
       <h3>${escapeHtml(row.label)}</h3>
-      <p>${escapeHtml(row.hint)}</p>
-      <p>「${escapeHtml(pack.hooks[row.key])}」</p>
+      <p>「${escapeHtml(line)}」</p>
       <div class="admin-actions"><button class="btn btn-cream" type="button" data-copy-hook="${escapeHtml(pack.id)}:${row.key}">複製這句</button></div>
     </section>
-  `).join('');
+  `;
+  }).join('');
   const tags = TAGS.map((row) => `
     <p><strong>${escapeHtml(row.label)}</strong><br />${escapeHtml(hashLine(pack.tags[row.key]))}</p>
   `).join('');

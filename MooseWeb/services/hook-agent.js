@@ -37,7 +37,8 @@ function systemFor(ids) {
     '使用者會上傳一張圖片。先看懂主體、色彩、氛圍、場景，以及畫面可能想傳達的情感或故事，再寫鉤子標題與 hashtag。',
     '只根據圖片裡看得到的內容，以及使用者補充的說明。不要捏造圖中沒有的品牌、價格、人名、地名、優惠或療效。',
     '標題用台灣口語，短、好讀，能當貼文第一句。不要用對比句式。標題裡不要放 emoji、井號或引號。',
-    '只寫使用者勾選的平台。每個平台六種風格各一則，每則 12 到 28 個字：pain 痛點或集體共鳴、curiosity 顛覆認知或讓人想知道原因、story 帶畫面的情境、value 直接給一個好處或做法、quote 適合排版的短金句、comment 引客人留言。comment 要用問句、二選一，或請人在留言區補一句，讓人想回覆。不要叫人按讚、分享或追蹤。',
+    '只寫使用者勾選的平台。每個平台六種風格各一則，每則 12 到 28 個字：pain 痛點或集體共鳴、curiosity 顛覆認知或讓人想知道原因、story 帶畫面的情境、value 直接給一個好處或做法、quote 適合排版的短金句。',
+    'comment 是店家貼文的第一句，直接對看照片的人說話。從畫面挑一個具體東西來問，句尾加問號，並請對方把答案寫在留言。例如畫面是兩杯飲料就寫「你會先點熱的還是冰的？留言跟我說」。必須換成這張圖裡看得到的東西。不要寫教學、不要解釋這句要達成什麼。',
     '勾了兩個以上時，標題與標籤都要依該平台改寫，不可把同一句複製到每個平台。',
     'hashtag 每個平台三層各剛好 3 個，不要加 #、不要空白。broad 是大眾會搜的熱門詞，niche 鎖定這張圖的受眾或主題，vibe 補風格與情境。',
     '平台語氣：IG 生活感；臉書好懂；Threads 口語；小紅書像筆記標題；TikTok 是三秒開場白，broad 第一個可用 fyp；Shorts 是直式短片口播第一句。',
@@ -110,7 +111,10 @@ function parseOne(row) {
     niche: threeTags(tagsIn.niche),
     vibe: threeTags(tagsIn.vibe),
   };
-  const hookOk = Object.values(hooks).every((line) => line.length >= 8);
+  const commentOk = hooks.comment.length >= 8
+    && /[？?]/.test(hooks.comment)
+    && !/用問句|二選一|引客人|觀看者|觀客|在下面留言|讓人想留言/.test(hooks.comment);
+  const hookOk = ['pain', 'curiosity', 'story', 'value', 'quote'].every((key) => hooks[key].length >= 8) && commentOk;
   const tagOk = Object.values(tags).every((list) => list.length === 3);
   if (!hookOk || !tagOk) throw new Error('沒有產出完整文案');
   return { hooks, tags };
@@ -218,7 +222,7 @@ async function writeHook({ note, image, platforms }) {
     `只寫這些平台：${ids.map((id) => `${id}=${PLATFORMS[id]}`).join('、')}`,
     ...ids.map((id) => PLATFORM_VOICE[id]),
     `補充說明：${extra || '（沒寫，只依圖片）'}`,
-    'visual 只寫一次。packs 只放上面這些平台，每個都要有六種標題與三層各 3 個標籤。',
+    'visual 只寫一次。packs 只放上面這些平台，每個都要有六種標題與三層各 3 個標籤。comment 必須是問這張圖的一句話，不能是在說明要怎麼寫。',
   ].join('\n');
   const deadline = Date.now() + 70000;
   const left = () => deadline - Date.now();
