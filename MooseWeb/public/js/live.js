@@ -1,13 +1,13 @@
 const DEMO_TRADE = {
   industry: '保健食品',
   product: '',
-  notes: '蝦皮賣場直播間。不要講療效，價格以商品卡為準。',
+  notes: '先搞懂是什麼再決定要不要吃。不要講療效。',
 };
 
 const DEMO_PRODUCT = {
   industry: '保健食品',
   product: '蜂膠 12 條獨立包裝',
-  notes: '先對包裝與規格。賣場價格以商品卡為準，不要講療效。',
+  notes: '先看成分與使用方式，不要只看濃度數字。',
 };
 
 function escapeHtml(value) {
@@ -33,11 +33,11 @@ function formatAll(data) {
     '收尾CTA',
     ep.cta || '',
   ].join('\n'));
-  return [`${data.headline || '蝦皮賣場直播稿'}`, data.angle || '', '', ...rows].filter((line, i, arr) => line || arr[i - 1]).join('\n');
+  return [`${data.headline || '直播稿'}`, data.angle || '', '', ...rows].filter((line, i, arr) => line || arr[i - 1]).join('\n');
 }
 
 function paintResult(data) {
-  document.getElementById('outHeadline').textContent = data.headline || '蝦皮賣場直播間十二段';
+  document.getElementById('outHeadline').textContent = data.headline || '十二則直播稿';
   document.getElementById('outAngle').textContent = data.angle || '';
   document.getElementById('episodeList').innerHTML = (data.episodes || []).map((ep) => `
     <section class="live-ep">
@@ -79,7 +79,7 @@ async function makeLive() {
     msg.textContent = '選其他時，請填商品名稱或要講的重點。';
     return;
   }
-  msg.textContent = '產出十二段中，約半分鐘，請不要重按。';
+  msg.textContent = '產出十二則中，約半分鐘，請不要重按。';
   btn.disabled = true;
   try {
     const res = await fetch('/api/live', {
@@ -123,12 +123,12 @@ document.getElementById('demoProductBtn').addEventListener('click', () => {
 document.getElementById('copyBtn').addEventListener('click', async () => {
   const note = document.getElementById('copyMsg');
   if (!window.lastLive) {
-    note.textContent = '請先產出蝦皮直播稿。';
+    note.textContent = '請先產出直播稿。';
     return;
   }
   try {
     await navigator.clipboard.writeText(formatAll(window.lastLive));
-    note.textContent = '已複製十二段蝦皮直播稿。';
+    note.textContent = '已複製十二則直播稿。';
   } catch {
     note.textContent = '複製失敗，請自行選取文字。';
   }
