@@ -195,8 +195,12 @@
             <textarea id="nextNote" class="form-input" rows="2" maxlength="200"></textarea>
           </div>
           <div>
-            <label class="field" for="liveWhen">客廳直播頻率</label>
+            <label class="field" for="liveWhen">蝦皮直播時間</label>
             <input id="liveWhen" class="form-input" maxlength="80" />
+          </div>
+          <div>
+            <label class="field" for="liveUrl">蝦皮賣場直播連結</label>
+            <input id="liveUrl" class="form-input" maxlength="300" placeholder="https://shopee.tw/ 或直播間分享連結" />
           </div>
           <div>
             <label class="field" for="liveNote">直播說明</label>
@@ -275,7 +279,7 @@
             <textarea id="col3Body" class="form-input" rows="2" maxlength="200"></textarea>
           </div>
           <div>
-            <label class="field" for="liveTitle">客廳直播標題</label>
+            <label class="field" for="liveTitle">蝦皮直播標題</label>
             <input id="liveTitle" class="form-input" maxlength="40" />
           </div>
           <div>
@@ -433,6 +437,7 @@
       $('monthLabel').value = content.monthLabel || '';
       $('coverVol').value = content.coverVol || '';
       $('liveWhen').value = content.liveWhen || '';
+      $('liveUrl').value = content.liveUrl || '';
       $('liveNote').value = content.liveNote || '';
       $('themeTitle').value = content.themeTitle || '';
       $('themeOrigin').value = content.themeOrigin || '';
@@ -985,6 +990,7 @@
           monthLabel: $('monthLabel').value,
           coverVol: $('coverVol').value,
           liveWhen: $('liveWhen').value,
+          liveUrl: $('liveUrl').value,
           liveNote: $('liveNote').value,
           themeTitle: $('themeTitle').value,
           themeOrigin: $('themeOrigin').value,

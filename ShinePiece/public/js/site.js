@@ -213,7 +213,7 @@ function renderChrome() {
             ${navLink('/issue', 'issue', '本月開箱')}
             ${navLink('/journal', 'journal', '專欄')}
             ${navLink('/wish', 'wish', '許願池')}
-            <a href="/#live">客廳直播</a>
+            <a href="/#live">蝦皮直播</a>
             ${navLink('/order', 'order', '結帳')}
           </nav>
           <div class="header-side">
@@ -261,6 +261,16 @@ if (menuBtn && nav) {
 
 fetch('/api/config').then((r) => r.json()).then((data) => {
   applyLineLinks(data.lineUrl);
+  const room = document.getElementById('liveRoom');
+  if (room) {
+    const url = String(data.liveUrl || '').trim();
+    room.classList.toggle('hidden', !url);
+    if (url) {
+      room.href = url;
+      room.target = '_blank';
+      room.rel = 'noopener noreferrer';
+    }
+  }
   [
     'heroTitle', 'heroLead', 'coverLabel', 'coverEnglish', 'pullQuote',
     'countryHead', 'countryLead', 'shopLead', 'col1Title', 'col1Body',

@@ -39,6 +39,18 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function normalizeLiveUrl(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return '';
+    return url.toString().slice(0, 300);
+  } catch {
+    return '';
+  }
+}
+
 function normalizeLineUrl(raw) {
   const value = String(raw || '').trim();
   if (!value) return '';
@@ -91,8 +103,9 @@ function emptyContent() {
     categories: clone(defaults.categories || []),
     products: clone(defaults.products || []),
     monthLabel: defaults.monthLabel || '',
-    liveWhen: defaults.liveWhen || '每週兩場，每場一次',
+    liveWhen: defaults.liveWhen || '開播時間以蝦皮賣場為準',
     liveNote: defaults.liveNote || '',
+    liveUrl: defaults.liveUrl || '',
     themeTitle: defaults.themeTitle || '',
     themeOrigin: defaults.themeOrigin || '',
     themeVisual: defaults.themeVisual || '/images/hero-tea.jpg',
@@ -200,6 +213,7 @@ function mergeContent(saved) {
     monthLabel: String(saved.monthLabel !== undefined ? saved.monthLabel : base.monthLabel).trim(),
     liveWhen: String(saved.liveWhen !== undefined ? saved.liveWhen : base.liveWhen).trim() || base.liveWhen,
     liveNote: String(saved.liveNote !== undefined ? saved.liveNote : base.liveNote).trim(),
+    liveUrl: normalizeLiveUrl(saved.liveUrl !== undefined ? saved.liveUrl : base.liveUrl),
     themeTitle: String(saved.themeTitle !== undefined ? saved.themeTitle : base.themeTitle).trim(),
     themeOrigin: String(saved.themeOrigin !== undefined ? saved.themeOrigin : base.themeOrigin).trim(),
     themeVisual: safeThemeVisual(saved.themeVisual, base.themeVisual),
@@ -214,6 +228,8 @@ function mergeContent(saved) {
   COPY_KEYS.forEach((key) => {
     merged[key] = pickCopy(saved, key);
   });
+  if (merged.liveTitle === '客廳裡的兩場閒聊') merged.liveTitle = '蝦皮賣場直播間';
+  if (merged.liveWhen === '每週兩場，每場一次') merged.liveWhen = '開播時間以蝦皮賣場為準';
   return merged;
 }
 
@@ -251,6 +267,7 @@ function publicConfig() {
     monthLabel: data.monthLabel || currentMonthLabel(),
     liveWhen: data.liveWhen,
     liveNote: data.liveNote,
+    liveUrl: data.liveUrl || '',
     themeTitle: data.themeTitle,
     themeOrigin: data.themeOrigin,
     themeVisual: data.themeVisual || '/images/hero-tea.jpg',

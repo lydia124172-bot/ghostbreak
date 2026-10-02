@@ -132,6 +132,7 @@ app.patch('/api/admin/settings', requireAdmin, (req, res) => {
     heroLead: String(req.body.heroLead || '').trim() || current.heroLead,
     monthLabel: String(req.body.monthLabel || '').trim(),
     liveWhen: String(req.body.liveWhen || '').trim() || current.liveWhen,
+    liveUrl: String(req.body.liveUrl || '').trim(),
     liveNote: String(req.body.liveNote || '').trim(),
     themeTitle: String(req.body.themeTitle || '').trim(),
     themeOrigin: String(req.body.themeOrigin || '').trim(),

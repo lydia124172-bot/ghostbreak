@@ -50,15 +50,15 @@
     </article>
     <a class="ed-tile is-photo is-mid" href="#live">
       <img src="/images/ed-room.jpg" alt="">
-      <span>客廳直播</span>
+      <span>蝦皮直播</span>
     </a>
 
     <article class="ed-tile is-dark" id="live">
-      <p class="news-title">LIVING ROOM</p>
-      <h2 id="liveTitle">客廳裡的兩場閒聊</h2>
-      <p class="live-times" id="liveWhen">每週兩場，每場一次</p>
+      <p class="news-title">SHOPEE LIVE</p>
+      <h2 id="liveTitle">蝦皮賣場直播間</h2>
+      <p class="live-times" id="liveWhen">開播時間以蝦皮賣場為準</p>
       <p class="lead hidden" id="liveNote"></p>
-      <a class="more hidden" data-line href="#">LINE 詢問本月場次</a>
+      <a class="more hidden" id="liveRoom" href="#">進蝦皮賣場直播間</a>
     </article>
     <article class="ed-tile is-cream is-notes hidden" id="notesTile">
       <p class="news-title">NOTES</p>
@@ -103,7 +103,7 @@
   </section>
 
   <div data-shell="footer"></div>
-  <script src="/js/site.js?v=19"></script>
+  <script src="/js/site.js?v=20"></script>
   <script>
     const notes = { 日本: 'Japan', 韓國: 'Korea', 中國: 'China', 泰國: 'Thailand', 台灣: 'Taiwan' };
     fetch('/api/config').then((r) => r.json()).then((data) => {
