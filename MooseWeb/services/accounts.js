@@ -138,6 +138,13 @@ function verifyPass(password, stored) {
   }
 }
 
+function cleanName(raw) {
+  const name = String(raw || '').replace(/\s+/g, ' ').trim().slice(0, 20);
+  if (!name) throw new Error('請填名稱');
+  if (/[<>]/.test(name)) throw new Error('名稱不能有這些符號');
+  return name;
+}
+
 function publicAccount(row) {
   if (!row) return { ok: false };
   const expired = Boolean(row.planExpires && Date.parse(row.planExpires) < Date.now());
@@ -149,6 +156,7 @@ function publicAccount(row) {
   return {
     ok: true,
     email: row.email,
+    name: String(row.name || '').trim(),
     plan: plan.id,
     planName: plan.name,
     planLabel: plan.priceLabel,
@@ -199,8 +207,9 @@ function getByEmail(email) {
   return loadStore().accounts.find((row) => row.email === key) || null;
 }
 
-function register(email, password) {
+function register(email, password, name) {
   const key = normalizeEmail(email);
+  const display = cleanName(name);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(key)) throw new Error('請填正確的 Email');
   if (String(password || '').length < 8) throw new Error('密碼至少 8 個字');
   const store = loadStore();
@@ -208,6 +217,7 @@ function register(email, password) {
   const row = {
     id: crypto.randomBytes(8).toString('hex'),
     email: key,
+    name: display,
     pass: hashPass(password),
     plan: 'free',
     credits: 0,
@@ -226,6 +236,16 @@ function register(email, password) {
   store.accounts.push(row);
   saveStore(store);
   return { account: publicAccount(row), sid: createSession(row.id) };
+}
+
+function setName(accountId, name) {
+  const display = cleanName(name);
+  const store = loadStore();
+  const row = store.accounts.find((item) => item.id === accountId);
+  if (!row) throw new Error('請先登入');
+  row.name = display;
+  saveStore(store);
+  return publicAccount(row);
 }
 
 function login(email, password) {
@@ -370,6 +390,7 @@ module.exports = {
   getBySid,
   getByEmail,
   register,
+  setName,
   login,
   requestReset,
   resetPassword,

@@ -78,11 +78,25 @@ fetch('/api/config').then((r) => r.json()).then((data) => {
   applyLineLinks(data.lineUrl);
 }).catch(() => {});
 
+function navPlan(me) {
+  if (!me.plan || me.plan === 'free') return '還沒買方案';
+  const name = String(me.planName || '');
+  const hit = name.match(/入門|進階|專業/);
+  if (hit) return hit[0];
+  return name.replace(/（[^）]*）/g, '').replace(/^付費工具[・．\s]*/, '').trim() || '方案';
+}
+
 function applyAccountNav(me) {
   const slot = document.getElementById('accountNav');
   if (!slot) return;
   const logged = Boolean(me && me.ok && me.email);
-  slot.textContent = logged ? (me.planName && me.planName !== '免費' ? me.planName : '我的方案') : '方案';
+  if (!logged) {
+    slot.textContent = '登入';
+    return;
+  }
+  const who = String(me.name || '').trim() || String(me.email).split('@')[0];
+  const points = Number(me.credits || 0);
+  slot.textContent = `${who}（${navPlan(me)}・${points} 點）`;
 }
 
 fetch('/api/account/me').then((r) => r.json()).then(applyAccountNav).catch(() => applyAccountNav(null));

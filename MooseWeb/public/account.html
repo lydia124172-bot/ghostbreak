@@ -67,6 +67,8 @@
       </form>
       <form id="registerForm" class="panel skill-form">
         <h2>註冊</h2>
+        <label class="field" for="regName">名稱</label>
+        <input id="regName" class="form-input" maxlength="20" autocomplete="name" required placeholder="顯示在選單上的名字" />
         <label class="field" for="regEmail">Email</label>
         <input id="regEmail" class="form-input" type="email" autocomplete="username" required />
         <label class="field" for="regPass">密碼（至少 8 個字）</label>
@@ -78,6 +80,12 @@
 
     <section id="memberBox" class="hidden">
       <article class="panel account-now">
+        <form id="nameForm" class="skill-form">
+          <label class="field" for="meName">名稱</label>
+          <input id="meName" class="form-input" maxlength="20" required />
+          <button class="btn btn-cream" type="submit">儲存名稱</button>
+          <p id="nameMsg" class="combo-fit"></p>
+        </form>
         <p class="meta" id="meEmail"></p>
         <h2 id="mePlan"></h2>
         <p class="lead" id="meDetail"></p>
@@ -117,7 +125,7 @@
       </nav>
     </div>
   </footer>
-  <script src="/js/site.js?v=studio5"></script>
+  <script src="/js/site.js?v=studio6"></script>
   <script>
     const $ = (id) => document.getElementById(id);
     let tree = { plans: [], billingNote: '' };
@@ -153,6 +161,7 @@
       $('guestBox').classList.add('hidden');
       $('memberBox').classList.remove('hidden');
       $('meEmail').textContent = me.email;
+      $('meName').value = me.name || '';
       const titles = [`商品短片：${me.planName}`];
       if (me.storyPlanName) titles.push(`劇本廣告：${me.storyPlanName}`);
       if (me.dramaPlanName) titles.push(`AI短劇：${me.dramaPlanName}`);
@@ -262,10 +271,22 @@
       e.preventDefault();
       $('regMsg').textContent = '';
       try {
-        await api('/api/account/register', { email: $('regEmail').value, password: $('regPass').value });
+        await api('/api/account/register', { name: $('regName').value, email: $('regEmail').value, password: $('regPass').value });
         await refresh();
       } catch (err) {
         $('regMsg').textContent = err.message;
+      }
+    });
+
+    $('nameForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('nameMsg').textContent = '';
+      try {
+        await api('/api/account/name', { name: $('meName').value });
+        $('nameMsg').textContent = '已儲存。選單會顯示這個名稱。';
+        await refresh();
+      } catch (err) {
+        $('nameMsg').textContent = err.message;
       }
     });
 

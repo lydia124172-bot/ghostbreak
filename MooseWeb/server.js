@@ -401,10 +401,20 @@ app.post('/api/account/subscription/cancel', async (req, res) => {
 
 app.post('/api/account/register', (req, res) => {
   try {
-    const result = accounts.register(req.body?.email, req.body?.password);
+    const result = accounts.register(req.body?.email, req.body?.password, req.body?.name);
     sendAccount(req, res, result.account, result.sid);
   } catch (err) {
     res.status(400).json({ error: err.message || '註冊失敗' });
+  }
+});
+
+app.post('/api/account/name', (req, res) => {
+  const row = currentAccount(req);
+  if (!row) return res.status(401).json({ error: '請先登入' });
+  try {
+    res.json(accounts.setName(row.id, req.body?.name));
+  } catch (err) {
+    res.status(400).json({ error: err.message || '無法儲存名稱' });
   }
 });
 
