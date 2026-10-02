@@ -198,7 +198,7 @@ module.exports = {
       status: '籌備中',
       href: '/hire?service=assistant',
       paid: true,
-      summary: '官網或 LINE 自動詢問需求、留下名單，並通知你跟進。（尚未上線，可先委託開發）',
+      summary: '放在官網小窗或 LINE 官方帳號。客人進來會依序被問：想辦什麼、大概預算或時段、姓名和聯絡方式。問完名單進後台，並通知你去跟進。目前不能自己開通，要另外委託做。',
       modules: [],
     },
 
