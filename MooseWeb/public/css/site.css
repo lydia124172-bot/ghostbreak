@@ -1166,6 +1166,31 @@ a.item {
 .script-legal li { margin: 10px 0; }
 .script-legal strong { color: var(--cream); }
 
+.studio-bridge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 0;
+  margin-top: 8px;
+}
+.studio-bridge .studio-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: inherit;
+  text-decoration: none;
+}
+.studio-bridge img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.studio-bridge h3 { margin: 0 0 4px; font-size: 22px; }
+.studio-bridge p { margin: 0; color: var(--mist); }
+.studio-bridge .btn { flex-shrink: 0; }
+
 .path-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1183,6 +1208,7 @@ a.item {
 
 @media (max-width: 900px) {
   .plan-grid, .plan-grid-2, .account-auth, .path-grid, .story-demo, .drama-refs { grid-template-columns: 1fr; }
+  .studio-bridge { align-items: flex-start; flex-direction: column; }
 }
 
 @media (max-width: 800px) {

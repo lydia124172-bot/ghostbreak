@@ -1,4 +1,30 @@
+const STUDIO_LINE = 'https://line.me/R/ti/p/@155tgdul';
+
 document.addEventListener('DOMContentLoaded', () => {
+  const nav = document.querySelector('header.top nav');
+  if (nav && !nav.querySelector('[data-line]')) {
+    const link = document.createElement('a');
+    link.href = STUDIO_LINE;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.dataset.line = '';
+    link.className = 'nav-line';
+    link.textContent = 'LINE';
+    nav.appendChild(link);
+  }
+  document.querySelectorAll('footer .row').forEach((row) => {
+    if (row.querySelector('[data-line]')) return;
+    const slot = row.querySelector('span:last-child');
+    if (!slot) return;
+    const link = document.createElement('a');
+    link.href = STUDIO_LINE;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.dataset.line = '';
+    link.textContent = 'LINE';
+    slot.append(document.createTextNode(' · '), link);
+  });
+
   const filters = document.getElementById('filters');
   const works = document.getElementById('works');
   if (filters && works) {
