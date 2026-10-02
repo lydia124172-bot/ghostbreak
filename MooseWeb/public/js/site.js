@@ -28,9 +28,7 @@ function applyFooterExtras() {
   if (!box || box.dataset.extra) return;
   box.dataset.extra = '1';
   [
-    { href: 'https://bafuholdings.com/works', label: '作品' },
-    { href: 'https://bafuholdings.com/courses', label: '課程' },
-    { href: 'https://bafuholdings.com/hire', label: '做網站' },
+    { href: 'https://bafuholdings.com/', label: '前往工作室' },
   ].forEach((item) => {
     if (box.querySelector(`a[href="${item.href}"]`)) return;
     const a = document.createElement('a');
