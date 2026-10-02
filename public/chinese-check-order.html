@@ -10,8 +10,11 @@
   <style>
     body { margin:0; font-family:Inter,system-ui,sans-serif; color:#1b1916; background:#fbf8f3; line-height:1.65; }
     .wrap { max-width:720px; margin:0 auto; padding:24px 22px 60px; }
-    .logo { font-weight:700; text-decoration:none; color:inherit; }
+    .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; }
+    .brand img { width:40px; height:40px; border-radius:50%; object-fit:cover; }
+    .logo { font-weight:700; line-height:1.2; }
     .logo span { color:#b4552d; }
+    .logo small { display:block; margin-top:2px; font-weight:500; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#6a645b; }
     .card { background:#fff; border:1px solid #e8e0d4; border-radius:20px; padding:26px; margin-top:24px; }
     h1 { font-size:30px; margin:0 0 6px; }
     .muted { color:#6a645b; }
@@ -27,7 +30,7 @@
 </head>
 <body>
   <div class="wrap">
-    <a class="logo" href="/chinese-check">Native <span>Chinese</span> Check</a>
+    <a class="brand" href="/chinese-check"><img src="/images/logo.png" alt="MooseWeb" width="40" height="40" /><span class="logo">Native <span>Chinese</span> Check<small>A MooseWeb SaaS</small></span></a>
     <div class="card" id="box">
       <p class="muted" id="loading">Loading your order…</p>
     </div>

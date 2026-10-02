@@ -49,8 +49,11 @@
     .wrap { max-width:1060px; margin:0 auto; padding:0 22px; }
     .zh { font-family:'Noto Serif TC',serif; }
     header.top { display:flex; justify-content:space-between; align-items:center; padding:16px 0; }
-    .logo { font-weight:700; text-decoration:none; letter-spacing:.01em; }
+    .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; }
+    .brand img { width:44px; height:44px; border-radius:50%; object-fit:cover; }
+    .logo { font-weight:700; letter-spacing:.01em; line-height:1.2; }
     .logo span { color:var(--accent); }
+    .logo small { display:block; margin-top:2px; font-weight:500; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
     .top nav a { margin-left:20px; text-decoration:none; color:var(--muted); font-size:15px; }
     .btn { display:inline-block; border:0; cursor:pointer; padding:13px 24px; border-radius:999px; font:600 15px Inter,sans-serif; text-decoration:none; }
     .btn-main { background:var(--accent); color:#fff; }
@@ -120,7 +123,7 @@
 <body>
   <div class="wrap">
     <header class="top">
-      <a class="logo" href="/chinese-check">Native <span>Chinese</span> Check</a>
+      <a class="brand" href="/chinese-check"><img src="/images/logo.png" alt="MooseWeb" width="44" height="44" /><span class="logo">Native <span>Chinese</span> Check<small>A MooseWeb SaaS</small></span></a>
       <nav>
         <a href="#how">How it works</a>
         <a href="#pricing">Pricing</a>
@@ -344,7 +347,7 @@
 
   <footer>
     <div class="wrap">
-      <span>© Native Chinese Check · a <a href="/">BAFU HOLDINGS</a> service</span>
+      <span>© Native Chinese Check · a <a href="/">MooseWeb</a> SaaS</span>
       <span><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="mailto:support@bafuholdings.com">Contact</a></span>
     </div>
   </footer>
