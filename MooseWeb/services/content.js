@@ -32,7 +32,7 @@ function emptyContent() {
     email: defaults.email,
     lineUrl: defaults.lineUrl || '',
     heroTitle: '寫稿、出圖、短片、\n換裝與對嘴。',
-    heroLead: '口播腳本、直播稿、個人 IP、熱問、提示詞、爆文鉤子，未購方案各可試用 1 次。商品短片、換裝、真人口播對嘴，以及還在做的劇本廣告與 AI 短劇，都從麋鹿工具包進去。',
+    heroLead: '下面的寫稿，沒買方案時每個只能用 1 次；買了方案可以一直寫，不扣點。生圖、短片、換裝、對嘴才扣你帳號裡的點，從麋鹿工具包進去。',
     workKinds: clone(defaults.workKinds || []),
     products: clone(defaults.products || []),
     works: clone(defaults.works || []),
