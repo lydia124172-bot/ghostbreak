@@ -1,29 +1,17 @@
-const STUDIO_LINE = 'https://line.me/R/ti/p/@155tgdul';
+const LINE_URL = 'https://line.me/R/ti/p/@155tgdul';
+const LINE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.814 4.269 8.846 10.036 9.608.391.084.923.258 1.057.59.121.3.079.766.038 1.08l-.164 1.02c-.05.303-.242 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C22.922 14.266 24 12.39 24 10.304z"/></svg>';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const nav = document.querySelector('header.top nav');
-  if (nav && !nav.querySelector('[data-line]')) {
-    const link = document.createElement('a');
-    link.href = STUDIO_LINE;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    link.dataset.line = '';
-    link.className = 'nav-line';
-    link.textContent = 'LINE';
-    nav.appendChild(link);
+  if (!document.querySelector('.line-float')) {
+    const line = document.createElement('a');
+    line.className = 'line-float';
+    line.href = LINE_URL;
+    line.target = '_blank';
+    line.rel = 'noopener';
+    line.setAttribute('aria-label', '加入 LINE 官方帳號');
+    line.innerHTML = `${LINE_ICON}<span>加入 LINE</span>`;
+    document.body.appendChild(line);
   }
-  document.querySelectorAll('footer .row').forEach((row) => {
-    if (row.querySelector('[data-line]')) return;
-    const slot = row.querySelector('span:last-child');
-    if (!slot) return;
-    const link = document.createElement('a');
-    link.href = STUDIO_LINE;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    link.dataset.line = '';
-    link.textContent = 'LINE';
-    slot.append(document.createTextNode(' · '), link);
-  });
 
   const filters = document.getElementById('filters');
   const works = document.getElementById('works');

@@ -55,6 +55,9 @@ footer a { color:var(--muted); }
 .btn-line { display:inline-block; margin-top:0; background:#06c755; color:#fff; }
 .btn-line:hover { color:#fff; }
 a.line-link { color:#057a34; font-weight:600; }
+.line-float { position:fixed; right:20px; bottom:20px; z-index:40; display:inline-flex; align-items:center; gap:8px; background:#06c755; color:#fff; border-radius:999px; padding:10px 16px 10px 12px; font-size:14px; font-weight:600; text-decoration:none; box-shadow:0 10px 28px rgba(6,199,85,.38); }
+.line-float svg { width:28px; height:28px; display:block; flex-shrink:0; }
+.line-float:hover { background:#05b34c; color:#fff; }
 @media (max-width:720px) {
   .item, .form-2 { display:block; }
   .item > .btn { margin-top:14px; }
