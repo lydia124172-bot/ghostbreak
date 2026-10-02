@@ -128,7 +128,7 @@ const TRADES = [
       },
       {
         name: '爆文鉤子',
-        need: '上傳一張圖，勾選 IG、臉書、Threads、小紅書、TikTok、Shorts，寫出各自的鉤子與標籤。',
+        need: '上傳一張圖，勾選 IG、臉書、Threads、小紅書、TikTok、Shorts，寫出各自的鉤子與標籤。另外給 3 句留言鉤子。',
         saas: '爆文鉤子智能體',
         status: '已上線',
         href: '/hook',

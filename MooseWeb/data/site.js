@@ -216,7 +216,7 @@ module.exports = {
       id: 'hook-caption',
       name: '爆文鉤子',
       kind: '智能體',
-      summary: '上傳照片，勾選要發的平台，寫出各自的鉤子標題與 Hashtag。未購方案可試用 1 次。',
+      summary: '上傳照片，勾選要發的平台，寫出各自的鉤子標題與 Hashtag，另外給 3 句留言鉤子。未購方案可試用 1 次。',
       href: '/hook',
     },
   ],
