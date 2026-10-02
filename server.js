@@ -809,18 +809,15 @@ function renderStudioWorks(works) {
   const rows = (works || []).filter((work) => !workHidden(work));
   if (!rows.length) return '<p class="lead">作品整理中。</p>';
   return rows.map((work) => {
-    const href = studioHref(work.href);
+    const kit = work.kind === '智能體';
+    const href = kit ? 'https://moose.bafuholdings.com/saas' : studioHref(work.href);
     const ext = /^https?:\/\//i.test(href);
-    const label = work.cta || (ext ? '打開看看' : '查看');
+    const label = kit ? '到麋鹿工具包' : (work.cta || (ext ? '打開看看' : '查看'));
     const btn = href
-      ? `<a class="btn btn-ghost" href="${studioEsc(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>${studioEsc(label)}</a>`
-      : '';
-    const kit = work.kind === '智能體'
-      ? '<a class="btn" href="https://moose.bafuholdings.com/saas">到麋鹿工具包</a>'
+      ? `<a class="btn${kit ? '' : ' btn-ghost'}" href="${studioEsc(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>${studioEsc(label)}</a>`
       : '';
     const feats = (work.features || []).map((item) => `<li>${studioEsc(item)}</li>`).join('');
-    const actions = (kit || btn) ? `<div class="work-actions">${kit}${btn}</div>` : '';
-    return `<article class="item" data-kind="${studioEsc(work.kind || '')}"><div><p class="meta">${studioEsc(work.kind || '')}</p><h3>${studioEsc(work.name)}</h3><p>${studioEsc(work.summary)}</p>${feats ? `<ul class="feature-list">${feats}</ul>` : ''}</div>${actions}</article>`;
+    return `<article class="item" data-kind="${studioEsc(work.kind || '')}"><div class="item-body"><p class="meta">${studioEsc(work.kind || '')}</p><h3>${studioEsc(work.name)}</h3><p>${studioEsc(work.summary)}</p>${feats ? `<ul class="feature-list">${feats}</ul>` : ''}</div>${btn}</article>`;
   }).join('');
 }
 
