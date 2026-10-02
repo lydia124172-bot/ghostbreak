@@ -56,7 +56,7 @@
     <article class="ed-tile is-dark" id="live">
       <p class="news-title">SHOPEE LIVE</p>
       <h2 id="liveTitle">蝦皮賣場直播間</h2>
-      <p class="live-times" id="liveWhen">直播時間：每週兩場，每場一次</p>
+      <p class="live-times hidden" id="liveWhen"></p>
       <p class="lead hidden" id="liveNote"></p>
       <a class="shop-entry" id="liveRoom" href="https://s.shopee.tw/W77I6hhQ2" target="_blank" rel="noopener noreferrer">進蝦皮賣場</a>
     </article>
@@ -103,7 +103,7 @@
   </section>
 
   <div data-shell="footer"></div>
-  <script src="/js/site.js?v=22"></script>
+  <script src="/js/site.js?v=23"></script>
   <script>
     const notes = { 日本: 'Japan', 韓國: 'Korea', 中國: 'China', 泰國: 'Thailand', 台灣: 'Taiwan' };
     fetch('/api/config').then((r) => r.json()).then((data) => {

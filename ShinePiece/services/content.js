@@ -211,7 +211,7 @@ function mergeContent(saved) {
     ...saved,
     lineUrl: normalizeLineUrl(saved.lineUrl !== undefined ? saved.lineUrl : base.lineUrl),
     monthLabel: String(saved.monthLabel !== undefined ? saved.monthLabel : base.monthLabel).trim(),
-    liveWhen: String(saved.liveWhen !== undefined ? saved.liveWhen : base.liveWhen).trim() || base.liveWhen,
+    liveWhen: String(saved.liveWhen !== undefined ? saved.liveWhen : '').trim(),
     liveNote: String(saved.liveNote !== undefined ? saved.liveNote : base.liveNote).trim(),
     liveUrl: normalizeLiveUrl(saved.liveUrl) || normalizeLiveUrl(base.liveUrl),
     themeTitle: String(saved.themeTitle !== undefined ? saved.themeTitle : base.themeTitle).trim(),
@@ -229,7 +229,7 @@ function mergeContent(saved) {
     merged[key] = pickCopy(saved, key);
   });
   if (merged.liveTitle === '客廳裡的兩場閒聊') merged.liveTitle = '蝦皮賣場直播間';
-  if (!merged.liveWhen || merged.liveWhen === '開播時間以蝦皮賣場為準') merged.liveWhen = '每週兩場，每場一次';
+  if (merged.liveWhen === '每週兩場，每場一次' || merged.liveWhen === '開播時間以蝦皮賣場為準') merged.liveWhen = '';
   return merged;
 }
 

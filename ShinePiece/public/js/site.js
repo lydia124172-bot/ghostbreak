@@ -280,7 +280,10 @@ fetch('/api/config').then((r) => r.json()).then((data) => {
     if (!el) return;
     const value = String(data[id] || '').trim();
     if (value) el.textContent = value;
-    if (id === 'liveWhen') el.textContent = value ? `直播時間：${value}` : '直播時間：每週兩場，每場一次';
+    if (id === 'liveWhen') {
+      el.textContent = value ? `直播時間：${value}` : '';
+      el.classList.toggle('hidden', !value);
+    }
     if (['countryLead', 'liveNote', 'col1Title', 'col1Body', 'col2Title', 'col2Body', 'col3Title', 'col3Body', 'coverEnglish', 'pullQuote', 'archiveNote', 'shopLead', 'wishLead'].includes(id)) {
       el.classList.toggle('hidden', !value);
     }
