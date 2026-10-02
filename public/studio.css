@@ -23,6 +23,7 @@ h2 { font-size:clamp(24px,3vw,32px); }
 .list { display:grid; gap:16px; }
 .item, .panel { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px; }
 .item { display:flex; gap:18px; justify-content:space-between; align-items:center; }
+.item[hidden] { display:none !important; }
 .item-body { flex:1; min-width:0; }
 .item > .btn { flex-shrink:0; align-self:center; }
 .item h3 { margin:0 0 8px; font-size:22px; }
