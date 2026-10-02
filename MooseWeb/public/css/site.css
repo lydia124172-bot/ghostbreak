@@ -1197,6 +1197,22 @@ a.item {
   gap: 16px;
   margin-bottom: 28px;
 }
+.studio-bridge {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px;
+  margin: 0 0 28px;
+}
+.studio-bridge img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.studio-bridge .meta { color: var(--copper); font-size: 12px; letter-spacing: 0.08em; margin: 0 0 6px; }
+.studio-bridge h2 { margin: 0 0 6px; font-size: 22px; }
+.studio-bridge p { margin: 0 0 12px; }
+.studio-bridge .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.studio-bridge .actions .btn { margin: 0; }
 .path-grid .card h3 { font-size: 26px; }
 
 .more-grid { padding-top: 0; }
