@@ -9,7 +9,7 @@ module.exports = {
   categories: [],
   products: [],
   monthLabel: '',
-  liveWhen: '開播時間以蝦皮賣場為準',
+  liveWhen: '',
   liveNote: '',
   liveUrl: '',
   themeTitle: '',

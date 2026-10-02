@@ -264,6 +264,7 @@ fetch('/api/config').then((r) => r.json()).then((data) => {
   const room = document.getElementById('liveRoom');
   if (room) {
     const url = String(data.liveUrl || '').trim();
+    room.textContent = '進蝦皮賣場';
     room.classList.toggle('hidden', !url);
     if (url) {
       room.href = url;
@@ -281,7 +282,8 @@ fetch('/api/config').then((r) => r.json()).then((data) => {
     if (!el) return;
     const value = String(data[id] || '').trim();
     if (value) el.textContent = value;
-    if (['countryLead', 'liveNote', 'col1Title', 'col1Body', 'col2Title', 'col2Body', 'col3Title', 'col3Body', 'coverEnglish', 'pullQuote', 'archiveNote', 'shopLead', 'wishLead'].includes(id)) {
+    if (id === 'liveWhen' && value) el.textContent = `直播時間：${value}`;
+    if (['countryLead', 'liveNote', 'liveWhen', 'col1Title', 'col1Body', 'col2Title', 'col2Body', 'col3Title', 'col3Body', 'coverEnglish', 'pullQuote', 'archiveNote', 'shopLead', 'wishLead'].includes(id)) {
       el.classList.toggle('hidden', !value);
     }
   });
