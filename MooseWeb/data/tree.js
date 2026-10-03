@@ -14,7 +14,7 @@ module.exports = {
       status: '已上線',
       href: '/clip',
       paid: true,
-      summary: '把商品圖排成會動的小廣告或靜態圖與文案。進階生圖只是靜態圖。不是真人口播對嘴。',
+      summary: '同一張商品圖接著動，一個鏡頭到底。可加一句賣點和旁白。分鏡劇情請用劇本廣告。',
       modules: [
         {
           id: 'layout',
@@ -102,7 +102,7 @@ module.exports = {
       status: '已上線',
       href: '/story',
       paid: true,
-      summary: '貼上劇本，或讓 AI 寫一段，做成 10 或 15 秒、有配音的直式廣告。單支 NT$299，月用 5 支 NT$1,490。兩種長度都扣 1 次。',
+      summary: '照劇本走：開場看見商品、使用或細節、收尾一句賣點。10 或 15 秒，有配音。單支 NT$299，月用 5 支 NT$1,490。',
       modules: [
         {
           id: 'demo',

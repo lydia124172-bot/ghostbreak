@@ -50,7 +50,7 @@ module.exports = {
       id: 'mooseclip',
       name: '商品短片',
       status: '已上線',
-      summary: '把商品圖排成直式短片或圖片與文案。不是真人口播對嘴。',
+      summary: '同一張商品圖接著動，一個鏡頭到底。可加一句賣點和旁白。分鏡劇情請用劇本廣告。',
       href: '/clip',
     },
     {
@@ -64,7 +64,7 @@ module.exports = {
       id: 'storyclip',
       name: '劇本廣告',
       status: '已上線',
-      summary: '貼上劇本，或讓 AI 寫一段，做成 10 或 15 秒、有配音的直式廣告。',
+      summary: '照劇本走：開場看見商品、使用或細節、收尾一句賣點。10 或 15 秒，有配音。',
       href: '/story',
     },
   ],
