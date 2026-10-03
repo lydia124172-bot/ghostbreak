@@ -42,7 +42,12 @@
       <label class="field" for="notes">補充（選填）</label>
       <textarea id="notes" class="form-input" rows="3" maxlength="400" placeholder="例如：女聲，語氣平靜，不要字幕"></textarea>
       <p class="field">主角</p>
-      <p class="lead">短句也可以。按下去會先把提示詞優化成能生出好看人物的描述，再一位一張。兩位就兩張。一位約 NT$2，兩位約 NT$4。</p>
+      <p class="lead">先選要生的人。男主是角色第一位，女主是第二位。只選男主就不會帶出女主。衣服和場景照劇本，不會改成別的地方。</p>
+      <div class="clip-types story-durations" id="castWho">
+        <button class="clip-type active" type="button" data-who="male"><strong>男主</strong><span>只生第一位</span></button>
+        <button class="clip-type" type="button" data-who="female"><strong>女主</strong><span>只生第二位</span></button>
+        <button class="clip-type" type="button" data-who="both"><strong>兩位</strong><span>各一張</span></button>
+      </div>
       <label class="field" for="castPrompt">主角提示詞</label>
       <textarea id="castPrompt" class="form-input" rows="3" maxlength="500" placeholder="例如：高，皮膚白，臉很美。兩位就分成兩句。"></textarea>
       <button class="btn btn-cream" id="castBtn" type="button">生成主角</button>
@@ -76,6 +81,6 @@
       </div>
     </form>
   </main>
-  <script src="/js/drama.js?v=owner5"></script>
+  <script src="/js/drama.js?v=owner6"></script>
 </body>
 </html>

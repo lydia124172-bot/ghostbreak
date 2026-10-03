@@ -119,17 +119,32 @@ async function stillFromText(visual, look, castImages) {
   return geminiImage(parts);
 }
 
-async function optimizeCastText(source) {
+function placeOf(script) {
+  const head = lookOf(script);
+  const found = head.match(/背景\s*[:：]\s*([\s\S]*)/);
+  return found ? found[1].replace(/\s+/g, ' ').trim().slice(0, 180) : '';
+}
+
+function pickPeople(text, who) {
+  const people = peopleOf(text);
+  const pool = people.length ? people : (String(text || '').trim() ? [String(text).trim()] : []);
+  if (who === 'both') return pool.slice(0, 2);
+  if (who === 'female') return pool[1] ? [pool[1]] : [];
+  return pool[0] ? [pool[0]] : [];
+}
+
+async function optimizeCastText(source, place) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   const raw = String(source || '').trim();
   if (!key || raw.length < 2) return raw;
   const ask = [
-    '你在幫寫實人像生圖寫提示詞。把客人的短句擴成可直接生圖的繁體中文。',
-    '客人寫到的特徵必須保留，不要改成相反的。沒寫的才補上：年齡感、髮型、五官、膚質、衣服、身形、光線。',
-    '要像定妝照：臉清楚、皮膚乾淨、電影光，不要網紅過度磨皮，不要奇幻。',
-    '一位就寫一段。兩位就分成兩段，一段一個人，段與段之間空一行。',
-    '不要寒暄，不要標題，不要解釋。',
-    `客人的話：${raw}`,
+    '你在幫寫實人像生圖寫提示詞。把這一位的短句擴成可直接生圖的繁體中文。',
+    '只寫這一位。禁止再寫另一個人。',
+    '客人寫到的年齡、髮型、衣服、聲線必須原樣保留，不要換成大衣、西裝、別的髮型。',
+    '沒寫的才補五官和膚質。要像定妝照：臉清楚、電影光，不要過度磨皮，不要奇幻。',
+    place ? `場景必須沿用這句，不要改成攝影棚或其他地方：${place}` : '不要自作主張換成攝影棚。',
+    '只輸出一段。不要寒暄，不要標題。',
+    `這一位：${raw}`,
   ].join('\n');
   try {
     const res = await fetch(
@@ -156,25 +171,33 @@ async function optimizeCastText(source) {
   }
 }
 
-async function makeCast({ topic, notes, script, prompt: wanted }) {
-  const source = castSource({ prompt: wanted, script });
+async function makeCast({ topic, notes, script, prompt: wanted, who }) {
+  const pickedWho = who === 'female' || who === 'both' ? who : 'male';
+  const typed = String(wanted || '').trim();
+  const roleText = castSource({ prompt: '', script });
+  const source = typed || roleText;
   const title = String(topic || '').trim();
   const extra = String(notes || '').trim();
   if (!source && title.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
-  const optimized = await optimizeCastText(source || `${title}。${extra}`);
-  const people = peopleOf(optimized);
-  const list = people.length >= 2 ? people : [optimized];
+  const chosen = pickPeople(source || `${title}。${extra}`, pickedWho);
+  if (!chosen.length) throw new Error('沒有這一位。男主是角色第一位，女主是第二位。');
+  const place = placeOf(script);
+  const optimized = [];
   const images = [];
-  for (const person of list.slice(0, 2)) {
+  for (const person of chosen) {
+    const line = await optimizeCastText(person, place);
+    optimized.push(line);
     images.push(await geminiImage([{
       text: [
         '直式 9:16 寫實定妝照。只畫這一位，半身到大腿，臉清楚，電影光。',
         '不要其他路人，不要文字、字幕、浮水印。',
-        `這一位：${person}`,
-      ].join('\n'),
+        '衣服和髮型必須照下面這句，不要換成別的衣服或髮型。',
+        place ? `場景必須是：${place}。不要改成攝影棚、辦公室或其他地方。` : '',
+        `這一位：${line}`,
+      ].filter(Boolean).join('\n'),
     }]));
   }
-  return { images, prompt: optimized };
+  return { images, prompt: optimized.join('\n') };
 }
 
 function scenePrompt(scene, look) {

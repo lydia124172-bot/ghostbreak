@@ -146,6 +146,8 @@ async function makeCast() {
   const { topic, notes } = await collectInput();
   const script = document.getElementById('script').value.trim();
   const prompt = document.getElementById('castPrompt').value.trim();
+  const whoBtn = document.querySelector('#castWho .clip-type.active');
+  const who = whoBtn && whoBtn.dataset.who ? whoBtn.dataset.who : 'male';
   if (!prompt && topic.length < 2 && script.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
   const btn = document.getElementById('castBtn');
   btn.disabled = true;
@@ -154,11 +156,11 @@ async function makeCast() {
     const res = await fetch('/api/drama/cast', {
       method: 'POST',
       headers: tokenHeaders(true),
-      body: JSON.stringify({ topic, notes, script, prompt }),
+      body: JSON.stringify({ topic, notes, script, prompt, who }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '主角沒有生出來');
-    if (body.prompt) document.getElementById('castPrompt').value = String(body.prompt);
+    if (body.prompt && who !== 'both') document.getElementById('castPrompt').value = String(body.prompt);
     castImages = (Array.isArray(body.images) ? body.images : []).filter(Boolean).slice(0, 2);
     const box = document.getElementById('castPreviewBox');
     box.innerHTML = '';
@@ -169,9 +171,11 @@ async function makeCast() {
       img.style.cssText = 'max-width:240px;border-radius:8px;';
       box.appendChild(img);
     });
-    showMsg(castImages.length > 1
-      ? '提示詞已優化，兩位主角各一張。三鏡沒放照片時會用這兩張。約 NT$4。'
-      : '提示詞已優化，主角已生成。三鏡沒放照片時會用這張。約 NT$2。');
+    showMsg(who === 'both'
+      ? '兩位各一張。衣服和場景照劇本。約 NT$4。'
+      : who === 'female'
+        ? '這次只生女主，沒有男主。衣服和場景照劇本。約 NT$2。'
+        : '這次只生男主，沒有女主。衣服和場景照劇本。約 NT$2。');
   } finally {
     btn.disabled = false;
     btn.textContent = '生成主角';
@@ -225,6 +229,12 @@ document.getElementById('dramaForm').addEventListener('submit', async (event) =>
   } catch (err) {
     showMsg(err.message || '短劇失敗');
   }
+});
+
+document.querySelectorAll('#castWho .clip-type').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#castWho .clip-type').forEach((el) => el.classList.toggle('active', el === btn));
+  });
 });
 
 document.getElementById('castBtn').addEventListener('click', async () => {
