@@ -31,17 +31,24 @@ function sceneCount() {
   return 3;
 }
 
+function tidy(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim();
+}
+
 function parseScenes(script) {
   const body = String(script || '').trim();
   if (body.length < 20) throw new Error('請先有三鏡劇本，或按「AI 寫劇本」。');
   const blocks = body.split(/SCENE\s*[123]/i).slice(1);
   const scenes = blocks.slice(0, 3).map((block, i) => {
-    const visual = (block.match(/VISUAL:\s*(.+)/i) || [])[1] || '';
-    const line = (block.match(/LINE:\s*(.+)/i) || [])[1] || '';
-    const visualText = String(visual).trim();
-    const lineText = String(line).trim();
-    if (visualText.length < 4) throw new Error(`第 ${i + 1} 鏡缺少畫面。請保留 VISUAL 與 LINE。`);
-    return { visual: visualText.slice(0, 180), line: lineText.slice(0, 80) };
+    const shot = tidy((block.match(/鏡位\s*[:：]\s*(.+)/i) || [])[1]);
+    const picture = tidy((block.match(/畫面\s*[:：]\s*([\s\S]*?)(?=\n\s*(?:對話|LINE|視覺|SCENE)|$)/i) || [])[1]);
+    const visualSame = tidy((block.match(/VISUAL[^:\n：]{0,8}[:：]\s*(.+)/i) || [])[1]);
+    const visual = [shot, picture || visualSame].filter(Boolean).join(' ').slice(0, 400);
+    const quoted = (block.match(/[「"]([^」"]{2,120})[」"]/) || [])[1];
+    const lineSame = tidy((block.match(/LINE[^:\n：]{0,8}[:：]\s*(.+)/i) || [])[1]);
+    const line = tidy(quoted || lineSame).slice(0, 120);
+    if (visual.length < 4) throw new Error(`第 ${i + 1} 鏡缺少畫面。請保留畫面或 VISUAL。`);
+    return { visual, line };
   });
   if (scenes.length < 3) throw new Error('劇本需要三鏡。請用 AI 寫，或依示範格式自己寫。');
   return scenes;
