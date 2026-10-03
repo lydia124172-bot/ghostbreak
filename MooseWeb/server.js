@@ -1934,9 +1934,14 @@ app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) =>
       script: String(req.body?.script || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
       cast: (Array.isArray(req.body?.cast) ? req.body.cast : (req.body?.cast ? [req.body.cast] : []))
-        .map((item) => String(item || '').trim())
-        .filter(Boolean)
-        .slice(0, 2),
+        .map((item) => {
+          if (item && typeof item === 'object') {
+            return { role: String(item.role || 'other').trim(), image: String(item.image || '').trim() };
+          }
+          return { role: 'lead', image: String(item || '').trim() };
+        })
+        .filter((item) => /^data:image\//.test(item.image))
+        .slice(0, 4),
       castPrompt: String(req.body?.castPrompt || '').trim().slice(0, 800),
       phase: '已送出',
       created: Date.now(),

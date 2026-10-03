@@ -144,14 +144,21 @@ let castImages = [];
 const castSlots = { male: '', female: '' };
 const castGallery = [];
 
-function syncCastImages() {
-  castImages = [castSlots.male, castSlots.female].filter(Boolean);
+function castPayload() {
+  const payload = [];
+  if (castSlots.male) payload.push({ role: 'male', image: castSlots.male });
+  if (castSlots.female) payload.push({ role: 'female', image: castSlots.female });
+  castGallery.filter((item) => item.role === 'other').slice(-2).forEach((item) => {
+    payload.push({ role: 'other', image: item.src });
+  });
+  castImages = payload;
+  return payload;
 }
 
 function addCast(role, src) {
   if (!src) return;
   castGallery.push({ role, src });
-  castSlots[role] = src;
+  if (role === 'male' || role === 'female') castSlots[role] = src;
 }
 
 function renderCast() {
@@ -159,8 +166,9 @@ function renderCast() {
   box.innerHTML = '';
   const count = { male: 0, female: 0 };
   castGallery.forEach((item) => {
-    count[item.role] += 1;
-    const label = `${item.role === 'female' ? '女主' : '男主'} ${count[item.role]}`;
+    count[item.role] = (count[item.role] || 0) + 1;
+    const name = item.role === 'female' ? '女主' : item.role === 'other' ? '其他人' : '男主';
+    const label = `${name} ${count[item.role]}`;
     const wrap = document.createElement('figure');
     wrap.style.cssText = 'margin:0;';
     const img = document.createElement('img');
@@ -202,16 +210,20 @@ async function makeCast() {
       addCast('female', fresh[1]);
     } else if (who === 'female') {
       addCast('female', fresh[0]);
+    } else if (who === 'other') {
+      addCast('other', fresh[0]);
     } else {
       addCast('male', fresh[0]);
     }
     if (body.prompt && who !== 'both') document.getElementById('castPrompt').value = String(body.prompt);
-    syncCastImages();
+    castPayload();
     renderCast();
     const face = appeal === 'rough' ? '這次照難看。' : '這次先好看。';
-    showMsg(who === 'both'
-      ? `新的兩張已留下，舊圖也還在。三鏡用最新的男主和女主。${face}約 NT$10。`
-      : `新的一張已留下，之前的圖也還在。三鏡用最新的男主和女主。${face}約 NT$5。`);
+    showMsg(who === 'other'
+      ? `其他人已留下，舊圖也還在。劇情有寫到他，那一鏡才會放進去。${face}約 NT$5。`
+      : who === 'both'
+        ? `新的兩張已留下，舊圖也還在。三鏡用最新的男主、女主，以及最近兩位其他人。${face}約 NT$10。`
+        : `新的一張已留下，之前的圖也還在。三鏡用最新的男主、女主，以及最近兩位其他人。${face}約 NT$5。`);
   } finally {
     btn.disabled = false;
     btn.textContent = '生成主角';
@@ -244,7 +256,7 @@ async function produceDrama(script) {
       body: JSON.stringify({
         script: line,
         images,
-        cast: castImages,
+        cast: castPayload(),
         castPrompt: document.getElementById('castPrompt').value.trim(),
       }),
     });

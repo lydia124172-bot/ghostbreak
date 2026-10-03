@@ -108,11 +108,24 @@ function castSource({ prompt, script }) {
   return String(role ? role[1] : '').trim().slice(0, 400);
 }
 
+function castList(cast) {
+  const list = Array.isArray(cast) ? cast : (cast ? [cast] : []);
+  return list.map((item) => {
+    if (typeof item === 'string') return { role: 'lead', image: item };
+    return { role: String(item && item.role || 'other'), image: String(item && item.image || '') };
+  }).filter((item) => item.image).slice(0, 4);
+}
+
 async function stillFromText(visual, look, castImages, castPrompt) {
-  const heroes = (Array.isArray(castImages) ? castImages : []).filter(Boolean).slice(0, 2);
+  const heroes = castList(castImages);
+  const labels = heroes.map((item, index) => {
+    const name = item.role === 'female' ? '女主' : item.role === 'male' ? '男主' : '其他人';
+    return `第${index + 1}張是${name}`;
+  }).join('，');
   const prompt = [
     '直式 9:16 寫實短劇劇照，電影光，像一格分鏡。',
-    heroes.length ? `附圖是主角，一位一張，共 ${heroes.length} 位。臉型、五官、髮型、衣服跟附圖一樣，不要換成別人。` : '',
+    heroes.length ? `附圖${labels}。臉型、五官、髮型、衣服跟對應的附圖一樣，不要換成別人。` : '',
+    heroes.some((item) => item.role === 'other') ? '這一鏡的畫面若寫到其他人，用對應的附圖。這一鏡沒寫到的人不要硬加進來。' : '',
     castPrompt ? `這是誰：${castPrompt}。只鎖定這個人的年齡、臉、髮型、衣服。不要把這段裡的一種表情用在每一鏡。` : '',
     '這一鏡的表情、情緒、身體狀態必須照下面的畫面。可以笑、哭、怒、累、受傷、狼狽。三鏡不要同一張臉。',
     '不要任何文字、字幕、標題、浮水印。',
@@ -120,8 +133,8 @@ async function stillFromText(visual, look, castImages, castPrompt) {
     `這一鏡的畫面：${visual}`,
   ].filter(Boolean).join('\n');
   const parts = [{ text: prompt }];
-  heroes.forEach((url) => {
-    const file = clipVideo.parseDataUrl(url);
+  heroes.forEach((item) => {
+    const file = clipVideo.parseDataUrl(item.image);
     parts.push({ inline_data: { mime_type: file.mime, data: file.b64 } });
   });
   return geminiImage(parts);
@@ -147,6 +160,11 @@ function pickPeople(text, who) {
 }
 
 function genderFor(person, who, index) {
+  if (who === 'other') {
+    if (/女/.test(person) && !/男/.test(person)) return 'female';
+    if (/男/.test(person)) return 'male';
+    return 'open';
+  }
   if (who === 'female') return 'female';
   if (who === 'male') return 'male';
   if (/女/.test(person) && !/男/.test(person)) return 'female';
@@ -156,6 +174,7 @@ function genderFor(person, who, index) {
 
 function forceGender(text, gender) {
   let line = String(text || '').trim();
+  if (gender === 'open') return line;
   if (gender === 'male') {
     line = line
       .replace(/女性/g, '男性')
@@ -179,11 +198,12 @@ function appealLock(appeal, gender) {
   if (appeal === 'rough') {
     return '臉要不好看、不討喜。可以疲憊、粗糙、黑眼圈、膚色不均。不要畫成俊男美女。五官仍要清楚。';
   }
-  const lead = gender === 'female' ? '女主角' : '男主角';
+  const lead = gender === 'female' ? '女主角' : gender === 'open' ? '這一位' : '男主角';
   return `臉要好看，像電影${lead}。五官端正、膚色乾淨均匀、眼神有神。禁止疲憊、黑眼圈、傷痕、蠟黃、油膩、邋遢。光線要討好這張臉。仍是寫實照片，不要塑膠網紅臉。`;
 }
 
 function genderLock(gender) {
+  if (gender === 'open') return '性別照原文。原文沒寫男或女，就不要改成另一性。';
   if (gender === 'female') {
     return '這一位是成年女性。必須畫成女人，女性的臉和身形。禁止畫成男人。adult woman, female face, not a man.';
   }
@@ -234,7 +254,7 @@ async function optimizeCastText(source, place, gender, appeal) {
 }
 
 async function makeCast({ topic, notes, script, prompt: wanted, who, appeal }) {
-  const pickedWho = who === 'female' || who === 'both' ? who : 'male';
+  const pickedWho = who === 'female' || who === 'both' || who === 'other' ? who : 'male';
   const pickedAppeal = appeal === 'rough' ? 'rough' : 'pretty';
   const typed = String(wanted || '').trim();
   const roleText = castSource({ prompt: '', script });
@@ -242,7 +262,9 @@ async function makeCast({ topic, notes, script, prompt: wanted, who, appeal }) {
   const title = String(topic || '').trim();
   const extra = String(notes || '').trim();
   if (!source && title.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
-  const chosen = pickPeople(source || `${title}。${extra}`, pickedWho);
+  const chosen = pickedWho === 'other'
+    ? [String(typed || source || `${title}。${extra}`).trim()].filter((line) => line.length >= 2)
+    : pickPeople(source || `${title}。${extra}`, pickedWho);
   if (!chosen.length) throw new Error('沒有這一位。請先寫主角，或先讓劇本裡有角色。');
   const place = placeOf(script);
   const optimized = [];
@@ -297,7 +319,7 @@ async function produce({ script, images, cast, castPrompt, onPhase }) {
   if (!configured()) throw new Error('AI 短劇尚未開通。');
   const scenes = parseScenes(script);
   const look = lookOf(script);
-  const heroes = (Array.isArray(cast) ? cast : (cast ? [cast] : [])).filter(Boolean).slice(0, 2);
+  const heroes = castList(cast);
   const leadPrompt = String(castPrompt || '').trim().slice(0, 800);
   const refs = Array.isArray(images) ? images : [];
   const clips = [];
