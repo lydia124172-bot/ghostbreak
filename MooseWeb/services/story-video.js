@@ -19,8 +19,8 @@ function configured() {
   return Boolean(arkKey() || falKey());
 }
 
-function creditCost() {
-  return Number(process.env.FAL_STORY_CREDITS || 1) || 1;
+function creditCost(duration) {
+  return videoDuration(duration) === '15' ? 15 : 10;
 }
 
 function videoDuration(requested) {

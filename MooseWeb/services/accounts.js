@@ -341,7 +341,7 @@ function consumeStoryCredit(accountId, amount = 1) {
   const expired = Boolean(row.storyExpires && Date.parse(row.storyExpires) < Date.now());
   const story = storyPlanOf(row.storyPlan);
   if (expired || !story) throw new Error('劇本廣告需有效方案。請先看示範，再選擇方案。');
-  if (Number(row.storyCredits || 0) < n) throw new Error('劇本廣告次數不足。請改選方案或等下一期。');
+  if (Number(row.storyCredits || 0) < n) throw new Error('劇本廣告秒數不足。請改選方案或等下一期。');
   row.storyCredits = Number(row.storyCredits || 0) - n;
   saveStore(store);
   return publicAccount(row);

@@ -1710,10 +1710,11 @@ app.post('/api/story/video', express.json({ limit: '8mb' }), async (req, res) =>
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
-  const cost = storyVideo.creditCost();
+  const duration = storyVideo.videoDuration(req.body?.duration);
+  const cost = storyVideo.creditCost(duration);
   if (!owner && (!paid || Number(paid.storyCredits || 0) < cost)) {
     return res.status(402).json({
-      error: `請先看示範，再到帳號申請劇本廣告方案。一次需 ${cost} 次。`,
+      error: `這支 ${duration} 秒要扣 ${cost} 秒。請到帳號購買秒數。`,
     });
   }
   try {
@@ -1721,7 +1722,7 @@ app.post('/api/story/video', express.json({ limit: '8mb' }), async (req, res) =>
       script: String(req.body?.script || '').trim(),
       product: String(req.body?.product || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
-      duration: storyVideo.videoDuration(req.body?.duration),
+      duration,
     });
     pruneStoryJobs();
     const job = {

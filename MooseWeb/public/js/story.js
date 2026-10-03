@@ -77,8 +77,8 @@ async function refreshPlan() {
     }
     const me = await fetch('/api/account/me').then((r) => r.json());
     const videoLine = me.ok && me.email && me.storyPlan
-      ? `出片：${escapeHtml(me.storyPlanName || '劇本廣告')}，剩餘 ${me.storyCredits ?? 0} 次。`
-      : '出片需劇本廣告方案（扣次數）。';
+      ? `出片：${escapeHtml(me.storyPlanName || '劇本廣告')}，剩餘 ${me.storyCredits ?? 0} 秒。`
+      : '出片按秒數扣。10 秒 NT$150，15 秒 NT$225。';
     if (st.scriptPaid) {
       bar.innerHTML = `已購買付費工具方案，AI 寫劇本不限次數。${videoLine}　<a href="/account">管理方案</a>`;
       return;
@@ -107,7 +107,7 @@ function renderPlans(plans) {
       <p class="plan-price">${escapeHtml(plan.priceLabel)}</p>
       <p class="plan-quota">${escapeHtml(plan.quota || '')}</p>
       <ul>${(plan.features || []).map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>
-      <a class="btn btn-copper" href="/account">${plan.id === 'story-once' ? '先買單支' : '選擇月用'}</a>
+      <a class="btn btn-copper" href="/account">${plan.id === 'story-month' ? '選擇月用' : '購買'}</a>
     </article>
   `).join('');
 }
@@ -159,7 +159,7 @@ async function produceStory(script) {
   const { product, photo, images } = await collectStoryInput();
   if (line.length < 12) throw new Error('請先有一段劇本，或按「AI 寫劇本」。');
   const seconds = selectedDuration();
-  const ok = window.confirm(`這會新做一支 ${seconds} 秒並扣一次。示範片可直接看，不必為了看效果再做。確定要新做嗎？`);
+  const ok = window.confirm(`這會新做一支 ${seconds} 秒，並扣 ${seconds} 秒。示範片可直接看，不必為了看效果再做。確定要新做嗎？`);
   if (!ok) {
     showMsg('已取消。沒有新扣費。劇本仍留在欄位裡，可再改。');
     return;

@@ -250,8 +250,9 @@
                 <option value="starter">商品短片・開店 NT$499／20 點</option>
                 <option value="plus">商品短片・常用 NT$990／50 點</option>
                 <option value="pro">商品短片・店家 NT$1,980／120 點</option>
-                <option value="story-once">劇本廣告・單支 NT$299／1 次</option>
-                <option value="story-month">劇本廣告・月用 NT$1,490／5 次</option>
+                <option value="story-10">劇本廣告・10秒 NT$150</option>
+                <option value="story-15">劇本廣告・15秒 NT$225</option>
+                <option value="story-month">劇本廣告・月用 NT$750／60 秒</option>
               </select>
             </div>
           </div>
@@ -447,7 +448,7 @@
       box.innerHTML = rows.map((row) => `
         <article class="item">
           <div>
-            <p class="meta">${escapeHtml(row.planName || '')}${row.pendingPlan ? ' · 待開通 ' + escapeHtml(row.pendingPlan) : ''}${row.credits ? ' · 剩餘 ' + row.credits + ' 點' : ''}${row.storyPlanName ? ' · ' + escapeHtml(row.storyPlanName) : ''}${row.pendingStoryPlan ? ' · 劇本待開通 ' + escapeHtml(row.pendingStoryPlan) : ''}${row.storyCredits ? ' · 劇本 ' + row.storyCredits + ' 次' : ''}</p>
+            <p class="meta">${escapeHtml(row.planName || '')}${row.pendingPlan ? ' · 待開通 ' + escapeHtml(row.pendingPlan) : ''}${row.credits ? ' · 剩餘 ' + row.credits + ' 點' : ''}${row.storyPlanName ? ' · ' + escapeHtml(row.storyPlanName) : ''}${row.pendingStoryPlan ? ' · 劇本待開通 ' + escapeHtml(row.pendingStoryPlan) : ''}${row.storyCredits ? ' · 劇本 ' + row.storyCredits + ' 秒' : ''}</p>
             <h3>${escapeHtml(row.email)}</h3>
             <p>${row.planExpires ? '商品短片至 ' + escapeHtml(String(row.planExpires).slice(0, 10)) : '商品短片免費'}${row.storyExpires ? '　劇本廣告至 ' + escapeHtml(String(row.storyExpires).slice(0, 10)) : ''}</p>
           </div>
@@ -456,7 +457,8 @@
             <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="plus">常用</button>
             <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="pro">店家</button>
             <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="free">免費</button>
-            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="story-once">劇本單支</button>
+            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="story-10">劇本10秒</button>
+            <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="story-15">劇本15秒</button>
             <button type="button" class="btn btn-ghost" data-grant="${escapeHtml(row.email)}" data-plan="story-month">劇本月用</button>
           </div>
         </article>

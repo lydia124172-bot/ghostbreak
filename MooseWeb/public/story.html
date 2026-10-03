@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>劇本廣告 StoryClip — 麋鹿網</title>
-  <meta name="description" content="貼上劇本或讓 AI 寫一段，做成 10 或 15 秒直式廣告。單支 NT$299，月用 5 支 NT$1,490。" />
+  <meta name="description" content="照劇本做成有配音的直式廣告。10 秒 NT$150，15 秒 NT$225。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
@@ -32,7 +32,7 @@
     <section class="hero research-hero">
       <p class="kicker">付費工具　StoryClip</p>
       <h1>劇本廣告</h1>
-      <p class="lead">照你的分鏡或旁白做成一支廣告：開場看見商品、使用或細節、收尾一句賣點。10 或 15 秒，有配音。單支 NT$299，月用 5 支 NT$1,490，都扣 1 次。<a href="/clip">商品短片</a>是同一張圖接著動，不在這一頁。</p>
+      <p class="lead">照你的分鏡或旁白做成一支廣告：開場看見商品、使用或細節、收尾一句賣點。有配音。10 秒 NT$150，15 秒 NT$225，照秒數扣。<a href="/clip">商品短片</a>是同一張圖接著動，不在這一頁。</p>
       <p class="clip-plan" id="storyPlan"></p>
     </section>
 
@@ -50,15 +50,15 @@
       <textarea id="notes" class="form-input" rows="3" maxlength="400" placeholder="例如：今天下單，今晚烘好寄出"></textarea>
       <label class="field" for="photo">商品圖（選填）</label>
       <input id="photo" type="file" accept="image/*" />
-      <p class="field">片長（兩種都扣 1 次。15 秒等待較久）</p>
+      <p class="field">片長（照秒數扣。15 秒等待較久）</p>
       <div class="clip-types story-durations" id="durationPicks">
         <button class="clip-type active" type="button" data-duration="10">
           <strong>10 秒</strong>
-          <span>預設，通常較快</span>
+          <span>NT$150，扣 10 秒</span>
         </button>
         <button class="clip-type" type="button" data-duration="15">
           <strong>15 秒</strong>
-          <span>較長，等待較久</span>
+          <span>NT$225，扣 15 秒</span>
         </button>
       </div>
       <label class="field" for="script">劇本</label>
@@ -91,6 +91,6 @@
     </div>
   </footer>
   <script src="/js/site.js?v=studio6"></script>
-  <script src="/js/story.js?v=2"></script>
+  <script src="/js/story.js?v=3"></script>
 </body>
 </html>
