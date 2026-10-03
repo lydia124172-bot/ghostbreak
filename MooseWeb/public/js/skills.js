@@ -149,17 +149,10 @@ const TRADES = [
       },
       {
         name: '劇本質感廣告',
-        need: '貼上分鏡或旁白，做成較有質感的廣告。目前建置中。',
-        saas: 'StoryClip 劇本廣告（建置中）',
-        status: '建置中',
+        need: '貼上分鏡或旁白，做成約 10 秒的直式廣告。',
+        saas: 'StoryClip 劇本廣告',
+        status: '已上線',
         href: '/story',
-      },
-      {
-        name: 'AI 短劇一鍵',
-        need: '填主題，寫三鏡並接成一支短劇。',
-        saas: 'DramaClip AI短劇（建置中）',
-        status: '建置中',
-        href: '/drama',
       },
       {
         name: '賣場連結',

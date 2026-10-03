@@ -22,6 +22,7 @@ const state = {
   videoId: '',
   skipPhotoReset: false,
   visionReady: false,
+  visionLeft: null,
   enhanceReady: false,
   videoReady: false,
   exportReady: false,
@@ -636,18 +637,23 @@ async function refreshPlan() {
     state.videoCredits5 = Number(st.videoCredits || 4) || 4;
     state.videoCredits10 = Number(st.videoCredits10 || 7) || 7;
     state.videoCredits15 = Number(st.videoCredits15 || 10) || 10;
+    state.visionLeft = st.visionUnlimited ? null : Number(st.visionLeft ?? 1);
     const make = document.getElementById('makeBtn');
     if (make && !make.disabled) make.textContent = makeBtnLabel();
     const me = await fetch('/api/account/me').then((r) => r.json());
     if (me.ok && me.email) {
       const extra = me.credits ? ` · 剩餘 ${me.credits} 點（換靜態圖扣 1 點）` : ' · 換靜態圖需方案點數';
       const pending = me.pendingPlan ? ' · 方案確認中' : '';
-      bar.innerHTML = `目前方案：${me.planName}${extra}${pending}　小廣告 5 秒扣 ${state.videoCredits5} 點、10 秒扣 ${state.videoCredits10} 點、15 秒扣 ${state.videoCredits15} 點　<a href="/account">管理方案</a>`;
+      const visionBit = st.visionUnlimited ? '' : `　識圖寫文案還可試 ${state.visionLeft} 次`;
+      bar.innerHTML = `目前方案：${me.planName}${extra}${pending}${visionBit}　小廣告 5 秒扣 ${state.videoCredits5} 點、10 秒扣 ${state.videoCredits10} 點、15 秒扣 ${state.videoCredits15} 點　<a href="/account">管理方案</a>`;
     } else {
-      bar.innerHTML = '排版與識圖不必登入。小廣告與進階生圖需方案點數。　<a href="/account">看方案</a>';
+      const visionNote = st.visionUnlimited
+        ? ''
+        : `識圖寫文案還可試 ${Number(st.visionLeft ?? 1)} 次。`;
+      bar.innerHTML = `排版不必登入。${visionNote}小廣告與進階生圖需方案點數。　<a href="/account">看方案</a>`;
     }
   } catch {
-    bar.innerHTML = '排版與識圖不必登入。要會動請按「產出小廣告」。　<a href="/account">看方案</a>';
+    bar.innerHTML = '排版不必登入。識圖寫文案沒買方案可試 1 次。　<a href="/account">看方案</a>';
   }
 }
 
@@ -965,7 +971,7 @@ async function writeCaptionFromFiles(files, { overwrite = true } = {}) {
   if (seq !== captionSeq) return;
   const res = await fetch('/api/clip/caption', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: clipAuthHeaders(true),
     body: JSON.stringify({
       images,
       product: overwrite ? '' : document.getElementById('product').value.trim(),
@@ -977,6 +983,8 @@ async function writeCaptionFromFiles(files, { overwrite = true } = {}) {
   const body = await res.json().catch(() => ({}));
   if (seq !== captionSeq) return;
   if (!res.ok) throw new Error(body.error || '識圖失敗');
+  if (body.unlimited) state.visionLeft = null;
+  else if (body.left != null) state.visionLeft = body.left;
   if (body.caption) document.getElementById('ownCopy').value = body.caption;
   if (body.product && (overwrite || !document.getElementById('product').value.trim())) {
     document.getElementById('product').value = body.product;
@@ -1005,7 +1013,9 @@ document.getElementById('photos').addEventListener('change', async () => {
   showClipMsg('已換圖，上一筆文案已清掉。正在依新圖重寫…');
   try {
     await writeCaptionFromFiles(files, { overwrite: true });
-    showClipMsg('圖已就緒。可直接按「產出小廣告」。');
+    showClipMsg(state.visionLeft === 0
+      ? '圖已就緒。免費識圖已用完，買方案後可不限次數。'
+      : '圖已就緒。可直接按「產出小廣告」。');
   } catch (err) {
     showClipMsg(err.message || '請先改商品名稱與文案，再產出。');
   }
@@ -1308,7 +1318,9 @@ document.getElementById('visionBtn').addEventListener('click', async () => {
     }
     msg.textContent = '正在依圖撰寫文案…';
     await writeCaptionFromFiles(files, { overwrite: true });
-    msg.textContent = '文案已依圖填入上方欄位，可再改，然後按「產出小廣告」。';
+    msg.textContent = state.visionLeft === 0
+      ? '文案已填入。免費識圖已用完，買方案後可不限次數。'
+      : '文案已依圖填入上方欄位，可再改，然後按「產出小廣告」。';
     document.getElementById('ownCopy').scrollIntoView({ block: 'center' });
   } catch (err) {
     msg.textContent = err.message || '識圖失敗';

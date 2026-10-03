@@ -41,7 +41,7 @@ const BASE_URL = (process.env.BASE_URL || `http://127.0.0.1:${PORT}`).replace(/\
 const PUBLIC = path.join(__dirname, 'public');
 const CLIP_CONNECT_OPEN = process.env.CLIP_CONNECT_OPEN === '1';
 const DRAMA_OPEN = process.env.DRAMA_OPEN === '1';
-const STORY_OPEN = process.env.STORY_OPEN === '1';
+const STORY_OPEN = process.env.STORY_OPEN !== '0';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -71,7 +71,6 @@ const pages = {
   '/skills': 'skills.html',
   '/clip': 'clip.html',
   '/story': 'story.html',
-  '/drama': 'drama.html',
   '/talk': 'talk.html',
   '/script': 'script.html',
   '/live': 'live.html',
@@ -277,6 +276,7 @@ app.get(['/works', '/agents'], (req, res) => redirectStudio(req, res, '/works'))
 app.get('/courses', (req, res) => redirectStudio(req, res, '/courses'));
 app.get('/course', (req, res) => redirectStudio(req, res, '/course'));
 app.get('/hire', (req, res) => redirectStudio(req, res, '/hire'));
+app.get('/drama', (_req, res) => res.redirect(302, '/story'));
 
 Object.entries(pages).forEach(([route, file]) => {
   app.get(route, (req, res) => sendPage(req, res, file));
@@ -507,8 +507,6 @@ app.post('/api/account/pay', express.json({ limit: '32kb' }), (req, res) => {
   const plan = accounts.publicTree().plans.find((item) => item.id === String(req.body?.plan || '').trim());
   const full = require('./data/tree').plans.find((item) => item.id === String(req.body?.plan || '').trim());
   if (!full || !plan) return res.status(400).json({ error: '沒有這個方案' });
-  if (full.product === 'storyclip') return res.status(400).json({ error: '劇本廣告建置中，尚未開放購買。' });
-  if (full.product === 'dramaclip') return res.status(400).json({ error: 'AI短劇建置中，尚未開放購買。' });
   if (!full.price || full.id === 'free') return res.status(400).json({ error: '免費方案不必付款。' });
   const periodic = Boolean(req.body?.auto) && /／月/.test(full.priceLabel || '');
   if (periodic && payOrders.activeSubscription(row.id)) {
@@ -1166,6 +1164,7 @@ app.post('/api/move', express.json({ limit: '8mb' }), async (req, res) => {
 app.get('/api/clip/status', (req, res) => {
   const sid = clipSid(req, res);
   const guest = clipStore.guestEnhanceState(sid);
+  const visionAccess = agentAccess(req, res, 'caption');
   res.json({
     ...clipPub.status(sid),
     vision: clipCaption.configured(),
@@ -1182,6 +1181,9 @@ app.get('/api/clip/status', (req, res) => {
     talkPerSecond: 1,
     tts: clipTts.configured(),
     owner: isOwner(req),
+    visionLeft: visionAccess.unlimited ? null : visionAccess.left,
+    visionLimit: visionAccess.unlimited ? null : visionAccess.limit,
+    visionUnlimited: Boolean(visionAccess.unlimited),
     guestEnhanceLeft: guest.left,
     guestEnhanceLimit: guest.limit,
   });
@@ -1220,6 +1222,15 @@ app.post('/api/clip/music-prompt', express.json({ limit: '200kb' }), async (req,
 });
 
 app.post('/api/clip/caption', express.json({ limit: '8mb' }), async (req, res) => {
+  const access = agentAccess(req, res, 'caption');
+  if (!access.unlimited && access.left <= 0) {
+    return res.status(402).json({
+      error: '識圖寫文案的免費試用已用完（限 1 次）。購買方案後可不限次數，不扣點。',
+      left: 0,
+      limit: access.limit,
+      needPlan: true,
+    });
+  }
   try {
     const result = await clipCaption.writeCaption({
       images: Array.isArray(req.body?.images) ? req.body.images : [],
@@ -1228,7 +1239,10 @@ app.post('/api/clip/caption', express.json({ limit: '8mb' }), async (req, res) =
       hook: String(req.body?.hook || '').trim(),
       style: String(req.body?.style || 'ugc'),
     });
-    res.json(result);
+    const extra = access.unlimited
+      ? { paid: true, unlimited: true }
+      : { left: clipStore.consumeGuestAgentTrial(access.bucket, 'caption').left, limit: access.limit };
+    res.json({ ...result, ...extra });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '識圖逾時，請再試一次' : (err.message || '識圖失敗');
     res.status(400).json({ error: msg });

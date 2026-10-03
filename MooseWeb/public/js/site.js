@@ -10,7 +10,7 @@ function applyPublicNav() {
   const path = pathOf();
   const items = [
     { href: '/', label: '首頁', on: path === '/' },
-    { href: '/saas', label: '麋鹿工具包', on: path === '/saas' || path === '/clip' || path === '/story' || path === '/talk' || path === '/drama' || path === '/dress' || path === '/model' || path === '/script' || path === '/live' || path === '/ip' || path === '/hot' || path === '/prompt' || path === '/hook' },
+    { href: '/saas', label: '麋鹿工具包', on: path === '/saas' || path === '/clip' || path === '/story' || path === '/talk' || path === '/dress' || path === '/model' || path === '/script' || path === '/live' || path === '/ip' || path === '/hot' || path === '/prompt' || path === '/hook' },
   ];
   nav.innerHTML = items.map((item) =>
     `<a href="${item.href}"${item.on ? ' class="active"' : ''}>${item.label}</a>`

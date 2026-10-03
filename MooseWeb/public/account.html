@@ -33,7 +33,7 @@
     <section class="page-head">
       <p class="kicker">方案分開買</p>
       <h1>買方案需先註冊帳號</h1>
-      <p class="lead">商品短片方案可線上付款，成功即開通。金流未設定時改走 LINE。劇本廣告與 AI短劇建置中。</p>
+      <p class="lead">商品短片、劇本廣告可線上付款，成功即開通。金流未設定時改走 LINE。</p>
       <p class="lead"><a href="/clip">商品短片</a></p>
     </section>
 
@@ -91,8 +91,7 @@
         <p class="lead" id="meDetail"></p>
         <div class="admin-actions">
           <a class="btn btn-cream" href="/clip">前往商品短片</a>
-          <a class="btn btn-cream" href="/story">劇本廣告（建置中）</a>
-          <a class="btn btn-cream" href="/drama">AI短劇（建置中）</a>
+          <a class="btn btn-cream" href="/story">劇本廣告</a>
           <a class="btn btn-line hidden" data-line href="#">透過 LINE 聯繫</a>
           <button class="btn btn-ghost" type="button" id="logoutBtn">登出</button>
         </div>
@@ -106,12 +105,9 @@
       <label id="autoRenewRow" class="lead hidden"><input type="checkbox" id="autoRenew" checked /> 每月自動續約（信用卡每月自動扣款，隨時可取消）</label>
       <h3>商品短片</h3>
       <section class="plan-grid" id="planGrid"></section>
-      <h3>劇本廣告　建置中</h3>
-      <p class="lead">尚未開放申請。現有劇本次數暫不能用來出片。</p>
+      <h3>劇本廣告</h3>
+      <p class="lead">約 10 秒一支。單支 NT$299，月用 5 支 NT$1,490。跟商品短片的點數分開。</p>
       <section class="plan-grid plan-grid-2" id="storyPlanGrid"></section>
-      <h3>AI短劇　建置中</h3>
-      <p class="lead">尚未開放申請。現有短劇次數暫不能用來出片。</p>
-      <section class="plan-grid plan-grid-2" id="dramaPlanGrid"></section>
     </section>
   </main>
 
@@ -164,7 +160,6 @@
       $('meName').value = me.name || '';
       const titles = [`商品短片：${me.planName}`];
       if (me.storyPlanName) titles.push(`劇本廣告：${me.storyPlanName}`);
-      if (me.dramaPlanName) titles.push(`AI短劇：${me.dramaPlanName}`);
       $('mePlan').textContent = titles.join('　·　');
       const bits = [me.planLabel];
       if (me.credits) bits.push(`商品短片剩餘 ${me.credits} 點`);
@@ -174,10 +169,6 @@
       if (me.storyCredits) bits.push(`劇本廣告剩餘 ${me.storyCredits} 次`);
       if (me.storyExpires) bits.push(`劇本廣告至 ${String(me.storyExpires).slice(0, 10)}`);
       if (me.pendingStoryPlan) bits.push('劇本廣告確認中');
-      if (me.dramaPlanName) bits.push(me.dramaPlanLabel || me.dramaPlanName);
-      if (me.dramaCredits) bits.push(`AI短劇剩餘 ${me.dramaCredits} 次`);
-      if (me.dramaExpires) bits.push(`AI短劇至 ${String(me.dramaExpires).slice(0, 10)}`);
-      if (me.pendingDramaPlan) bits.push('AI短劇確認中');
       $('meDetail').textContent = bits.filter(Boolean).join(' · ');
       $('billingNote').textContent = tree.billingNote || '';
       $('subBox').classList.toggle('hidden', !me.subscription);
@@ -200,8 +191,8 @@
       }
       const clipPlans = (tree.plans || []).filter((plan) => (plan.product || 'mooseclip') === 'mooseclip');
       $('planGrid').innerHTML = clipPlans.map((plan) => planButton(plan, me.plan, me.pendingPlan)).join('');
-      $('storyPlanGrid').innerHTML = '';
-      $('dramaPlanGrid').innerHTML = '';
+      const storyPlans = (tree.plans || []).filter((plan) => plan.product === 'storyclip');
+      $('storyPlanGrid').innerHTML = storyPlans.map((plan) => planButton(plan, me.storyPlan, me.pendingStoryPlan)).join('');
     }
 
     async function refresh() {

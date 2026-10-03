@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>劇本廣告 StoryClip — 麋鹿網</title>
-  <meta name="description" content="劇本廣告建置中，尚未開放寫稿與出片。" />
+  <meta name="description" content="貼上劇本或讓 AI 寫一段，做成約 10 秒直式廣告。單支 NT$299，月用 5 支 NT$1,490。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=fields2" />
+  <link rel="stylesheet" href="/css/site.css?v=plans1" />
 </head>
 <body>
   <header class="site-header">
@@ -32,19 +32,41 @@
     <section class="hero research-hero">
       <p class="kicker">付費工具　StoryClip</p>
       <h1>劇本廣告</h1>
-      <p class="lead">這一項目前建置中，尚未開放寫稿、出片與購買方案。</p>
+      <p class="lead">貼上分鏡或旁白，或讓 AI 依商品寫一段。做成約 10 秒、直式的質感廣告。單支 NT$299，月用 5 支 NT$1,490。不扣商品短片的點。</p>
+      <p class="clip-plan" id="storyPlan"></p>
     </section>
 
-    <section class="panel clip-panel clip-soon-panel">
-      <p class="kicker">建置中</p>
-      <h2>尚未開放</h2>
-      <p class="lead">貼上劇本做成質感廣告的功能還在準備。現在請用商品短片或真人口播。</p>
-      <div class="admin-actions">
-        <a class="btn btn-copper" href="/saas">回付費工具</a>
-        <a class="btn btn-cream" href="/clip">商品短片</a>
-        <a class="btn btn-cream" href="/talk">真人口播短片</a>
-      </div>
+    <section class="panel">
+      <h2>示範劇本</h2>
+      <pre id="demoScript" class="story-script"></pre>
+      <video id="demoVideo" class="clip-video" src="/story-demo/demo.mp4" controls playsinline></video>
     </section>
+
+    <form id="storyForm" class="panel">
+      <h2>做一支</h2>
+      <label class="field" for="product">商品名稱</label>
+      <input id="product" class="form-input" maxlength="40" placeholder="例如：手沖咖啡豆" />
+      <label class="field" for="notes">想強調的賣點（選填）</label>
+      <textarea id="notes" class="form-input" rows="3" maxlength="400" placeholder="例如：今天下單，今晚烘好寄出"></textarea>
+      <label class="field" for="photo">商品圖（選填）</label>
+      <input id="photo" type="file" accept="image/*" />
+      <label class="field" for="script">劇本</label>
+      <textarea id="script" class="form-input" rows="8" maxlength="1200" placeholder="可自己貼，或按 AI 寫劇本"></textarea>
+      <div class="admin-actions">
+        <button class="btn btn-cream" id="writeBtn" type="button">AI 寫劇本</button>
+        <button class="btn btn-cream" id="writeMakeBtn" type="button">AI 寫好並產出</button>
+        <button class="btn btn-copper" id="makeBtn" type="submit">用現有劇本產出</button>
+        <button class="btn btn-ghost" id="recoverBtn" type="button">取回剛才的片子</button>
+      </div>
+      <p id="storyMsg" class="lead"></p>
+      <div id="previewBox" class="hidden">
+        <video id="preview" class="clip-video" controls playsinline></video>
+        <a class="btn btn-copper" id="downloadBtn" href="#" download>下載</a>
+      </div>
+    </form>
+
+    <h2>方案</h2>
+    <section class="plan-grid plan-grid-2" id="planGrid"></section>
   </main>
 
   <footer class="site-footer">
@@ -58,5 +80,6 @@
     </div>
   </footer>
   <script src="/js/site.js?v=studio6"></script>
+  <script src="/js/story.js?v=1"></script>
 </body>
 </html>

@@ -286,8 +286,8 @@ function requestPlan(account, planId) {
     saveStore(store);
     return { account: publicAccount(row), granted: true, message: '已改為免費方案。' };
   }
-  if (isDramaPlan(plan)) throw new Error('AI短劇建置中，尚未開放申請。');
-  if (isStoryPlan(plan)) throw new Error('劇本廣告建置中，尚未開放申請。');
+  if (isDramaPlan(plan)) row.pendingDramaPlan = plan.id;
+  else if (isStoryPlan(plan)) row.pendingStoryPlan = plan.id;
   else row.pendingPlan = plan.id;
   saveStore(store);
   return {

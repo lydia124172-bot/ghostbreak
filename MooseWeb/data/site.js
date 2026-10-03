@@ -63,16 +63,9 @@ module.exports = {
     {
       id: 'storyclip',
       name: '劇本廣告',
-      status: '建置中',
-      summary: '貼上劇本，做成有分鏡的質感廣告。',
+      status: '已上線',
+      summary: '貼上劇本，或讓 AI 寫一段，做成約 10 秒、有配音的直式廣告。',
       href: '/story',
-    },
-    {
-      id: 'dramaclip',
-      name: 'AI短劇',
-      status: '建置中',
-      summary: '填主題做成三鏡短劇。',
-      href: '/drama',
     },
   ],
   works: [
