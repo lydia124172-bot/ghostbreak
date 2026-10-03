@@ -66,22 +66,29 @@ async function remuxPlayable(buffer) {
   if (srcBuf.length < 200) return { buffer: srcBuf, mime: 'video/mp4' };
   const src = writeTemp('mw-in', srcBuf, 'mp4');
   const out = path.join(os.tmpdir(), `mw-play-${Date.now()}.mp4`);
+  const phoneAudio = ['-c:a', 'aac', '-profile:a', 'aac_low', '-b:a', '128k', '-ac', '2', '-ar', '44100'];
   try {
-    await runFfmpeg(['-y', '-i', src, '-c', 'copy', '-movflags', '+faststart', out], out);
-    const ready = fs.readFileSync(out);
-    return { buffer: ready, mime: 'video/mp4' };
+    await runFfmpeg(['-y', '-i', src, '-c:v', 'copy', ...phoneAudio, '-movflags', '+faststart', out], out);
+    return { buffer: fs.readFileSync(out), mime: 'video/mp4' };
   } catch {
+    try { fs.unlinkSync(out); } catch { /* 略過 */ }
     try {
       await runFfmpeg([
         '-y', '-i', src,
         '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '20',
-        '-c:a', 'aac', '-b:a', '128k',
+        ...phoneAudio,
         '-movflags', '+faststart',
         out,
       ], out);
       return { buffer: fs.readFileSync(out), mime: 'video/mp4' };
     } catch {
-      return { buffer: srcBuf, mime: 'video/mp4' };
+      try { fs.unlinkSync(out); } catch { /* 略過 */ }
+      try {
+        await runFfmpeg(['-y', '-i', src, '-c', 'copy', '-movflags', '+faststart', out], out);
+        return { buffer: fs.readFileSync(out), mime: 'video/mp4' };
+      } catch {
+        return { buffer: srcBuf, mime: 'video/mp4' };
+      }
     }
   } finally {
     try { fs.unlinkSync(src); } catch { /* 略過 */ }
@@ -176,7 +183,7 @@ async function concatVideos(buffers) {
       await runFfmpeg([
         '-y', '-f', 'concat', '-safe', '0', '-i', list,
         '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '20',
-        '-c:a', 'aac', '-b:a', '128k',
+        '-c:a', 'aac', '-profile:a', 'aac_low', '-b:a', '128k', '-ac', '2', '-ar', '44100',
         '-movflags', '+faststart',
         out,
       ], out);

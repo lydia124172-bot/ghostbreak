@@ -355,8 +355,9 @@ async function produce({ script, images, cast, castPrompt, onPhase }) {
   }
   if (onPhase) onPhase('接片中');
   const joined = await clipExport.concatVideos(clips);
+  const playable = await clipExport.remuxPlayable(joined.buffer);
   return {
-    buffer: joined.buffer,
+    buffer: playable.buffer,
     mime: 'video/mp4',
     engine: 'drama',
     duration: String(Number(sceneDuration()) * scenes.length),
