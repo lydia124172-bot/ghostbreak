@@ -376,6 +376,7 @@ function publicTree() {
       id, product: product || 'mooseclip', name, price, priceLabel, period, credits, features, images, videos, quota, scope,
     })),
     billingNote: tree.billingNote,
+    pointRules: Array.isArray(tree.pointRules) ? tree.pointRules.slice() : [],
   };
 }
 

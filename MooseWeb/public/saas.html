@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=studio4" />
+  <link rel="stylesheet" href="/css/site.css?v=plans1" />
 </head>
 <body>
   <header class="site-header">
@@ -47,10 +47,15 @@
     <section class="page-head">
       <p class="kicker">方案與點數</p>
       <h2>月費點數</h2>
-      <p class="lead">下列月費購買點數，供<strong>商品短片進階生圖、模特兒換裝、改圖、讓圖動起來、真人口播對嘴</strong>共用（成功才扣）。排版與 AI 識圖可免費試用。登入後可線上付款。</p>
+      <p class="lead">四張卡只差月費和點數。扣點方式相同，寫在下面。</p>
     </section>
     <section class="plan-grid" id="planGrid"></section>
-    <p class="lead" id="billingNote"></p>
+    <ul class="plan-rules">
+      <li>生圖、換裝、改圖：各 1 點</li>
+      <li>短片：5 秒 3 點、10 秒 6 點、15 秒 9 點</li>
+      <li>數字人對嘴：每秒 1 點</li>
+      <li>做出來才扣點。排版、看圖不扣點</li>
+    </ul>
   </main>
 
   <footer class="site-footer">
@@ -117,10 +122,9 @@
         <article class="plan-card">
           <p class="meta">${escapeHtml(plan.period)}</p>
           <h3>${escapeHtml(plan.name)}</h3>
-          <p class="plan-scope">${escapeHtml(plan.scope || '')}</p>
           <p class="plan-price">${escapeHtml(plan.priceLabel)}</p>
           <p class="plan-quota">${escapeHtml(plan.quota || '')}</p>
-          <ul>${(plan.features || []).map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>
+          <p class="plan-scope">${escapeHtml(plan.scope || '')}</p>
           <a class="btn btn-copper" href="${href}">${label}</a>
         </article>`;
       }
@@ -128,9 +132,8 @@
       document.getElementById('planGrid').innerHTML = clipPlans.map((plan) => planCard(
         plan,
         plan.id === 'free' ? '/clip' : '/account',
-        plan.id === 'free' ? '直接使用' : '選擇方案'
+        plan.id === 'free' ? '去排版' : '選擇方案'
       )).join('');
-      document.getElementById('billingNote').textContent = tree.billingNote || '';
     });
   </script>
 </body>

@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=fields2" />
+  <link rel="stylesheet" href="/css/site.css?v=plans1" />
 </head>
 <body>
   <header class="site-header">
@@ -191,10 +191,9 @@
           <article class="plan-card${current ? ' current' : ''}">
             <p class="meta">${escapeHtml(plan.period)}</p>
             <h3>${escapeHtml(plan.name)}</h3>
-            <p class="plan-scope">${escapeHtml(plan.scope || '')}</p>
             <p class="plan-price">${escapeHtml(plan.priceLabel)}</p>
             <p class="plan-quota">${escapeHtml(plan.quota || '')}</p>
-            <ul>${(plan.features || []).map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>
+            <p class="plan-scope">${escapeHtml(plan.scope || '')}</p>
             <button class="btn ${current ? 'btn-ghost' : 'btn-copper'}" type="button" data-plan="${escapeHtml(plan.id)}" ${current ? 'disabled' : ''}>${label}</button>
           </article>
         `;
