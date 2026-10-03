@@ -129,16 +129,58 @@ function pickPeople(text, who) {
   const people = peopleOf(text);
   const pool = people.length ? people : (String(text || '').trim() ? [String(text).trim()] : []);
   if (who === 'both') return pool.slice(0, 2);
-  if (who === 'female') return pool[1] ? [pool[1]] : [];
-  return pool[0] ? [pool[0]] : [];
+  if (who === 'female') {
+    const hit = pool.find((part) => /女/.test(part));
+    return [hit || pool[pool.length - 1] || pool[0]].filter(Boolean);
+  }
+  const hit = pool.find((part) => /男/.test(part) && !/女/.test(part));
+  const notWoman = pool.find((part) => !/女|她/.test(part));
+  return [hit || notWoman || pool[0]].filter(Boolean);
 }
 
-async function optimizeCastText(source, place) {
+function genderFor(person, who, index) {
+  if (who === 'female') return 'female';
+  if (who === 'male') return 'male';
+  if (/女/.test(person) && !/男/.test(person)) return 'female';
+  if (/男/.test(person)) return 'male';
+  return index === 0 ? 'male' : 'female';
+}
+
+function forceGender(text, gender) {
+  let line = String(text || '').trim();
+  if (gender === 'male') {
+    line = line
+      .replace(/女性/g, '男性')
+      .replace(/女生/g, '男生')
+      .replace(/女人/g, '男人')
+      .replace(/女孩/g, '男孩')
+      .replace(/她/g, '他');
+    if (!/男/.test(line)) line = `成年男性。${line}`;
+  } else if (gender === 'female') {
+    line = line
+      .replace(/男性/g, '女性')
+      .replace(/男生/g, '女生')
+      .replace(/男人/g, '女人')
+      .replace(/男孩/g, '女孩');
+    if (!/女/.test(line)) line = `成年女性。${line}`;
+  }
+  return line;
+}
+
+function genderLock(gender) {
+  if (gender === 'female') {
+    return '這一位是成年女性。必須畫成女人，女性的臉和身形。禁止畫成男人。adult woman, female face, not a man.';
+  }
+  return '這一位是成年男性。必須畫成男人，男性的臉、喉結和身形。禁止畫成女人，禁止女性化。adult man, male face, not a woman.';
+}
+
+async function optimizeCastText(source, place, gender) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   const raw = String(source || '').trim();
   if (!key || raw.length < 2) return raw;
   const ask = [
     '你在幫寫實人像生圖寫提示詞。把這一位的短句擴成可直接生圖的繁體中文。',
+    genderLock(gender),
     '只寫這一位。禁止再寫另一個人。',
     '客人寫到的年齡、髮型、衣服、聲線必須原樣保留，不要換成大衣、西裝、別的髮型。',
     '沒寫的才補五官和膚質。要像定妝照：臉清楚、電影光，不要過度磨皮，不要奇幻。',
@@ -180,20 +222,23 @@ async function makeCast({ topic, notes, script, prompt: wanted, who }) {
   const extra = String(notes || '').trim();
   if (!source && title.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
   const chosen = pickPeople(source || `${title}。${extra}`, pickedWho);
-  if (!chosen.length) throw new Error('沒有這一位。男主是角色第一位，女主是第二位。');
+  if (!chosen.length) throw new Error('沒有這一位。請先寫主角，或先讓劇本裡有角色。');
   const place = placeOf(script);
   const optimized = [];
   const images = [];
-  for (const person of chosen) {
-    const line = await optimizeCastText(person, place);
+  for (let index = 0; index < chosen.length; index += 1) {
+    const gender = genderFor(chosen[index], pickedWho, index);
+    const line = forceGender(await optimizeCastText(chosen[index], place, gender), gender);
     optimized.push(line);
     images.push(await geminiImage([{
       text: [
+        genderLock(gender),
         '直式 9:16 寫實定妝照。只畫這一位，半身到大腿，臉清楚，電影光。',
         '不要其他路人，不要文字、字幕、浮水印。',
         '衣服和髮型必須照下面這句，不要換成別的衣服或髮型。',
         place ? `場景必須是：${place}。不要改成攝影棚、辦公室或其他地方。` : '',
         `這一位：${line}`,
+        genderLock(gender),
       ].filter(Boolean).join('\n'),
     }]));
   }

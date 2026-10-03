@@ -174,8 +174,8 @@ async function makeCast() {
     showMsg(who === 'both'
       ? '兩位各一張。衣服和場景照劇本。約 NT$4。'
       : who === 'female'
-        ? '這次只生女主，沒有男主。衣服和場景照劇本。約 NT$2。'
-        : '這次只生男主，沒有女主。衣服和場景照劇本。約 NT$2。');
+        ? '這次只生女主，畫成女生。衣服和場景照劇本。約 NT$2。'
+        : '這次只生男主，畫成男生。衣服和場景照劇本。約 NT$2。');
   } finally {
     btn.disabled = false;
     btn.textContent = '生成主角';
