@@ -935,7 +935,7 @@ app.post('/api/dress/video', express.json({ limit: '8mb' }), async (req, res) =>
     const prompt = [
       `Animate this fashion try-on still into a ${duration}-second photoreal clip.`,
       'Gentle camera move and natural fabric motion. Keep the same person: face, hair, body, skin tone, and pose.',
-      'Keep the outfit colors, cut, and details unchanged. Do not swap clothes or invent new brands.',
+      'Keep the outfit colors, cut, and details unchanged. Do not swap clothes, invent brands, or add a buckle, zipper, pocket, or button that is not already in the still. A tied fabric belt stays a tie, with no metal buckle.',
       note ? `Guest note: ${note}` : '',
       'No captions, subtitles, watermarks, or on-screen text. Single continuous shot.',
     ].filter(Boolean).join(' ');
@@ -1235,7 +1235,7 @@ app.get('/api/clip/video/job/:jobId', async (req, res) => {
       saveVideoJobs();
       return res.status(400).json({ error: job.error });
     }
-    if (peek.status !== 'done') return res.json({ jobId: job.id, status: peek.status });
+    if (peek.status !== 'done') return res.json({ jobId: job.id, status: peek.status, duration: job.duration || '' });
     if (!job.saving) {
       job.saving = true;
       const videoUrl = peek.videoUrl;
@@ -1259,7 +1259,7 @@ app.get('/api/clip/video/job/:jobId', async (req, res) => {
         });
       });
     }
-    return res.json({ jobId: job.id, status: 'saving' });
+    return res.json({ jobId: job.id, status: 'saving', duration: job.duration || '' });
   } catch (err) {
     console.log('[clip-video] poll failed', err && err.message);
     res.status(400).json({ error: err.message || '生片失敗' });

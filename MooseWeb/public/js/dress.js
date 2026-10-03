@@ -143,7 +143,7 @@ async function makeDress() {
     return;
   }
   document.getElementById('resultBox').classList.add('hidden');
-  msg.textContent = '正在換裝，約半分鐘，請不要重按。';
+  msg.textContent = '正在依補充整理正負提示詞，再換裝。請不要重按。';
   btn.disabled = true;
   try {
     const res = await fetch('/api/dress', {
@@ -203,7 +203,7 @@ async function makeBg() {
   }
 }
 
-async function waitVideoJob(jobId) {
+async function waitVideoJob(jobId, duration) {
   const note = document.getElementById('motionMsg');
   for (let i = 0; i < 90; i += 1) {
     await new Promise((r) => setTimeout(r, 2500));
@@ -212,7 +212,9 @@ async function waitVideoJob(jobId) {
     if (!res.ok) throw new Error(body.error || '生片失敗');
     if (body.status === 'done' && body.videoUrl) return body;
     const phase = body.status === 'running' ? '正在生成短片' : '排隊中';
-    note.textContent = `${phase}（${body.duration || ''}秒），約一分鐘，請不要重按。`;
+    const sec = body.duration || duration || '';
+    const wait = String(sec) === '15' ? '15 秒會比 5 秒久，請不要重按。' : '請不要重按。';
+    note.textContent = `${phase}（${sec}秒）。${wait}`;
   }
   throw new Error('生片逾時，請稍後再試。');
 }
@@ -305,7 +307,7 @@ async function makeMotion() {
     });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || '生片失敗');
-    const done = body.videoUrl ? body : await waitVideoJob(body.jobId);
+    const done = body.videoUrl ? body : await waitVideoJob(body.jobId, duration);
     paintVideo(done);
     refreshPlan();
   } catch (err) {

@@ -59,24 +59,102 @@ function publicScenes() {
   return SCENES.map(({ id, name, hint }) => ({ id, name, hint }));
 }
 
-function dressPrompt(note) {
-  const extra = String(note || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+const BASE_POSITIVE = [
+  '第一張是模特兒，第二張與第三張是要一起穿上的衣服。兩件都穿上，不要只穿其中一件。',
+  '必須是同一個人：眉、眼、鼻、唇、臉型、下顎、膚色、髮型、髮色、年齡感跟第一張一致。',
+  '體型與姿勢維持第一張，只換衣服。',
+  '衣服的顏色、版型、花紋、材質、鈕扣顆數、口袋、領型、袖口、開襟、腰帶打法跟衣服圖一致。',
+  '質感乾淨、商業、能上架。只輸出一張圖。',
+].join('');
+
+const BASE_NEGATIVE = [
+  '換臉，美顏，瘦臉，改妝，改五官，變成別人，改姿勢，大轉身，漏穿其中一件，換成別件衣服，',
+  '衣服圖沒有的金屬扣環，皮帶頭，拉鍊，額外口袋，額外鈕扣，品牌標，',
+  '布帶打結被改成扣環，文字，浮水印，裸露，色情，小孩，奇幻風。',
+].join('');
+
+function cleanNote(note) {
+  return String(note || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+}
+
+function parsePromptJson(text) {
+  const raw = String(text || '').trim().replace(/^```json\s*|\s*```$/g, '').trim();
+  const data = JSON.parse(raw);
+  const positive = String(data.positive || '').replace(/\s+/g, ' ').trim().slice(0, 900);
+  const negative = String(data.negative || '').replace(/\s+/g, ' ').trim().slice(0, 700);
+  if (positive.length < 40 || negative.length < 20) throw new Error('提示詞太短');
+  return { positive, negative };
+}
+
+function fallbackPrompts(note) {
+  const extra = cleanNote(note);
+  return {
+    positive: extra ? `${BASE_POSITIVE}客人要：${extra}` : BASE_POSITIVE,
+    negative: BASE_NEGATIVE,
+  };
+}
+
+async function compilePrompts(note, garments) {
+  const extra = cleanNote(note);
+  const system = [
+    '你是換裝提示詞編輯。只輸出 JSON：{"positive":"","negative":""}。不要解釋。',
+    '正向寫畫面必須出現的事。負向寫畫面禁止出現的事。兩邊用繁體中文，具體、短句、不得互相矛盾。',
+    '正向必須保留：同一張臉、兩件衣服都穿上、顏色版型花紋材質鈕扣口袋腰帶打法跟衣服圖一致、商業試衣、只出一張圖。',
+    '負向必須保留：換臉、美顏、改五官、漏件、換成別件、多畫金屬扣環、皮帶頭、拉鍊、額外口袋、額外鈕扣、假品牌、文字、浮水印、裸露、小孩。',
+    '客人寫「不要某物」：該物只放負向，正向改寫成衣服圖上實際有的做法。',
+    '客人寫「要某效果」：放進正向，負向排除相反效果。',
+    '不准添加客人沒說的新場景、新姿勢或新配件。看衣服圖，不要把圖上沒有的扣環寫進正向。',
+    '後面兩張圖依序是衣服圖一、衣服圖二，不是模特兒。',
+    extra ? `客人指示：${extra}` : '客人沒有額外指示。',
+  ].join('\n');
+  const parts = [
+    { text: system },
+    ...garments.map((row) => ({ inline_data: { mime_type: row.mime, data: row.b64 } })),
+  ];
+  const key = String(process.env.GEMINI_API_KEY || '').trim();
+  let lastErr;
+  for (const model of ['gemini-flash-lite-latest', 'gemini-3.6-flash']) {
+    try {
+      const json = await withTimeout(20000, async (signal) => {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
+          {
+            method: 'POST',
+            signal,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts }],
+              generationConfig: { temperature: 0.2, maxOutputTokens: 1200, responseMimeType: 'application/json' },
+            }),
+          },
+        );
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error?.message || `提示詞服務 ${res.status}`);
+        return body;
+      });
+      const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text).join('\n') || '';
+      return parsePromptJson(text);
+    } catch (err) {
+      lastErr = err;
+      if (err.name === 'AbortError') break;
+    }
+  }
+  console.log('[dress] prompt compile skipped', lastErr && lastErr.message);
+  return fallbackPrompts(extra);
+}
+
+function imagePrompt(prompts) {
   return [
-    '第一張是模特兒。第二張與第三張是要一起穿上的衣服或配件。兩件都要穿到第一張的人身上，不要只穿其中一件。',
-    '臉部鎖定（最重要）：必須是同一個人。眉、眼、鼻、唇、臉型、下顎、膚色、髮型、髮色、年齡感都要跟第一張一致。禁止換臉、美顏瘦臉、改妝、改五官比例或變成別人。',
-    '體型與姿勢盡量維持第一張；只換衣服與必要配件，不要改動作大轉身。',
-    '第二張與第三張的顏色、版型、花紋、材質都要保留，不要漏件，也不要換成別件。',
-    '質感要乾淨、商業、能上架，像 Adobe Express 的試衣成品，不是奇幻風。',
-    '不要小孩、不要裸露、不要色情、不要加字、不要浮水印、不要假品牌標。',
-    extra ? `客人補充：${extra}` : '沒有其他補充，依三張圖完成換裝。',
-    '只輸出一張圖。',
+    `正向提示詞：${prompts.positive}`,
+    `負向提示詞：${prompts.negative}`,
+    '只輸出一張圖。第一張是模特兒，第二張與第三張是衣服。',
   ].join('\n');
 }
 
 function bgPrompt(scene, note) {
   const extra = String(note || '').replace(/\s+/g, ' ').trim().slice(0, 120);
   return [
-    'Keep the person and clothing from the photo exactly the same: face, hair, body, pose, outfit colors and details.',
+    'Keep the person and clothing from the photo exactly the same: face, hair, body, pose, outfit colors, buttons, pockets, and belt. Do not add a buckle, zipper, pocket, or logo that is not already in the photo.',
     'Only replace the background. Clean cutout edges, natural contact shadows, commercial Adobe Express quality.',
     `New background: ${scene.prompt}.`,
     'Soft natural light, photoreal, lifestyle fashion look. No fantasy, no clutter, no extra people.',
@@ -140,8 +218,9 @@ async function dress({ model, cloth, cloth2, note }) {
   const person = parseDataUrl(model);
   const garment = parseDataUrl(cloth);
   const garment2 = parseDataUrl(cloth2);
+  const prompts = await compilePrompts(note, [garment, garment2]);
   return generateImage([
-    { text: dressPrompt(note) },
+    { text: imagePrompt(prompts) },
     { inline_data: { mime_type: person.mime, data: person.b64 } },
     { inline_data: { mime_type: garment.mime, data: garment.b64 } },
     { inline_data: { mime_type: garment2.mime, data: garment2.b64 } },
