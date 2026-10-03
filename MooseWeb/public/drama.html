@@ -42,7 +42,7 @@
       <label class="field" for="notes">補充（選填）</label>
       <textarea id="notes" class="form-input" rows="3" maxlength="400" placeholder="例如：女聲，語氣平靜，不要字幕"></textarea>
       <p class="field">主角</p>
-      <p class="lead">預設先好看。生成過的圖都會留在下面。需要別人出現時，選其他人，寫這一位再生成。劇情有寫到他，那一鏡才會放進去。一張約 NT$5。最多再帶兩位其他人。</p>
+      <p class="lead">可以生成，也可以自己上傳。點一下圖，就是這次影片要用的人。男主、女主各一張，其他人最多兩張。上傳不另計模型費。生成一張約 NT$5。</p>
       <div class="clip-types story-durations" id="castWho">
         <button class="clip-type active" type="button" data-who="male"><strong>男主</strong><span>只生男生</span></button>
         <button class="clip-type" type="button" data-who="female"><strong>女主</strong><span>只生女生</span></button>
@@ -56,6 +56,14 @@
       <label class="field" for="castPrompt">主角提示詞</label>
       <textarea id="castPrompt" class="form-input" rows="3" maxlength="500" placeholder="例如：阿翔，30歲，俐落短髮，深灰色西裝。其他人就只寫這一位。"></textarea>
       <button class="btn btn-cream" id="castBtn" type="button">生成主角</button>
+      <div class="admin-actions">
+        <label class="btn btn-ghost" for="castFileMale">上傳男主</label>
+        <input id="castFileMale" type="file" accept="image/*" hidden />
+        <label class="btn btn-ghost" for="castFileFemale">上傳女主</label>
+        <input id="castFileFemale" type="file" accept="image/*" hidden />
+        <label class="btn btn-ghost" for="castFileOther">上傳其他人</label>
+        <input id="castFileOther" type="file" accept="image/*" hidden />
+      </div>
       <div id="castPreviewBox" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;"></div>
       <p class="field">三鏡參考圖（可空。空的那鏡用上面的主角，表情和狀態照該鏡劇情）</p>
       <p class="lead" id="photoCount">尚未選圖。</p>
@@ -86,6 +94,6 @@
       </div>
     </form>
   </main>
-  <script src="/js/drama.js?v=owner14"></script>
+  <script src="/js/drama.js?v=owner15"></script>
 </body>
 </html>

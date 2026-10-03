@@ -143,34 +143,55 @@ async function writeDramaScript() {
 let castImages = [];
 const castSlots = { male: '', female: '' };
 const castGallery = [];
+let castSeq = 0;
 
 function castPayload() {
   const payload = [];
-  if (castSlots.male) payload.push({ role: 'male', image: castSlots.male });
-  if (castSlots.female) payload.push({ role: 'female', image: castSlots.female });
-  castGallery.filter((item) => item.role === 'other').slice(-2).forEach((item) => {
+  const male = castGallery.find((item) => item.role === 'male' && item.picked);
+  const female = castGallery.find((item) => item.role === 'female' && item.picked);
+  if (male) payload.push({ role: 'male', image: male.src });
+  if (female) payload.push({ role: 'female', image: female.src });
+  castGallery.filter((item) => item.role === 'other' && item.picked).slice(-2).forEach((item) => {
     payload.push({ role: 'other', image: item.src });
   });
   castImages = payload;
+  if (male) castSlots.male = male.src;
+  if (female) castSlots.female = female.src;
   return payload;
+}
+
+function pickCast(id) {
+  const item = castGallery.find((entry) => entry.id === id);
+  if (!item) return;
+  if (item.role === 'other') {
+    item.picked = true;
+    const picked = castGallery.filter((entry) => entry.role === 'other' && entry.picked);
+    while (picked.length > 2) picked.shift().picked = false;
+    return;
+  }
+  castGallery.forEach((entry) => {
+    if (entry.role === item.role) entry.picked = entry.id === id;
+  });
+  castSlots[item.role] = item.src;
 }
 
 function addCast(role, src) {
   if (!src) return;
-  castGallery.push({ role, src });
-  if (role === 'male' || role === 'female') castSlots[role] = src;
+  castSeq += 1;
+  castGallery.push({ id: castSeq, role, src, picked: false });
+  pickCast(castSeq);
 }
 
 function renderCast() {
   const box = document.getElementById('castPreviewBox');
   box.innerHTML = '';
-  const count = { male: 0, female: 0 };
+  const count = { male: 0, female: 0, other: 0 };
   castGallery.forEach((item) => {
     count[item.role] = (count[item.role] || 0) + 1;
     const name = item.role === 'female' ? '女主' : item.role === 'other' ? '其他人' : '男主';
-    const label = `${name} ${count[item.role]}`;
+    const label = `${name} ${count[item.role]}${item.picked ? ' · 用這張' : ''}`;
     const wrap = document.createElement('figure');
-    wrap.style.cssText = 'margin:0;';
+    wrap.style.cssText = `margin:0;cursor:pointer;border-radius:8px;${item.picked ? 'outline:2px solid #1c1915;outline-offset:3px;' : ''}`;
     const img = document.createElement('img');
     img.src = item.src;
     img.alt = label;
@@ -180,8 +201,25 @@ function renderCast() {
     cap.textContent = label;
     wrap.appendChild(img);
     wrap.appendChild(cap);
+    wrap.addEventListener('click', () => {
+      if (item.role === 'other' && item.picked) item.picked = false;
+      else pickCast(item.id);
+      renderCast();
+      showMsg('已選定這次影片要用的人。男主、女主各一張，其他人最多兩張。');
+    });
     box.appendChild(wrap);
   });
+}
+
+async function uploadCast(role, input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  const src = await fileToJpegDataUrl(file);
+  addCast(role, src);
+  renderCast();
+  const name = role === 'female' ? '女主' : role === 'other' ? '其他人' : '男主';
+  showMsg(`${name}的照片已留下，並設成這次要用的人。點別張可以改。`);
 }
 
 async function makeCast() {
@@ -297,6 +335,22 @@ document.getElementById('castBtn').addEventListener('click', async () => {
   } catch (err) {
     showMsg(err.message || '主角沒有生出來');
   }
+});
+
+[
+  ['castFileMale', 'male'],
+  ['castFileFemale', 'female'],
+  ['castFileOther', 'other'],
+].forEach(([id, role]) => {
+  const input = document.getElementById(id);
+  if (!input) return;
+  input.addEventListener('change', async () => {
+    try {
+      await uploadCast(role, input);
+    } catch (err) {
+      showMsg(err.message || '照片沒有讀到');
+    }
+  });
 });
 
 document.getElementById('writeBtn').addEventListener('click', async () => {
