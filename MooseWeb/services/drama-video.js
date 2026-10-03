@@ -52,23 +52,25 @@ function lookOf(script) {
   return head.replace(/\s+/g, ' ').trim().slice(0, 500);
 }
 
-async function stillFromText(visual, look) {
+function imageDataUrl(part) {
+  const raw = part && (part.inlineData || part.inline_data);
+  if (!raw || !raw.data) return '';
+  const mime = String(raw.mimeType || raw.mime_type || 'image/jpeg');
+  const kind = /png/i.test(mime) ? 'png' : /webp/i.test(mime) ? 'webp' : 'jpeg';
+  return `data:image/${kind};base64,${raw.data}`;
+}
+
+async function geminiImage(parts) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   if (!key) throw new Error('短劇畫面尚未開通。');
   const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
-  const prompt = [
-    '直式 9:16 寫實短劇劇照，電影光，像一格分鏡。',
-    '不要任何文字、字幕、標題、浮水印。',
-    look ? `角色與背景，三鏡都要一致：${look}` : '',
-    `畫面：${visual}`,
-  ].filter(Boolean).join('\n');
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
           imageConfig: { aspectRatio: '9:16', imageSize: '1K' },
@@ -78,10 +80,40 @@ async function stillFromText(visual, look) {
   );
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.error?.message || `短劇畫面失敗 ${res.status}`);
-  const parts = json.candidates?.[0]?.content?.parts || [];
-  const b64 = parts.map((part) => part.inlineData?.data || part.inline_data?.data).find(Boolean);
-  if (!b64) throw new Error('沒有產出第鏡畫面，請再試一次。');
-  return `data:image/jpeg;base64,${b64}`;
+  const image = (json.candidates?.[0]?.content?.parts || []).map(imageDataUrl).find(Boolean);
+  if (!image) throw new Error('沒有產出畫面，請再試一次。');
+  return image;
+}
+
+async function stillFromText(visual, look, castImage) {
+  const prompt = [
+    '直式 9:16 寫實短劇劇照，電影光，像一格分鏡。',
+    castImage ? '附圖是主角。必須是同一個人：臉、髮型、衣服不要換。只改這一鏡的動作和站位。' : '',
+    '不要任何文字、字幕、標題、浮水印。',
+    look ? `角色與背景，三鏡都要一致：${look}` : '',
+    `畫面：${visual}`,
+  ].filter(Boolean).join('\n');
+  const parts = [{ text: prompt }];
+  if (castImage) {
+    const file = clipVideo.parseDataUrl(castImage);
+    parts.push({ inline_data: { mime_type: file.mime, data: file.b64 } });
+  }
+  return geminiImage(parts);
+}
+
+async function makeCast({ topic, notes, script }) {
+  const look = lookOf(script);
+  const title = String(topic || '').trim();
+  const extra = String(notes || '').trim();
+  if (!look && title.length < 2) throw new Error('請先填主題，或先按 AI 寫三鏡。');
+  const prompt = [
+    '直式 9:16 寫實主角定妝照。一個人，半身到大腿，臉清楚，電影光。',
+    '不要其他路人，不要文字、字幕、浮水印。',
+    look || `依主題設計這一位主角：${title}。`,
+    extra ? `補充：${extra}` : '',
+  ].filter(Boolean).join('\n');
+  const image = await geminiImage([{ text: prompt }]);
+  return { image };
 }
 
 function scenePrompt(scene, look) {
@@ -106,15 +138,16 @@ async function waitScene(job) {
   throw new Error('這一鏡逾時。請不要重按。');
 }
 
-async function produce({ script, images, onPhase }) {
+async function produce({ script, images, cast, onPhase }) {
   if (!configured()) throw new Error('AI 短劇尚未開通。');
   const scenes = parseScenes(script);
   const look = lookOf(script);
+  const hero = String(cast || '').trim();
   const refs = Array.isArray(images) ? images : [];
   const clips = [];
   for (let i = 0; i < scenes.length; i += 1) {
     if (onPhase) onPhase(`第 ${i + 1} 鏡`);
-    const still = refs[i] || await stillFromText(scenes[i].visual, look);
+    const still = refs[i] || await stillFromText(scenes[i].visual, look, hero);
     const submitted = await clipVideo.submit({
       images: [still],
       product: scenes[i].visual,
@@ -147,4 +180,5 @@ module.exports = {
   sceneDuration,
   parseScenes,
   produce,
+  makeCast,
 };

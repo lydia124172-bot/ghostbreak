@@ -140,6 +140,34 @@ async function writeDramaScript() {
   return script;
 }
 
+let castImage = '';
+
+async function makeCast() {
+  const { topic, notes } = await collectInput();
+  const script = document.getElementById('script').value.trim();
+  if (topic.length < 2 && script.length < 2) throw new Error('請先填主題，或先按 AI 寫三鏡。');
+  const btn = document.getElementById('castBtn');
+  btn.disabled = true;
+  btn.textContent = '生成主角中…';
+  try {
+    const res = await fetch('/api/drama/cast', {
+      method: 'POST',
+      headers: tokenHeaders(true),
+      body: JSON.stringify({ topic, notes, script }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || '主角沒有生出來');
+    castImage = String(body.image || '');
+    const preview = document.getElementById('castPreview');
+    preview.src = castImage;
+    preview.hidden = false;
+    showMsg('主角已生成。三鏡沒放照片時會用這張臉。這一張約 NT$2。');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '生成主角';
+  }
+}
+
 async function produceDrama(script) {
   const line = String(script || document.getElementById('script').value || '').trim();
   const { images } = await collectInput();
@@ -163,7 +191,7 @@ async function produceDrama(script) {
     const res = await fetch('/api/drama/video', {
       method: 'POST',
       headers: tokenHeaders(true),
-      body: JSON.stringify({ script: line, images }),
+      body: JSON.stringify({ script: line, images, cast: castImage }),
     });
     const body = await res.json().catch(() => ({}));
     if (res.status === 401 || res.status === 404) throw new Error(body.error || '請先登入後台。');
@@ -186,6 +214,14 @@ document.getElementById('dramaForm').addEventListener('submit', async (event) =>
     await produceDrama();
   } catch (err) {
     showMsg(err.message || '短劇失敗');
+  }
+});
+
+document.getElementById('castBtn').addEventListener('click', async () => {
+  try {
+    await makeCast();
+  } catch (err) {
+    showMsg(err.message || '主角沒有生出來');
   }
 });
 

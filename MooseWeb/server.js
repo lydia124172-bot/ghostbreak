@@ -49,7 +49,7 @@ const jsonDefault = express.json({
   limit: '1mb',
   verify: (req, _res, buf) => { if (req.url === '/api/line/webhook') req.rawBody = buf; },
 });
-const largeJsonPost = /^\/api\/(dress|edit|move|model|hook|prompt|script|clip\/(caption|enhance|video|music-prompt)|talk\/video|story\/(script|video)|drama\/(script|video))(\/|$)/;
+const largeJsonPost = /^\/api\/(dress|edit|move|model|hook|prompt|script|clip\/(caption|enhance|video|music-prompt)|talk\/video|story\/(script|video)|drama\/(script|video|cast))(\/|$)/;
 app.use((req, res, next) => {
   if (req.method === 'POST' && largeJsonPost.test(req.path)) return next();
   return jsonDefault(req, res, next);
@@ -1866,6 +1866,7 @@ function latestDramaJob(sid) {
 app.use([
   '/api/drama/script',
   '/api/drama/video',
+  '/api/drama/cast',
 ], (req, res, next) => {
   if (isOwner(req)) return next();
   return res.status(404).json({ error: '找不到這個功能。' });
@@ -1882,6 +1883,20 @@ app.get('/api/drama/status', (req, res) => {
     demoScript: owner ? dramaVideo.DEMO_SCRIPT : '',
     owner,
   });
+});
+
+app.post('/api/drama/cast', express.json({ limit: '8mb' }), async (req, res) => {
+  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
+  try {
+    const result = await dramaVideo.makeCast({
+      topic: String(req.body?.topic || '').trim(),
+      notes: String(req.body?.notes || '').trim(),
+      script: String(req.body?.script || '').trim(),
+    });
+    res.json({ image: result.image });
+  } catch (err) {
+    res.status(400).json({ error: err.message || '主角沒有生出來' });
+  }
 });
 
 app.post('/api/drama/script', express.json({ limit: '8mb' }), async (req, res) => {
@@ -1915,6 +1930,7 @@ app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) =>
       cost,
       script: String(req.body?.script || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
+      cast: String(req.body?.cast || ''),
       phase: '已送出',
       created: Date.now(),
       result: null,
@@ -1926,6 +1942,7 @@ app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) =>
       dramaVideo.produce({
         script: job.script,
         images: job.images,
+        cast: job.cast,
         onPhase: (phase) => { job.phase = phase; },
       }).then((fileOut) => {
         const saved = clipStore.saveMedia(job.sid, 'video', fileOut.buffer, fileOut.mime || 'video/mp4');
@@ -1941,10 +1958,12 @@ app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) =>
           ...extra,
         };
         job.images = [];
+        job.cast = '';
         saveDramaJobs();
       }).catch((err) => {
         job.error = err.message || '短劇失敗';
         job.images = [];
+        job.cast = '';
         saveDramaJobs();
         console.log('[drama] failed', job.error);
       });

@@ -41,7 +41,11 @@
       <input id="topic" class="form-input" maxlength="80" placeholder="例如：雨夜巷口，她決定先走" />
       <label class="field" for="notes">補充（選填）</label>
       <textarea id="notes" class="form-input" rows="3" maxlength="400" placeholder="例如：女聲，語氣平靜，不要字幕"></textarea>
-      <p class="field">三鏡參考圖（可空。空的那鏡由 AI 生畫面）</p>
+      <p class="field">主角</p>
+      <p class="lead">按這裡生出主角。三鏡沒放照片時，會用這張臉。多一張圖，約 NT$2。</p>
+      <button class="btn btn-cream" id="castBtn" type="button">生成主角</button>
+      <img id="castPreview" alt="主角" hidden style="display:block;max-width:240px;margin-top:12px;border-radius:8px;" />
+      <p class="field">三鏡參考圖（可空。空的那鏡用主角，再照劇本生畫面）</p>
       <p class="lead" id="photoCount">尚未選圖。</p>
       <label class="field" for="photo1">第 1 鏡</label>
       <input id="photo1" type="file" accept="image/*" />
@@ -70,6 +74,6 @@
       </div>
     </form>
   </main>
-  <script src="/js/drama.js?v=owner1"></script>
+  <script src="/js/drama.js?v=owner2"></script>
 </body>
 </html>
