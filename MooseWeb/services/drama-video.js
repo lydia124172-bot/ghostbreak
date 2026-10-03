@@ -159,17 +159,24 @@ function pickPeople(text, who) {
   return [hit || notWoman || pool[0]].filter(Boolean);
 }
 
-function genderFor(person, who, index) {
-  if (who === 'other') {
-    if (/女/.test(person) && !/男/.test(person)) return 'female';
-    if (/男/.test(person)) return 'male';
-    return 'open';
-  }
+function guessGender(text) {
+  const line = String(text || '');
+  if (/女性|女生|女人|女主/.test(line) && !/男性|男生|男人|男主/.test(line)) return 'female';
+  if (/男性|男生|男人|男主/.test(line) && !/女性|女生|女人|女主/.test(line)) return 'male';
+  if (/女/.test(line) && !/男/.test(line)) return 'female';
+  if (/男/.test(line) && !/女/.test(line)) return 'male';
+  const female = /及肩|長髮|長直|披肩|微捲|波浪|絲質睡衣|睡衣|洋裝|裙/.test(line);
+  const male = /寸頭|平頭|短寸|鬍|西裝/.test(line);
+  if (female && !male) return 'female';
+  if (male && !female) return 'male';
+  return '';
+}
+
+function genderFor(person, who) {
+  const guessed = guessGender(person);
   if (who === 'female') return 'female';
   if (who === 'male') return 'male';
-  if (/女/.test(person) && !/男/.test(person)) return 'female';
-  if (/男/.test(person)) return 'male';
-  return index === 0 ? 'male' : 'female';
+  return guessed || 'open';
 }
 
 function forceGender(text, gender) {
@@ -215,7 +222,9 @@ async function optimizeCastText(source, place, gender, appeal) {
   const raw = String(source || '').trim();
   if (!key || raw.length < 2) return raw;
   const ask = [
-    '你在幫寫實人像生圖寫提示詞。把這一位的短句擴成可直接生圖的繁體中文。',
+    '你在幫寫實人像生圖寫提示詞。把這一位的短句擴成可直接生圖的一段繁體中文。',
+    '第一句只寫「女性。」或「男性。」，依這個人的名字和描述判斷，不要判反，也不要換成另一個人。',
+    '年齡、髮長、髮型、衣服顏色和款式必須跟原文一樣。短寸頭就寫短寸頭，及肩微捲就寫及肩微捲，絲質睡衣不要改成襯衫。',
     genderLock(gender),
     appealLock(appeal, gender),
     appeal === 'rough'
@@ -269,17 +278,22 @@ async function makeCast({ topic, notes, script, prompt: wanted, who, appeal }) {
   const place = placeOf(script);
   const optimized = [];
   const images = [];
+  const roles = [];
   for (let index = 0; index < chosen.length; index += 1) {
-    const gender = genderFor(chosen[index], pickedWho, index);
-    const line = forceGender(await optimizeCastText(chosen[index], place, gender, pickedAppeal), gender);
+    let gender = genderFor(chosen[index], pickedWho);
+    let line = await optimizeCastText(chosen[index], place, gender, pickedAppeal);
+    const seen = guessGender(line) || guessGender(chosen[index]);
+    if ((pickedWho === 'both' || pickedWho === 'other') && seen) gender = seen;
+    line = forceGender(line, gender);
     optimized.push(line);
+    roles.push(gender === 'female' ? 'female' : gender === 'male' ? 'male' : 'other');
     images.push(await geminiImage([{
       text: [
         genderLock(gender),
         appealLock(pickedAppeal, gender),
         '直式 9:16 寫實電影定妝照，2K。只畫這一位，半身，臉清楚。',
         '85mm 鏡頭。不要其他路人，不要文字、字幕、浮水印。',
-        '髮長、髮型、衣服顏色和款式必須完全照「原文」。長直髮就要披在肩上，禁止盤髮、丸子頭、馬尾、短髮。禁止換成別的衣服。',
+        '髮長、髮型和衣服必須完全照原文。短寸頭就畫短寸頭，及肩微捲就畫及肩微捲，長直髮才披在肩上。不要改成另一種髮型，也不要換成別的衣服。',
         pickedAppeal === 'rough' ? '臉的氣質可以照原文的疲憊或粗糙。' : '臉要好看。原文若寫疲憊、傷痕、難看，這次不要畫。',
         `原文：${chosen[index]}`,
         `可補的細節：${line}`,
@@ -288,7 +302,7 @@ async function makeCast({ topic, notes, script, prompt: wanted, who, appeal }) {
       ].filter(Boolean).join('\n'),
     }]));
   }
-  return { images, prompt: optimized.join('\n') };
+  return { images, prompt: optimized.join('\n\n'), roles };
 }
 
 function scenePrompt(scene, look, castPrompt) {

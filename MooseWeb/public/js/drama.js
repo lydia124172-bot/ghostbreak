@@ -205,9 +205,9 @@ async function makeCast() {
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '主角沒有生出來');
     const fresh = (Array.isArray(body.images) ? body.images : []).filter(Boolean).slice(0, 2);
+    const roles = Array.isArray(body.roles) ? body.roles : [];
     if (who === 'both') {
-      addCast('male', fresh[0]);
-      addCast('female', fresh[1]);
+      fresh.forEach((src, index) => addCast(roles[index] === 'female' ? 'female' : 'male', src));
     } else if (who === 'female') {
       addCast('female', fresh[0]);
     } else if (who === 'other') {
@@ -215,14 +215,14 @@ async function makeCast() {
     } else {
       addCast('male', fresh[0]);
     }
-    if (body.prompt && who !== 'both') document.getElementById('castPrompt').value = String(body.prompt);
+    if (body.prompt) document.getElementById('castPrompt').value = String(body.prompt);
     castPayload();
     renderCast();
     const face = appeal === 'rough' ? '這次照難看。' : '這次先好看。';
     showMsg(who === 'other'
       ? `其他人已留下，舊圖也還在。劇情有寫到他，那一鏡才會放進去。${face}約 NT$5。`
       : who === 'both'
-        ? `新的兩張已留下，舊圖也還在。三鏡用最新的男主、女主，以及最近兩位其他人。${face}約 NT$10。`
+        ? `兩位已照各自的描述分開，提示詞已優化並寫回欄位。舊圖還在。${face}約 NT$10。`
         : `新的一張已留下，之前的圖也還在。三鏡用最新的男主、女主，以及最近兩位其他人。${face}約 NT$5。`);
   } finally {
     btn.disabled = false;

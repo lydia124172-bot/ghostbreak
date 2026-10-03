@@ -1896,7 +1896,7 @@ app.post('/api/drama/cast', express.json({ limit: '8mb' }), async (req, res) => 
       who: String(req.body?.who || '').trim(),
       appeal: String(req.body?.appeal || '').trim(),
     });
-    res.json({ images: result.images, prompt: result.prompt || '' });
+    res.json({ images: result.images, prompt: result.prompt || '', roles: result.roles || [] });
   } catch (err) {
     res.status(400).json({ error: err.message || '主角沒有生出來' });
   }
