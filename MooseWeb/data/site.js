@@ -64,7 +64,7 @@ module.exports = {
       id: 'storyclip',
       name: '劇本廣告',
       status: '已上線',
-      summary: '照劇本走：開場看見商品、使用或細節、收尾一句賣點。10 或 15 秒，有配音。',
+      summary: '照劇本走：開場看見商品，兩人短對話，收尾一句賣點。10 或 15 秒。',
       href: '/story',
     },
   ],

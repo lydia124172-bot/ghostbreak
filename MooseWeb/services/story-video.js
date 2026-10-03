@@ -4,7 +4,9 @@ const DEMO_SCRIPT = [
   '晨光從窗邊進來，木桌上放著一袋剛烘好的手沖咖啡豆。',
   '手撥開袋口，深焙香氣散開。熱水緩緩注入濾杯，液面慢慢漲起。',
   '最後端起杯子靠近窗邊，蒸汽在光裡轉了一下。',
-  '不要字幕、不要浮水印。旁白：今天下單，今晚烘好寄出。',
+  '店員：這包今天烘的？',
+  '客人：今天下單，今晚寄出。',
+  '不要字幕、不要浮水印。',
 ].join('\n');
 
 function falKey() {
@@ -65,14 +67,15 @@ function engine() {
 
 function storyPrompt({ script, product, duration }) {
   const body = String(script || '').trim();
-  if (body.length < 12) throw new Error('請貼上至少一段劇本，寫分鏡或旁白即可。');
+  if (body.length < 12) throw new Error('請貼上至少一段劇本，寫兩人對談即可。');
   if (body.length > 1200) throw new Error('劇本請在 1,200 字內。');
   const name = String(product || '').trim();
   const seconds = videoDuration(duration);
   return [
     `Vertical 9:16 cinematic product commercial, about ${seconds} seconds, photoreal, premium lighting.`,
-    'Follow this script beat by beat: opening, product use or detail, then one closing selling line.',
-    'Speak narration lines in Chinese. No on-screen captions, subtitles, prices, logos, or watermarks.',
+    'Follow this script beat by beat: show the product, then two people talk to each other about it.',
+    'Speak each quoted line in Chinese, on camera, matched to that speaker. Lip movement follows the words.',
+    'No on-screen captions, subtitles, prices, logos, or watermarks.',
     name ? `Keep this product recognizable: ${name}.` : '',
     'SCRIPT:',
     body,
