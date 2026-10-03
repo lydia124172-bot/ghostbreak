@@ -817,7 +817,7 @@ app.get('/api/dress/last', (req, res) => {
   }
 });
 
-app.post('/api/dress', express.json({ limit: '8mb' }), async (req, res) => {
+app.post('/api/dress', express.json({ limit: '12mb' }), async (req, res) => {
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
@@ -830,6 +830,7 @@ app.post('/api/dress', express.json({ limit: '8mb' }), async (req, res) => {
     const result = await dressAgent.dress({
       model: String(req.body?.model || ''),
       cloth: String(req.body?.cloth || ''),
+      cloth2: String(req.body?.cloth2 || ''),
       note: String(req.body?.note || '').trim(),
     });
     const mediaId = stashDressImage(req, res, result.image);
@@ -984,6 +985,7 @@ app.get('/api/clip/status', (req, res) => {
     videoDuration: clipVideo.videoDuration(),
     videoCredits: clipVideo.creditCost('5'),
     videoCredits10: clipVideo.creditCost('10'),
+    videoCredits15: clipVideo.creditCost('15'),
     talk: clipTalk.configured(),
     talkEngine: clipTalk.engine(),
     talkPerSecond: 1,

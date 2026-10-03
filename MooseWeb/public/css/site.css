@@ -669,6 +669,10 @@ details.clip-panel > summary::-webkit-details-marker { color: var(--gold); }
   gap: 12px;
 }
 
+.dress-uploads {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 p.field {
   display: block;
   font-size: 14px;
@@ -744,7 +748,7 @@ label.choice {
 }
 
 @media (max-width: 800px) {
-  .admin-2 { grid-template-columns: 1fr; }
+  .admin-2, .dress-uploads { grid-template-columns: 1fr; }
 }
 
 .status-ok { color: #1b7a4a; font-size: 14px; }

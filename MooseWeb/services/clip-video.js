@@ -79,10 +79,10 @@ function parseDataUrl(url) {
   return { mime: m[1], b64: m[2], url };
 }
 
-function motionPrompt({ product, price, hook, style }) {
+function motionPrompt({ product, price, hook, style, duration: wanted }) {
   const name = product || 'the product in the first frame';
   const offer = [price, hook].filter(Boolean).join(', ');
-  const sec = videoDuration();
+  const sec = videoDuration(wanted);
   const scene = style === 'life'
     ? 'Soft window light, shallow depth of field. Motion comes from environment (steam, pour, fabric, leaves) not from punching the camera forward.'
     : 'Authentic UGC product ad: phone-held feel with a slow side arc or orbit (about 15–30 degrees), light parallax between product and background.';
@@ -266,7 +266,7 @@ async function submit({ images, product, price, hook, style, audio, audioUrl, vo
   const still = prepareStill(Buffer.from(file.b64, 'base64'));
   const imageUrl = await falUpload(key, still, 'image/jpeg', 'product.jpg');
   const payload = {
-    prompt: prompt || motionPrompt({ product: product || '商品', price, hook, style }),
+    prompt: prompt || motionPrompt({ product: product || '商品', price, hook, style, duration }),
     image_url: imageUrl,
     resolution: '720p',
     duration,

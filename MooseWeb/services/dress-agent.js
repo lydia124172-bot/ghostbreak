@@ -62,13 +62,13 @@ function publicScenes() {
 function dressPrompt(note) {
   const extra = String(note || '').replace(/\s+/g, ' ').trim().slice(0, 120);
   return [
-    '第一張是模特兒。第二張是衣服或配件。把第二張的服裝穿到第一張的人身上。',
+    '第一張是模特兒。第二張與第三張是要一起穿上的衣服或配件。兩件都要穿到第一張的人身上，不要只穿其中一件。',
     '臉部鎖定（最重要）：必須是同一個人。眉、眼、鼻、唇、臉型、下顎、膚色、髮型、髮色、年齡感都要跟第一張一致。禁止換臉、美顏瘦臉、改妝、改五官比例或變成別人。',
     '體型與姿勢盡量維持第一張；只換衣服與必要配件，不要改動作大轉身。',
-    '服裝的顏色、版型、花紋、材質要跟第二張一致，不要換成別件。',
+    '第二張與第三張的顏色、版型、花紋、材質都要保留，不要漏件，也不要換成別件。',
     '質感要乾淨、商業、能上架，像 Adobe Express 的試衣成品，不是奇幻風。',
     '不要小孩、不要裸露、不要色情、不要加字、不要浮水印、不要假品牌標。',
-    extra ? `客人補充：${extra}` : '沒有其他補充，依兩張圖完成換裝。',
+    extra ? `客人補充：${extra}` : '沒有其他補充，依三張圖完成換裝。',
     '只輸出一張圖。',
   ].join('\n');
 }
@@ -134,14 +134,17 @@ async function generateImage(parts) {
   return { image: out };
 }
 
-async function dress({ model, cloth, note }) {
+async function dress({ model, cloth, cloth2, note }) {
   if (looksLikeJailbreak(note)) throw new Error('無法提供');
+  if (!model || !cloth || !cloth2) throw new Error('請上傳模特兒照與兩張衣服圖。');
   const person = parseDataUrl(model);
   const garment = parseDataUrl(cloth);
+  const garment2 = parseDataUrl(cloth2);
   return generateImage([
     { text: dressPrompt(note) },
     { inline_data: { mime_type: person.mime, data: person.b64 } },
     { inline_data: { mime_type: garment.mime, data: garment.b64 } },
+    { inline_data: { mime_type: garment2.mime, data: garment2.b64 } },
   ]);
 }
 

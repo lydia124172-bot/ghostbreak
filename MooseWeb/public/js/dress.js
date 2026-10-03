@@ -1,6 +1,7 @@
 const state = {
   model: '',
   cloth: '',
+  cloth2: '',
   image: '',
   videoCost: 4,
   videoCost10: 7,
@@ -137,8 +138,8 @@ async function refreshPlan() {
 async function makeDress() {
   const msg = document.getElementById('dressMsg');
   const btn = document.getElementById('makeBtn');
-  if (!state.model || !state.cloth) {
-    msg.textContent = '請先選模特兒照與衣服圖。';
+  if (!state.model || !state.cloth || !state.cloth2) {
+    msg.textContent = '請先選模特兒照，以及兩張衣服圖。';
     return;
   }
   document.getElementById('resultBox').classList.add('hidden');
@@ -151,6 +152,7 @@ async function makeDress() {
       body: JSON.stringify({
         model: state.model,
         cloth: state.cloth,
+        cloth2: state.cloth2,
         note: document.getElementById('note').value.trim(),
       }),
     });
@@ -315,6 +317,7 @@ async function makeMotion() {
 
 document.getElementById('modelFile').addEventListener('change', () => pick('modelFile', 'model', 'modelPrev'));
 document.getElementById('clothFile').addEventListener('change', () => pick('clothFile', 'cloth', 'clothPrev'));
+document.getElementById('clothFile2').addEventListener('change', () => pick('clothFile2', 'cloth2', 'clothPrev2'));
 document.getElementById('makeBtn').addEventListener('click', makeDress);
 document.getElementById('recoverBtn').addEventListener('click', () => recoverLast(false));
 document.getElementById('bgBtn').addEventListener('click', makeBg);

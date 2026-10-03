@@ -29,6 +29,7 @@ const state = {
   duration: '5',
   videoCredits5: 4,
   videoCredits10: 7,
+  videoCredits15: 10,
   owner: false,
 };
 
@@ -37,11 +38,15 @@ function selectedStyle() {
 }
 
 function selectedDuration() {
-  return state.duration === '10' ? '10' : '5';
+  if (state.duration === '10' || state.duration === '15') return state.duration;
+  return '5';
 }
 
 function videoPointCost() {
-  return selectedDuration() === '10' ? state.videoCredits10 : state.videoCredits5;
+  const sec = selectedDuration();
+  if (sec === '15') return state.videoCredits15;
+  if (sec === '10') return state.videoCredits10;
+  return state.videoCredits5;
 }
 
 function makeBtnLabel() {
@@ -630,13 +635,14 @@ async function refreshPlan() {
     state.owner = Boolean(st.owner);
     state.videoCredits5 = Number(st.videoCredits || 4) || 4;
     state.videoCredits10 = Number(st.videoCredits10 || 7) || 7;
+    state.videoCredits15 = Number(st.videoCredits15 || 10) || 10;
     const make = document.getElementById('makeBtn');
     if (make && !make.disabled) make.textContent = makeBtnLabel();
     const me = await fetch('/api/account/me').then((r) => r.json());
     if (me.ok && me.email) {
       const extra = me.credits ? ` · 剩餘 ${me.credits} 點（換靜態圖扣 1 點）` : ' · 換靜態圖需方案點數';
       const pending = me.pendingPlan ? ' · 方案確認中' : '';
-      bar.innerHTML = `目前方案：${me.planName}${extra}${pending}　小廣告 5 秒扣 ${state.videoCredits5} 點、10 秒扣 ${state.videoCredits10} 點　<a href="/account">管理方案</a>`;
+      bar.innerHTML = `目前方案：${me.planName}${extra}${pending}　小廣告 5 秒扣 ${state.videoCredits5} 點、10 秒扣 ${state.videoCredits10} 點、15 秒扣 ${state.videoCredits15} 點　<a href="/account">管理方案</a>`;
     } else {
       bar.innerHTML = '排版與識圖不必登入。小廣告與進階生圖需方案點數。　<a href="/account">看方案</a>';
     }
@@ -789,6 +795,7 @@ async function assertVideoAllowed() {
   const me = await fetch('/api/account/me').then((r) => r.json()).catch(() => ({}));
   state.videoCredits5 = Number(st.videoCredits || 4) || 4;
   state.videoCredits10 = Number(st.videoCredits10 || 7) || 7;
+  state.videoCredits15 = Number(st.videoCredits15 || 10) || 10;
   const need = videoPointCost();
   if (!me.ok || Number(me.credits || 0) < need) {
     throw new Error(`小廣告（${selectedDuration()} 秒）需先到後台登入，或方案剩餘 ${need} 點以上。`);
@@ -1074,13 +1081,17 @@ function playMusicPreview(src, label) {
 
 document.querySelectorAll('#durationPicks .clip-type').forEach((btn) => {
   btn.addEventListener('click', () => {
-    state.duration = btn.dataset.duration === '10' ? '10' : '5';
+    const picked = btn.dataset.duration;
+    state.duration = picked === '10' || picked === '15' ? picked : '5';
     document.querySelectorAll('#durationPicks .clip-type').forEach((el) => el.classList.toggle('active', el === btn));
     const make = document.getElementById('makeBtn');
     if (make && !make.disabled) make.textContent = makeBtnLabel();
-    showClipMsg(state.duration === '5'
-      ? `下次產出 5 秒，扣 ${state.videoCredits5} 點，會比較快。`
-      : `下次產出 10 秒，扣 ${state.videoCredits10} 點，等待會比較久。`);
+    const waitNote = state.duration === '15'
+      ? `下次產出 15 秒，扣 ${state.videoCredits15} 點，等待最久。`
+      : state.duration === '10'
+        ? `下次產出 10 秒，扣 ${state.videoCredits10} 點，等待會比較久。`
+        : `下次產出 5 秒，扣 ${state.videoCredits5} 點，會比較快。`;
+    showClipMsg(waitNote);
   });
 });
 
