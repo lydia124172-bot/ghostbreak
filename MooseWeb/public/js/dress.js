@@ -3,9 +3,13 @@ const state = {
   cloth: '',
   cloth2: '',
   image: '',
-  videoCost: 4,
-  videoCost10: 7,
-  videoCost15: 10,
+  imageId: '',
+  videoCost: 3,
+  videoCost10: 6,
+  videoCost15: 9,
+  videoHd: 3,
+  videoHd10: 6,
+  videoHd15: 9,
   videoReady: false,
   scenes: [],
   scene: '',
@@ -72,12 +76,34 @@ function paintScenes(rows) {
   `).join('');
 }
 
-function paintResult(image, extra) {
+function frameLine(body, lead) {
+  const ratio = body && body.aspectRatio ? body.aspectRatio : '';
+  const size = body && body.imageSize ? body.imageSize : '';
+  const asked = document.getElementById('dressSize') ? document.getElementById('dressSize').value : '';
+  const spec = [ratio, size].filter(Boolean).join('、');
+  const fallback = asked === '2K' && size === '1K' ? '2K 這次沒被接受，已改以 1K 產出。' : '';
+  return [lead, spec ? `這張是 ${spec}。` : '', fallback].filter(Boolean).join('');
+}
+
+function motionChoice() {
+  const picked = document.getElementById('motionSec').value;
+  const duration = picked === '10' || picked === '15' ? picked : '5';
+  const resolution = document.getElementById('motionRes').value === '1080p' ? '1080p' : '720p';
+  const hd = resolution === '1080p';
+  const points = duration === '15'
+    ? (hd ? state.videoHd15 : state.videoCost15)
+    : (duration === '10' ? (hd ? state.videoHd10 : state.videoCost10) : (hd ? state.videoHd : state.videoCost));
+  return { duration, resolution, points };
+}
+
+function paintResult(image, extra, mediaId) {
   state.image = image;
+  state.imageId = String(mediaId || '');
   const out = document.getElementById('outImage');
   const save = document.getElementById('saveBtn');
-  out.src = image;
-  save.href = image;
+  out.src = state.imageId ? `/api/clip/media/${state.imageId}` : image;
+  save.href = state.imageId ? `/api/clip/media/${state.imageId}?download=1` : '#';
+  save.setAttribute('download', '換裝.jpg');
   document.getElementById('outLine').textContent = extra || '僅供試衣參考，不是實穿保證。';
   document.getElementById('resultBox').classList.remove('hidden');
   document.getElementById('bgBox').classList.remove('hidden');
@@ -97,7 +123,8 @@ async function recoverLast(auto) {
       if (!auto && msg) msg.textContent = body.error || '沒有可取回的換裝圖。';
       return false;
     }
-    paintResult(body.image, '已取回剛才的換裝圖。請先下載存檔，再離開頁面。');
+    const mediaId = String(body.imageUrl || '').split('/').pop();
+    paintResult(body.image, '已取回剛才的換裝圖。請先下載存檔，再離開頁面。', mediaId);
     if (msg) msg.textContent = '';
     return true;
   } catch {
@@ -115,6 +142,9 @@ async function refreshPlan() {
     state.videoCost = Number(data.videoCost || 4) || 4;
     state.videoCost10 = Number(data.videoCost10 || 7) || 7;
     state.videoCost15 = Number(data.videoCost15 || 10) || 10;
+    state.videoHd = Number(data.videoHd || 5) || 5;
+    state.videoHd10 = Number(data.videoHd10 || 10) || 10;
+    state.videoHd15 = Number(data.videoHd15 || 15) || 15;
     paintScenes(data.scenes || []);
     const recoverBtn = document.getElementById('recoverBtn');
     if (recoverBtn) recoverBtn.classList.toggle('hidden', !data.hasLast);
@@ -123,7 +153,7 @@ async function refreshPlan() {
       return;
     }
     const motion = data.videoReady
-      ? `換裝／換背景各 1 點；動起來 5 秒 ${state.videoCost} 點、10 秒 ${state.videoCost10} 點、15 秒 ${state.videoCost15} 點。`
+      ? `換裝／換背景各 1 點。短片 5 秒 ${state.videoCost} 點、10 秒 ${state.videoCost10} 點、15 秒 ${state.videoCost15} 點。`
       : '換裝／換背景可用。讓圖動起來暫時無法使用。';
     if (!data.loggedIn) {
       bar.textContent = `需先到方案頁登入。${motion}`;
@@ -143,7 +173,12 @@ async function makeDress() {
     return;
   }
   document.getElementById('resultBox').classList.add('hidden');
-  msg.textContent = '正在依補充整理正負提示詞，再換裝。請不要重按。';
+  const note = document.getElementById('note').value.trim();
+  const positive = document.getElementById('promptPos').value.trim();
+  const negative = document.getElementById('promptNeg').value.trim();
+  msg.textContent = positive
+    ? '正在依畫面上的提示詞換裝。請不要重按。'
+    : '正在直接依衣服圖換裝。請不要重按。';
   btn.disabled = true;
   try {
     const res = await fetch('/api/dress', {
@@ -153,12 +188,16 @@ async function makeDress() {
         model: state.model,
         cloth: state.cloth,
         cloth2: state.cloth2,
-        note: document.getElementById('note').value.trim(),
+        note,
+        positive,
+        negative,
+        aspectRatio: document.getElementById('dressRatio').value,
+        imageSize: document.getElementById('dressSize').value,
       }),
     });
-    const body = await res.json();
+    const body = await readJson(res);
     if (!res.ok) throw new Error(body.error || '產出失敗');
-    paintResult(body.image, '僅供試衣參考，不是實穿保證。');
+    paintResult(body.image, frameLine(body, '僅供試衣參考，不是實穿保證。'), body.mediaId);
     msg.textContent = '';
     refreshPlan();
   } catch (err) {
@@ -189,11 +228,13 @@ async function makeBg() {
         image: state.image,
         scene: state.scene,
         note: document.getElementById('bgNote').value.trim(),
+        aspectRatio: document.getElementById('dressRatio').value,
+        imageSize: document.getElementById('dressSize').value,
       }),
     });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || '換背景失敗');
-    paintResult(body.image, '背景已換。僅供試衣參考，不是實穿保證。');
+    paintResult(body.image, frameLine(body, '背景已換。僅供試衣參考，不是實穿保證。'), body.mediaId);
     note.textContent = '';
     refreshPlan();
   } catch (err) {
@@ -217,6 +258,42 @@ async function waitVideoJob(jobId, duration) {
     note.textContent = `${phase}（${sec}秒）。${wait}`;
   }
   throw new Error('生片逾時，請稍後再試。');
+}
+
+async function saveDressFile(event) {
+  if (event) event.preventDefault();
+  const save = document.getElementById('saveBtn');
+  const note = document.getElementById('dressMsg');
+  if (!state.image && !state.imageId) {
+    if (note) note.textContent = '還沒有圖片可下載。';
+    return;
+  }
+  const prev = save.textContent;
+  save.textContent = '下載中…';
+  try {
+    let blob;
+    if (state.imageId) {
+      const res = await fetch(`/api/clip/media/${state.imageId}?download=1`);
+      if (!res.ok) throw new Error('下載失敗，請再試一次。');
+      blob = await res.blob();
+    } else {
+      const res = await fetch(state.image);
+      blob = await res.blob();
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = '換裝.jpg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+    if (note) note.textContent = '已開始下載，請到「下載」資料夾查看。';
+  } catch (err) {
+    if (note) note.textContent = err.message || '無法下載，請再試一次。';
+  } finally {
+    save.textContent = prev || '下載圖片';
+  }
 }
 
 function mediaDownloadUrl(videoUrl) {
@@ -275,7 +352,8 @@ function paintVideo(done) {
   save.href = mediaDownloadUrl(done.videoUrl);
   save.setAttribute('download', '換裝短片.mp4');
   box.classList.remove('hidden');
-  document.getElementById('motionMsg').textContent = `短片已完成（${done.duration || ''}秒）。`;
+  const resLabel = done.resolution ? `、${done.resolution}` : '';
+  document.getElementById('motionMsg').textContent = `短片已完成（${done.duration || ''}秒${resLabel}）。`;
 }
 
 async function makeMotion() {
@@ -289,10 +367,9 @@ async function makeMotion() {
     note.textContent = '讓圖動起來暫時無法使用。';
     return;
   }
-  const picked = document.getElementById('motionSec').value;
-  const duration = picked === '10' || picked === '15' ? picked : '5';
-  const points = duration === '15' ? state.videoCost15 : (duration === '10' ? state.videoCost10 : state.videoCost);
-  note.textContent = `正在送出 ${duration} 秒短片，扣 ${points} 點，請不要重按。`;
+  const choice = motionChoice();
+  const duration = choice.duration;
+  note.textContent = `正在送出 ${duration} 秒、${choice.resolution} 短片，扣 ${choice.points} 點，請不要重按。`;
   btn.disabled = true;
   document.getElementById('videoBox').classList.add('hidden');
   try {
@@ -302,7 +379,9 @@ async function makeMotion() {
       body: JSON.stringify({
         image: state.image,
         duration,
-        note: document.getElementById('bgNote').value.trim() || document.getElementById('note').value.trim(),
+        resolution: choice.resolution,
+        ratio: document.getElementById('motionRatio').value,
+        motion: document.getElementById('motionNote').value.trim(),
       }),
     });
     const body = await res.json();
@@ -320,7 +399,66 @@ async function makeMotion() {
 document.getElementById('modelFile').addEventListener('change', () => pick('modelFile', 'model', 'modelPrev'));
 document.getElementById('clothFile').addEventListener('change', () => pick('clothFile', 'cloth', 'clothPrev'));
 document.getElementById('clothFile2').addEventListener('change', () => pick('clothFile2', 'cloth2', 'clothPrev2'));
+function clearOptimized() {
+  const box = document.getElementById('promptBox');
+  const pos = document.getElementById('promptPos');
+  const neg = document.getElementById('promptNeg');
+  if (pos) pos.value = '';
+  if (neg) neg.value = '';
+  if (box) box.classList.add('hidden');
+}
+
+async function readJson(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    if (res.status === 413) throw new Error('圖片太大，單張請小於 2MB。');
+    throw new Error('換裝暫時無法使用，請再試一次。');
+  }
+}
+
+async function optimizeNote() {
+  const msg = document.getElementById('dressMsg');
+  const btn = document.getElementById('optimizeBtn');
+  const note = document.getElementById('note').value.trim();
+  if (note.length < 2) {
+    msg.textContent = '請先寫一句描述。沒寫的話，無法整理提示詞。';
+    return;
+  }
+  if (!state.cloth || !state.cloth2) {
+    msg.textContent = '請先選兩張衣服圖，再優化提示詞。';
+    return;
+  }
+  msg.textContent = '正在讓 Gemini 看衣服圖，寫一段短提示。';
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/dress/prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cloth: state.cloth,
+        cloth2: state.cloth2,
+        note,
+      }),
+    });
+    const body = await readJson(res);
+    if (!res.ok) throw new Error(body.error || '提示詞整理失敗');
+    document.getElementById('promptPos').value = body.positive || '';
+    document.getElementById('promptNeg').value = body.negative || '';
+    document.getElementById('promptBox').classList.remove('hidden');
+    msg.textContent = '提示詞已展開，可再改，然後按產出換裝。';
+  } catch (err) {
+    msg.textContent = err.message || '提示詞整理失敗';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('note').addEventListener('input', clearOptimized);
+document.getElementById('optimizeBtn').addEventListener('click', optimizeNote);
 document.getElementById('makeBtn').addEventListener('click', makeDress);
+document.getElementById('saveBtn').addEventListener('click', saveDressFile);
 document.getElementById('recoverBtn').addEventListener('click', () => recoverLast(false));
 document.getElementById('bgBtn').addEventListener('click', makeBg);
 document.getElementById('motionBtn').addEventListener('click', makeMotion);

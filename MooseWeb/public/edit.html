@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>改圖 — 麋鹿網</title>
+  <meta name="description" content="上傳原圖，寫要改的地方，再傳一張正確的參考圖。成功一張扣 1 點。" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=dress2" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>MooseWeb</small></span>
+      </a>
+      <button class="menu-btn" id="menuBtn" type="button">選單</button>
+      <nav class="nav" id="nav">
+        <a href="/">首頁</a>
+        <a href="/works">看作品</a>
+        <a href="/courses">上課</a>
+        <a href="/hire">做網站</a>
+        <a href="/saas" class="active">我做的付費工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <p class="kicker">智能體　成功一張扣 1 點</p>
+      <h1>先寫要改哪裡，再傳正確的圖。</h1>
+      <p class="lead">第一張是原圖。寫出只准動的地方，例如洋裝、腰帶或背景，再上傳那一塊要換成的正確照片。沒寫到的臉、姿勢和其他地方會盡量留著。這不是修圖保證，小細節仍可能略變。</p>
+      <p class="clip-plan" id="editPlan">需登入並有方案點數。</p>
+    </section>
+
+    <section class="panel clip-panel">
+      <form id="editForm" class="skill-form" novalidate>
+        <div>
+          <label class="field" for="photo">原圖</label>
+          <input id="photo" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" />
+          <p class="combo-fit">要被改的那張。JPG、PNG、WebP，小於 2MB。</p>
+          <img id="photoPrev" class="clip-still hidden" alt="原圖預覽" />
+        </div>
+        <div>
+          <label class="field" for="note">要改的是哪裡</label>
+          <textarea id="note" class="form-input" rows="3" maxlength="400" placeholder="例如：只改洋裝，換成下一張的衣服。臉、姿勢、背景不要動"></textarea>
+        </div>
+        <div>
+          <label class="field" for="reference">正確的圖</label>
+          <input id="reference" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" />
+          <p class="combo-fit">這一張是要換成的正確樣子，例如衣服實拍。只會拿來替換上面寫的那一塊。</p>
+          <img id="refPrev" class="clip-still hidden" alt="正確圖預覽" />
+        </div>
+        <div class="admin-actions">
+          <label class="field" for="ratio" style="margin:0;">輸出比例</label>
+          <select id="ratio" class="form-input" style="width:auto;min-width:9rem;">
+            <option value="1:1" selected>1:1　方圖</option>
+            <option value="3:4">3:4　直式</option>
+            <option value="4:5">4:5　直式</option>
+            <option value="9:16">9:16　全螢幕直式</option>
+            <option value="16:9">16:9　橫式</option>
+          </select>
+          <label class="field" for="size" style="margin:0;">尺寸</label>
+          <select id="size" class="form-input" style="width:auto;min-width:7rem;">
+            <option value="1K" selected>1K</option>
+            <option value="2K">2K</option>
+          </select>
+          <button class="btn btn-copper" type="button" id="makeBtn">開始改圖</button>
+        </div>
+        <p class="combo-fit">輸出比例會重排畫面。想維持原圖構圖，就選最接近的比例。2K 若這支模型做不到，會改出 1K，並在結果上說明。成功才扣 1 點。</p>
+        <p id="editMsg" class="combo-fit"></p>
+      </form>
+    </section>
+
+    <section class="panel clip-panel hidden" id="resultBox">
+      <p class="kicker">改好的圖</p>
+      <h2>改圖結果</h2>
+      <img id="outImage" class="clip-still" alt="改圖結果" />
+      <p id="outLine" class="combo-fit"></p>
+      <div class="admin-actions">
+        <a class="btn btn-copper" id="saveBtn" href="#" download="改圖.jpg">下載圖片</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© 麋鹿網　版權由 Lydia Global Company 所有</span>
+      <nav class="footer-links">
+        <a href="/privacy">隱私權政策</a>
+        <a href="/terms">服務條款</a>
+        <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
+      </nav>
+    </div>
+  </footer>
+  <script src="/js/site.js?v=studio6"></script>
+  <script src="/js/edit.js?v=2"></script>
+</body>
+</html>

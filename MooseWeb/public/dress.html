@@ -56,8 +56,36 @@
           </div>
         </div>
         <div>
-          <label class="field" for="note">補充（選填。先整理成正向與負向提示詞，再照提示詞生圖）</label>
-          <input id="note" class="form-input" type="text" maxlength="120" autocomplete="off" placeholder="例如：腰帶只打結，不要金屬扣環" />
+          <div class="field-label-row">
+            <label class="field" for="note">換裝描述</label>
+            <button class="btn btn-cream clip-field-btn" type="button" id="optimizeBtn">優化提示詞</button>
+          </div>
+          <textarea id="note" class="form-input" rows="4" maxlength="400" placeholder="寫一句就好。例如：腰帶只打結，不要金屬扣環"></textarea>
+          <div id="promptBox" class="hidden">
+            <label class="field" for="promptPos">正向提示詞</label>
+            <textarea id="promptPos" class="form-input" rows="4" maxlength="900"></textarea>
+            <label class="field" for="promptNeg">負向提示詞</label>
+            <textarea id="promptNeg" class="form-input" rows="3" maxlength="700"></textarea>
+          </div>
+        </div>
+        <div class="admin-2">
+          <div>
+            <label class="field" for="dressRatio">畫面比例</label>
+            <select id="dressRatio" class="form-input">
+              <option value="3:4" selected>3:4　直式</option>
+              <option value="4:5">4:5　直式</option>
+              <option value="9:16">9:16　全螢幕直式</option>
+              <option value="1:1">1:1　方圖</option>
+              <option value="16:9">16:9　橫式</option>
+            </select>
+          </div>
+          <div>
+            <label class="field" for="dressSize">靜態尺寸</label>
+            <select id="dressSize" class="form-input">
+              <option value="1K" selected>1K</option>
+              <option value="2K">2K</option>
+            </select>
+          </div>
         </div>
         <div class="admin-actions">
           <button class="btn btn-copper" type="button" id="makeBtn">產出換裝</button>
@@ -82,6 +110,10 @@
         </div>
         <p id="bgMsg" class="combo-fit"></p>
       </div>
+      <div>
+        <label class="field" for="motionNote">動作（選填。沒寫就只做輕微晃動）</label>
+        <textarea id="motionNote" class="form-input" rows="3" maxlength="200" placeholder="例如：慢慢往前走，再轉身一圈"></textarea>
+      </div>
       <div class="admin-actions">
         <a class="btn btn-copper" id="saveBtn" href="#" download="換裝.jpg">下載圖片</a>
         <label class="field" for="motionSec" style="margin:0;">時長</label>
@@ -90,10 +122,24 @@
           <option value="10">10 秒</option>
           <option value="15">15 秒</option>
         </select>
+        <label class="field" for="motionRes" style="margin:0;">解析度</label>
+        <select id="motionRes" class="form-input" style="width:auto;min-width:7rem;">
+          <option value="720p" selected>720p</option>
+          <option value="1080p">1080p</option>
+        </select>
+        <label class="field" for="motionRatio" style="margin:0;">短片比例</label>
+        <select id="motionRatio" class="form-input" style="width:auto;min-width:9rem;">
+          <option value="" selected>跟換裝圖</option>
+          <option value="3:4">3:4　直式</option>
+          <option value="4:5">4:5　直式</option>
+          <option value="9:16">9:16　全螢幕直式</option>
+          <option value="1:1">1:1　方圖</option>
+          <option value="16:9">16:9　橫式</option>
+        </select>
         <button class="btn btn-cream" type="button" id="motionBtn">讓圖動起來</button>
         <button class="btn btn-cream" type="button" id="toClipBtn">接著做成商品短片</button>
       </div>
-      <p class="combo-fit"><strong>讓圖動起來</strong>會把換裝圖做成 5、10 或 15 秒短片：多半是輕微鏡頭移動，加上布料、頭髮或背景的細微動態，人臉與姿勢會盡量維持與靜態圖相同。不能指定走路、轉圈、換姿勢或對嘴講話；成品也沒有配樂與字幕。臉在畫面裡很大時仍可能略變形，試衣準度請以靜態圖為準。15 秒等待較久。若要配樂、口播與發文文案，請用「接著做成商品短片」。</p>
+      <p class="combo-fit"><strong>讓圖動起來</strong>會把換裝圖做成 5、10 或 15 秒短片。這支模型是同一種畫質，選 720p 或 1080p 價錢一樣。短片比例選「跟換裝圖」就沿用這張圖；改成其他比例時，會先把圖裁成那個比例再送出。動作可寫，例如慢慢往前走、轉身。沒寫就只做輕微鏡頭移動和布料晃動。不能對嘴講話，成品也沒有配樂與字幕。臉與衣服細節仍可能略變。15 秒等待較久、扣點也較多。若要配樂、口播與發文文案，請用「接著做成商品短片」。</p>
       <p class="combo-fit">「接著做成商品短片」會帶<strong>換裝圖</strong>到商品短片頁當商品圖再產小廣告。本頁產出的短片請用「儲存短片到裝置」另存，無法直接匯入商品短片頁。</p>
       <p id="motionMsg" class="combo-fit"></p>
       <div id="videoBox" class="hidden" style="margin-top:16px;">
@@ -127,6 +173,6 @@
     </div>
   </footer>
   <script src="/js/site.js?v=studio6"></script>
-  <script src="/js/dress.js?v=16"></script>
+  <script src="/js/dress.js?v=24"></script>
 </body>
 </html>

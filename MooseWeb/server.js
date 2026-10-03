@@ -29,6 +29,7 @@ const hotAgent = require('./services/hot-agent');
 const promptAgent = require('./services/prompt-agent');
 const hookAgent = require('./services/hook-agent');
 const dressAgent = require('./services/dress-agent');
+const editAgent = require('./services/edit-agent');
 const modelLock = require('./services/model-lock');
 const accounts = require('./services/accounts');
 const ecpay = require('./services/ecpay');
@@ -44,10 +45,15 @@ const STORY_OPEN = process.env.STORY_OPEN === '1';
 
 const app = express();
 app.set('trust proxy', 1);
-app.use(express.json({
+const jsonDefault = express.json({
   limit: '1mb',
   verify: (req, _res, buf) => { if (req.url === '/api/line/webhook') req.rawBody = buf; },
-}));
+});
+const largeJsonPost = /^\/api\/(dress|edit|move|model|hook|prompt|script|clip\/(caption|enhance|video|music-prompt)|talk\/video|story\/(script|video)|drama\/(script|video))(\/|$)/;
+app.use((req, res, next) => {
+  if (req.method === 'POST' && largeJsonPost.test(req.path)) return next();
+  return jsonDefault(req, res, next);
+});
 
 const STUDIO_ORIGIN = 'https://bafuholdings.com';
 
@@ -74,6 +80,8 @@ const pages = {
   '/prompt': 'prompt.html',
   '/hook': 'hook.html',
   '/dress': 'dress.html',
+  '/edit': 'edit.html',
+  '/move': 'move.html',
   '/model': 'model.html',
   '/account': 'account.html',
   '/privacy': 'privacy.html',
@@ -761,6 +769,9 @@ app.get('/api/dress/status', (req, res) => {
   const videoCost = clipVideo.creditCost('5');
   const videoCost10 = clipVideo.creditCost('10');
   const videoCost15 = clipVideo.creditCost('15');
+  const videoHd = clipVideo.creditCost('5', '1080p');
+  const videoHd10 = clipVideo.creditCost('10', '1080p');
+  const videoHd15 = clipVideo.creditCost('15', '1080p');
   const last = clipStore.getLastDress(clipSid(req, res));
   res.json({
     ready: dressAgent.configured(),
@@ -768,6 +779,9 @@ app.get('/api/dress/status', (req, res) => {
     videoCost,
     videoCost10,
     videoCost15,
+    videoHd,
+    videoHd10,
+    videoHd15,
     scenes: dressAgent.publicScenes(),
     owner,
     loggedIn: Boolean(paid && paid.ok),
@@ -790,6 +804,61 @@ function stashDressImage(req, res, dataUrl) {
     return '';
   }
 }
+
+function stashEditImage(req, res, dataUrl) {
+  try {
+    const m = String(dataUrl || '').match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+=*)$/i);
+    if (!m) return '';
+    const buf = Buffer.from(m[2], 'base64');
+    if (!buf.length || buf.length > 6 * 1024 * 1024) return '';
+    const saved = clipStore.saveMedia(clipSid(req, res), 'edit', buf, m[1]);
+    return saved.id;
+  } catch {
+    return '';
+  }
+}
+
+app.get('/api/edit/status', (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  res.json({
+    ready: editAgent.configured(),
+    cost: 1,
+    owner,
+    loggedIn: Boolean(paid && paid.ok),
+    credits: paid ? Number(paid.credits || 0) : 0,
+  });
+});
+
+app.post('/api/edit', express.json({ limit: '12mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  if (!owner && (!paid || !paid.credits)) {
+    return res.status(402).json({
+      error: '改圖需購買方案點數。作者請先到後台登入，即可直接使用。',
+    });
+  }
+  try {
+    const result = await editAgent.edit({
+      image: String(req.body?.image || ''),
+      reference: String(req.body?.reference || ''),
+      note: String(req.body?.note || '').trim(),
+      aspectRatio: String(req.body?.aspectRatio || '').trim(),
+      imageSize: String(req.body?.imageSize || '').trim(),
+    });
+    const mediaId = stashEditImage(req, res, result.image);
+    if (!mediaId) return res.status(400).json({ error: '改圖暫存失敗，請再試一次。' });
+    const frame = { imageSize: result.imageSize || '', aspectRatio: result.aspectRatio || '' };
+    if (owner) return res.json({ owner: true, mediaId, ...frame });
+    const account = accounts.consumeCredit(row.id, 1);
+    res.json({ credits: account.credits, mediaId, ...frame });
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? '產出逾時，請不要重按。' : (err.message || '改圖失敗');
+    res.status(400).json({ error: msg });
+  }
+});
 
 app.post('/api/dress/stash', express.json({ limit: '8mb' }), (req, res) => {
   const image = String(req.body?.image || '');
@@ -817,6 +886,28 @@ app.get('/api/dress/last', (req, res) => {
   }
 });
 
+app.post('/api/dress/prompt', express.json({ limit: '12mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  if (!owner && (!paid || !paid.credits)) {
+    return res.status(402).json({
+      error: '優化提示詞需購買方案點數。作者請先到後台登入。',
+    });
+  }
+  try {
+    const prompts = await dressAgent.optimize({
+      cloth: String(req.body?.cloth || ''),
+      cloth2: String(req.body?.cloth2 || ''),
+      note: String(req.body?.note || '').trim(),
+    });
+    res.json(prompts);
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? '整理逾時，請再按一次。' : (err.message || '提示詞整理失敗');
+    res.status(400).json({ error: msg });
+  }
+});
+
 app.post('/api/dress', express.json({ limit: '12mb' }), async (req, res) => {
   const owner = isOwner(req);
   const row = currentAccount(req);
@@ -832,11 +923,16 @@ app.post('/api/dress', express.json({ limit: '12mb' }), async (req, res) => {
       cloth: String(req.body?.cloth || ''),
       cloth2: String(req.body?.cloth2 || ''),
       note: String(req.body?.note || '').trim(),
+      positive: String(req.body?.positive || '').trim(),
+      negative: String(req.body?.negative || '').trim(),
+      aspectRatio: String(req.body?.aspectRatio || '').trim(),
+      imageSize: String(req.body?.imageSize || '').trim(),
     });
     const mediaId = stashDressImage(req, res, result.image);
-    if (owner) return res.json({ image: result.image, owner: true, mediaId });
+    const frame = { imageSize: result.imageSize || '', aspectRatio: result.aspectRatio || '' };
+    if (owner) return res.json({ image: result.image, owner: true, mediaId, ...frame });
     const account = accounts.consumeCredit(row.id, 1);
-    res.json({ image: result.image, credits: account.credits, mediaId });
+    res.json({ image: result.image, credits: account.credits, mediaId, ...frame });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請不要重按。' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
@@ -904,11 +1000,14 @@ app.post('/api/dress/bg', express.json({ limit: '8mb' }), async (req, res) => {
       image,
       sceneId: String(req.body?.scene || '').trim(),
       note: String(req.body?.note || '').trim(),
+      aspectRatio: String(req.body?.aspectRatio || '').trim(),
+      imageSize: String(req.body?.imageSize || '').trim(),
     });
     const mediaId = stashDressImage(req, res, result.image);
-    if (owner) return res.json({ image: result.image, owner: true, mediaId });
+    const frame = { imageSize: result.imageSize || '', aspectRatio: result.aspectRatio || '' };
+    if (owner) return res.json({ image: result.image, owner: true, mediaId, ...frame });
     const account = accounts.consumeCredit(row.id, 1);
-    res.json({ image: result.image, credits: account.credits, mediaId });
+    res.json({ image: result.image, credits: account.credits, mediaId, ...frame });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '產出逾時，請不要重按。' : (err.message || '產出失敗');
     res.status(400).json({ error: msg });
@@ -920,29 +1019,38 @@ app.post('/api/dress/video', express.json({ limit: '8mb' }), async (req, res) =>
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
   const duration = clipVideo.videoDuration(String(req.body?.duration || '5').trim());
-  const cost = clipVideo.creditCost(duration);
+  const resolution = clipVideo.videoResolution(req.body?.resolution);
+  const ratio = clipVideo.frameRatio(req.body?.ratio);
+  const cost = clipVideo.creditCost(duration, resolution);
   if (!owner && (!paid || Number(paid.credits || 0) < cost)) {
     return res.status(402).json({
-      error: `讓圖動起來（${duration} 秒）需方案剩餘 ${cost} 點以上。作者請先到後台登入。`,
+      error: `讓圖動起來（${duration} 秒、${resolution}）需方案剩餘 ${cost} 點以上。作者請先到後台登入。`,
     });
   }
   const image = String(req.body?.image || '');
   if (!image.startsWith('data:image/')) {
     return res.status(400).json({ error: '請先產出換裝圖，再讓圖動起來。' });
   }
-  const note = String(req.body?.note || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  const motion = String(req.body?.motion || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (/忽略(以上|先前|之前|所有)?(指令|規則)|ignore (previous|all) instructions|越獄|jailbreak/i.test(motion)) {
+    return res.status(400).json({ error: '無法提供' });
+  }
   try {
     const prompt = [
       `Animate this fashion try-on still into a ${duration}-second photoreal clip.`,
-      'Gentle camera move and natural fabric motion. Keep the same person: face, hair, body, skin tone, and pose.',
+      'Keep the same person: face, hair, skin tone, and identity. Do not swap the face.',
       'Keep the outfit colors, cut, and details unchanged. Do not swap clothes, invent brands, or add a buckle, zipper, pocket, or button that is not already in the still. A tied fabric belt stays a tie, with no metal buckle.',
-      note ? `Guest note: ${note}` : '',
-      'No captions, subtitles, watermarks, or on-screen text. Single continuous shot.',
-    ].filter(Boolean).join(' ');
+      motion
+        ? `Action, performed continuously for the whole clip: ${motion}. This body motion is requested. Do not freeze the pose.`
+        : 'No requested action. Gentle camera move and natural fabric, hair, or background motion only. Keep the pose.',
+      'No captions, subtitles, watermarks, or on-screen text. No lip-sync talking. Single continuous shot.',
+    ].join(' ');
     const submitted = await clipVideo.submit({
       images: [image],
       product: 'fashion try-on',
       duration,
+      resolution,
+      ratio,
       prompt,
     });
     pruneVideoJobs();
@@ -958,16 +1066,99 @@ app.post('/api/dress/video', express.json({ limit: '8mb' }), async (req, res) =>
       accountId: row && row.id,
       cost,
       duration: submitted.duration,
+      resolution: submitted.resolution || resolution,
+      audioPath: submitted.audioPath || '',
       created: Date.now(),
       result: null,
       error: '',
     };
     videoJobs.set(job.id, job);
     saveVideoJobs();
-    console.log('[dress-video] queued', submitted.duration + 's');
-    res.json({ jobId: job.id, status: 'queued', duration: submitted.duration, cost });
+    console.log('[dress-video] queued', submitted.duration + 's', submitted.resolution || resolution);
+    res.json({ jobId: job.id, status: 'queued', duration: submitted.duration, resolution: submitted.resolution || resolution, cost });
   } catch (err) {
     console.log('[dress-video] submit failed', err && err.message);
+    res.status(400).json({ error: err.message || '生片失敗' });
+  }
+});
+
+app.get('/api/move/status', (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  res.json({
+    ready: clipVideo.configured(),
+    owner,
+    loggedIn: Boolean(paid && paid.ok),
+    credits: paid ? Number(paid.credits || 0) : 0,
+    cost5: clipVideo.creditCost('5'),
+    cost10: clipVideo.creditCost('10'),
+    cost15: clipVideo.creditCost('15'),
+  });
+});
+
+app.post('/api/move', express.json({ limit: '8mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  const duration = clipVideo.videoDuration(String(req.body?.duration || '5').trim());
+  const ratio = clipVideo.frameRatio(req.body?.ratio);
+  const cost = clipVideo.creditCost(duration);
+  if (!owner && (!paid || Number(paid.credits || 0) < cost)) {
+    return res.status(402).json({
+      error: `讓圖動起來（${duration} 秒）需方案剩餘 ${cost} 點以上。作者請先到後台登入。`,
+    });
+  }
+  const image = String(req.body?.image || '');
+  if (!image.startsWith('data:image/')) {
+    return res.status(400).json({ error: '請先上傳要動的圖。' });
+  }
+  const motion = String(req.body?.motion || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (/忽略(以上|先前|之前|所有)?(指令|規則)|ignore (previous|all) instructions|越獄|jailbreak/i.test(motion)) {
+    return res.status(400).json({ error: '無法提供' });
+  }
+  try {
+    const prompt = [
+      `Animate this still into a ${duration}-second photoreal clip.`,
+      'Keep the same subject, face, product, colors, and details from the first frame.',
+      'Do not add text, logos, watermarks, or objects that are not already in the still.',
+      motion
+        ? `Action, performed continuously for the whole clip: ${motion}. This body motion is requested. Do not freeze the pose.`
+        : 'No requested action. Gentle camera move and natural motion in fabric, hair, or background only. Keep the pose.',
+      'No captions, subtitles, watermarks, or on-screen text. No lip-sync talking. Single continuous shot.',
+    ].join(' ');
+    const submitted = await clipVideo.submit({
+      images: [image],
+      product: 'still photo',
+      duration,
+      ratio,
+      prompt,
+    });
+    pruneVideoJobs();
+    const job = {
+      id: crypto.randomUUID(),
+      kind: 'move',
+      requestId: submitted.requestId,
+      model: submitted.model,
+      statusUrl: submitted.statusUrl,
+      responseUrl: submitted.responseUrl,
+      sid: clipSid(req, res),
+      owner,
+      accountId: row && row.id,
+      cost,
+      duration: submitted.duration,
+      resolution: submitted.resolution || '720p',
+      audioPath: submitted.audioPath || '',
+      created: Date.now(),
+      result: null,
+      error: '',
+    };
+    videoJobs.set(job.id, job);
+    saveVideoJobs();
+    console.log('[move-video] queued', submitted.duration + 's');
+    res.json({ jobId: job.id, status: 'queued', duration: submitted.duration, cost });
+  } catch (err) {
+    console.log('[move-video] submit failed', err && err.message);
     res.status(400).json({ error: err.message || '生片失敗' });
   }
 });
@@ -1136,8 +1327,9 @@ function packVideoJob(job, saved, extra) {
     jobId: job.id,
     videoId: saved.id,
     videoUrl: `/api/clip/media/${saved.id}`,
-    engine: 'wan',
+    engine: clipVideo.videoEngine(job.model),
     duration: job.duration || clipVideo.videoDuration(),
+    resolution: job.resolution || '',
     ...extra,
   };
 }
@@ -1206,6 +1398,7 @@ app.post('/api/clip/video', express.json({ limit: '8mb' }), async (req, res) => 
       accountId: row && row.id,
       cost,
       duration: submitted.duration,
+      audioPath: submitted.audioPath || '',
       created: Date.now(),
       result: null,
       error: '',
@@ -1235,12 +1428,16 @@ app.get('/api/clip/video/job/:jobId', async (req, res) => {
       saveVideoJobs();
       return res.status(400).json({ error: job.error });
     }
-    if (peek.status !== 'done') return res.json({ jobId: job.id, status: peek.status, duration: job.duration || '' });
+    if (peek.status !== 'done') return res.json({ jobId: job.id, status: peek.status, duration: job.duration || '', resolution: job.resolution || '' });
     if (!job.saving) {
       job.saving = true;
       const videoUrl = peek.videoUrl;
       setImmediate(() => {
-        clipVideo.finish(videoUrl).then((fileOut) => {
+        clipVideo.finish(videoUrl, {
+          audioPath: job.audioPath,
+          engine: clipVideo.videoEngine(job.model),
+          duration: job.duration,
+        }).then((fileOut) => {
           const saved = clipStore.saveMedia(job.sid, 'video', fileOut.buffer, fileOut.mime || 'video/mp4');
           const extra = { recovered: false };
           if (job.owner) extra.owner = true;
@@ -1943,6 +2140,17 @@ app.use(express.static(PUBLIC, { index: false }));
 app.use((req, res) => {
   if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not found' });
   sendPage(req, res, '404.html', 404);
+});
+
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+    return res.status(413).json({ error: '圖片太大，單張請小於 2MB。' });
+  }
+  if (err instanceof SyntaxError && err.status === 400) {
+    return res.status(400).json({ error: '送出的內容無法讀取。' });
+  }
+  return next(err);
 });
 
 app.listen(PORT, async () => {

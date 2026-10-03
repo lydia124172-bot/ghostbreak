@@ -27,9 +27,9 @@ const state = {
   exportReady: false,
   musicPick: 'bright',
   duration: '5',
-  videoCredits5: 4,
-  videoCredits10: 7,
-  videoCredits15: 10,
+  videoCredits5: 3,
+  videoCredits10: 6,
+  videoCredits15: 9,
   owner: false,
 };
 

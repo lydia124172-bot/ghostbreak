@@ -59,26 +59,31 @@ function publicScenes() {
   return SCENES.map(({ id, name, hint }) => ({ id, name, hint }));
 }
 
-const BASE_POSITIVE = [
-  '第一張是模特兒，第二張與第三張是要一起穿上的衣服。兩件都穿上，不要只穿其中一件。',
-  '必須是同一個人：眉、眼、鼻、唇、臉型、下顎、膚色、髮型、髮色、年齡感跟第一張一致。',
-  '體型與姿勢維持第一張，只換衣服。',
-  '衣服的顏色、版型、花紋、材質、鈕扣顆數、口袋、領型、袖口、開襟、腰帶打法跟衣服圖一致。',
-  '質感乾淨、商業、能上架。只輸出一張圖。',
-].join('');
-
-const BASE_NEGATIVE = [
-  '換臉，美顏，瘦臉，改妝，改五官，變成別人，改姿勢，大轉身，漏穿其中一件，換成別件衣服，',
-  '衣服圖沒有的金屬扣環，皮帶頭，拉鍊，額外口袋，額外鈕扣，品牌標，',
-  '布帶打結被改成扣環，文字，浮水印，裸露，色情，小孩，奇幻風。',
-].join('');
+function directPrompt(note) {
+  const extra = cleanNote(note);
+  return [
+    'Put the exact clothes from images 2 and 3 onto the person in image 1.',
+    'Keep the same face, hair, skin, and pose. Change only the clothes.',
+    'Copy the garment as photographed: color, cut, buttons, pockets, collar, sleeves, and the belt, including how it is tied.',
+    'Do not add a buckle, bow, pocket, zipper, or other piece that is not in the clothing photos.',
+    extra ? `Guest note, use it only when it matches the clothing photos: ${extra}` : '',
+    'One photoreal commercial photo.',
+  ].filter(Boolean).join(' ');
+}
 
 function cleanNote(note) {
-  return String(note || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  return String(note || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+}
+
+function cleanPrompt(text, max) {
+  return String(text || '').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
 function parsePromptJson(text) {
-  const raw = String(text || '').trim().replace(/^```json\s*|\s*```$/g, '').trim();
+  const stripped = String(text || '').trim().replace(/^```json\s*|\s*```$/g, '').trim();
+  const start = stripped.indexOf('{');
+  const end = stripped.lastIndexOf('}');
+  const raw = start >= 0 && end > start ? stripped.slice(start, end + 1) : stripped;
   const data = JSON.parse(raw);
   const positive = String(data.positive || '').replace(/\s+/g, ' ').trim().slice(0, 900);
   const negative = String(data.negative || '').replace(/\s+/g, ' ').trim().slice(0, 700);
@@ -87,25 +92,25 @@ function parsePromptJson(text) {
 }
 
 function fallbackPrompts(note) {
-  const extra = cleanNote(note);
   return {
-    positive: extra ? `${BASE_POSITIVE}客人要：${extra}` : BASE_POSITIVE,
-    negative: BASE_NEGATIVE,
+    positive: directPrompt(note),
+    negative: 'different person, changed face, clothing details that are not in the clothing photos',
   };
 }
 
-async function compilePrompts(note, garments) {
+async function compilePrompts(note, garments, required) {
   const extra = cleanNote(note);
+  if (!extra) {
+    if (required) throw new Error('請先寫一句描述，再優化提示詞。');
+    return fallbackPrompts('');
+  }
   const system = [
-    '你是換裝提示詞編輯。只輸出 JSON：{"positive":"","negative":""}。不要解釋。',
-    '正向寫畫面必須出現的事。負向寫畫面禁止出現的事。兩邊用繁體中文，具體、短句、不得互相矛盾。',
-    '正向必須保留：同一張臉、兩件衣服都穿上、顏色版型花紋材質鈕扣口袋腰帶打法跟衣服圖一致、商業試衣、只出一張圖。',
-    '負向必須保留：換臉、美顏、改五官、漏件、換成別件、多畫金屬扣環、皮帶頭、拉鍊、額外口袋、額外鈕扣、假品牌、文字、浮水印、裸露、小孩。',
-    '客人寫「不要某物」：該物只放負向，正向改寫成衣服圖上實際有的做法。',
-    '客人寫「要某效果」：放進正向，負向排除相反效果。',
-    '不准添加客人沒說的新場景、新姿勢或新配件。看衣服圖，不要把圖上沒有的扣環寫進正向。',
-    '後面兩張圖依序是衣服圖一、衣服圖二，不是模特兒。',
-    extra ? `客人指示：${extra}` : '客人沒有額外指示。',
+    'Look at the two clothing photos. Write the image prompt you would use yourself.',
+    'Return only JSON: {"positive":"","negative":""}. English. No explanation.',
+    'positive is one short paragraph: same person, wear both garments, and describe the belt, buttons, pockets, and collar exactly as they appear in the photos.',
+    'negative is one short line of changes that would make the clothes wrong.',
+    'If the guest note conflicts with the photos, follow the photos.',
+    `Guest note: ${extra}`,
   ].join('\n');
   const parts = [
     { text: system },
@@ -113,7 +118,7 @@ async function compilePrompts(note, garments) {
   ];
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   let lastErr;
-  for (const model of ['gemini-flash-lite-latest', 'gemini-3.6-flash']) {
+  for (const model of ['gemini-3.6-flash', 'gemini-flash-lite-latest']) {
     try {
       const json = await withTimeout(20000, async (signal) => {
         const res = await fetch(
@@ -140,15 +145,16 @@ async function compilePrompts(note, garments) {
     }
   }
   console.log('[dress] prompt compile skipped', lastErr && lastErr.message);
+  if (required) throw new Error('提示詞暫時無法整理，請稍後再按一次。');
   return fallbackPrompts(extra);
 }
 
 function imagePrompt(prompts) {
   return [
-    `正向提示詞：${prompts.positive}`,
-    `負向提示詞：${prompts.negative}`,
-    '只輸出一張圖。第一張是模特兒，第二張與第三張是衣服。',
-  ].join('\n');
+    prompts.positive,
+    prompts.negative ? `Avoid: ${prompts.negative}` : '',
+    'Image 1 is the person. Images 2 and 3 are the clothes. Output one image.',
+  ].filter(Boolean).join('\n');
 }
 
 function bgPrompt(scene, note) {
@@ -164,12 +170,23 @@ function bgPrompt(scene, note) {
   ].filter(Boolean).join('\n');
 }
 
-async function generateImage(parts) {
+const RATIOS = ['3:4', '4:5', '9:16', '1:1', '16:9'];
+const SIZES = ['1K', '2K'];
+
+function imageOptions(input) {
+  const aspectRatio = RATIOS.includes(input && input.aspectRatio) ? input.aspectRatio : '3:4';
+  const imageSize = SIZES.includes(input && input.imageSize) ? input.imageSize : '1K';
+  return { aspectRatio, imageSize };
+}
+
+async function generateImage(parts, options) {
   if (!configured()) throw new Error('換裝暫時無法使用，請稍後再試。');
   const modelName = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
   const key = String(process.env.GEMINI_API_KEY || '').trim();
-  const sizes = [process.env.GEMINI_IMAGE_SIZE || '1K', '2K'];
+  const picked = imageOptions(options);
+  const sizes = [picked.imageSize, picked.imageSize === '2K' ? '1K' : '2K'];
   let json;
+  let usedSize = picked.imageSize;
   try {
     let lastErr;
     for (const imageSize of [...new Set(sizes)]) {
@@ -185,7 +202,7 @@ async function generateImage(parts) {
                 contents: [{ role: 'user', parts }],
                 generationConfig: {
                   responseModalities: ['TEXT', 'IMAGE'],
-                  imageConfig: { aspectRatio: '3:4', imageSize },
+                  imageConfig: { aspectRatio: picked.aspectRatio, imageSize },
                 },
               }),
             },
@@ -194,12 +211,13 @@ async function generateImage(parts) {
           if (!res.ok) throw new Error(body.error?.message || `換裝服務 ${res.status}`);
           return body;
         });
+        usedSize = imageSize;
         lastErr = null;
         break;
       } catch (err) {
         lastErr = err;
         if (err.name === 'AbortError') throw err;
-        if (!/invalid|imageSize|2K/i.test(err.message || '')) throw err;
+        if (!/invalid|imageSize|2K|1K/i.test(err.message || '')) throw err;
       }
     }
     if (!json) throw lastErr || new Error('換裝失敗');
@@ -209,25 +227,38 @@ async function generateImage(parts) {
   }
   const out = (json.candidates?.[0]?.content?.parts || []).map(partImage).find(Boolean);
   if (!out) throw new Error('沒有產出圖片，請換一張清楚的全身或半身照再試。');
-  return { image: out };
+  return { image: out, imageSize: usedSize, aspectRatio: picked.aspectRatio };
 }
 
-async function dress({ model, cloth, cloth2, note }) {
+async function optimize({ cloth, cloth2, note }) {
   if (looksLikeJailbreak(note)) throw new Error('無法提供');
+  if (!cleanNote(note)) throw new Error('請先寫一句描述，再優化提示詞。');
+  if (!cloth || !cloth2) throw new Error('請先選兩張衣服圖，再優化提示詞。');
+  const garment = parseDataUrl(cloth);
+  const garment2 = parseDataUrl(cloth2);
+  return compilePrompts(note, [garment, garment2], true);
+}
+
+async function dress({ model, cloth, cloth2, note, positive, negative, aspectRatio, imageSize }) {
+  if (looksLikeJailbreak([note, positive, negative].join(' '))) throw new Error('無法提供');
   if (!model || !cloth || !cloth2) throw new Error('請上傳模特兒照與兩張衣服圖。');
   const person = parseDataUrl(model);
   const garment = parseDataUrl(cloth);
   const garment2 = parseDataUrl(cloth2);
-  const prompts = await compilePrompts(note, [garment, garment2]);
+  const pos = cleanPrompt(positive, 900);
+  const neg = cleanPrompt(negative, 700);
+  const prompts = pos
+    ? { positive: pos, negative: neg }
+    : { positive: directPrompt(note), negative: '' };
   return generateImage([
     { text: imagePrompt(prompts) },
     { inline_data: { mime_type: person.mime, data: person.b64 } },
     { inline_data: { mime_type: garment.mime, data: garment.b64 } },
     { inline_data: { mime_type: garment2.mime, data: garment2.b64 } },
-  ]);
+  ], { aspectRatio, imageSize });
 }
 
-async function changeBg({ image, sceneId, note }) {
+async function changeBg({ image, sceneId, note, aspectRatio, imageSize }) {
   if (looksLikeJailbreak(note)) throw new Error('無法提供');
   const scene = findScene(sceneId);
   if (!scene) throw new Error('請選擇背景場景。');
@@ -235,7 +266,7 @@ async function changeBg({ image, sceneId, note }) {
   return generateImage([
     { text: bgPrompt(scene, note) },
     { inline_data: { mime_type: photo.mime, data: photo.b64 } },
-  ]);
+  ], { aspectRatio, imageSize });
 }
 
-module.exports = { configured, dress, changeBg, publicScenes, findScene };
+module.exports = { configured, dress, optimize, changeBg, publicScenes, findScene, generateImage, parseDataUrl, looksLikeJailbreak };

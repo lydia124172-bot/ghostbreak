@@ -15,20 +15,31 @@ function ffmpegBin() {
   return '';
 }
 
-function prepareStill(buf) {
+function prepareStill(buf, options) {
   const srcBuf = Buffer.isBuffer(buf) ? buf : Buffer.from(buf || []);
   if (srcBuf.length < 80) throw new Error('商品圖讀取失敗，請換一張 jpg 或 png。');
   const bin = ffmpegBin();
   if (!bin) return srcBuf;
+  const opts = options && typeof options === 'object' ? options : {};
+  const resolution = videoResolution(opts.resolution);
+  const framed = framePixels(opts.ratio, resolution);
+  const hd = resolution === '1080p';
+  const short = hd ? 1080 : 720;
+  const long = hd ? 1920 : 1280;
   const src = path.join(os.tmpdir(), `moose-still-in-${Date.now()}.jpg`);
   const out = path.join(os.tmpdir(), `moose-still-out-${Date.now()}.jpg`);
   fs.writeFileSync(src, srcBuf);
-  const vf = "scale='if(lt(min(iw\\,ih)\\,720)\\,720*iw/min(iw\\,ih)\\,iw)':'if(lt(min(iw\\,ih)\\,720)\\,720*ih/min(iw\\,ih)\\,ih)',scale='min(iw\\,1280)':'min(ih\\,1280)':force_original_aspect_ratio=decrease,format=yuvj420p";
+  const vf = framed
+    ? `scale=${framed[0]}:${framed[1]}:force_original_aspect_ratio=increase,crop=${framed[0]}:${framed[1]},format=yuvj420p`
+    : `scale='if(lt(min(iw\\,ih)\\,${short})\\,${short}*iw/min(iw\\,ih)\\,iw)':'if(lt(min(iw\\,ih)\\,${short})\\,${short}*ih/min(iw\\,ih)\\,ih)',scale='min(iw\\,${long})':'min(ih\\,${long})':force_original_aspect_ratio=decrease,format=yuvj420p`;
   const first = spawnSync(bin, ['-y', '-i', src, '-vf', vf, '-q:v', '3', '-frames:v', '1', out], { windowsHide: true });
   if (first.status !== 0 || !fs.existsSync(out) || fs.statSync(out).size < 2000) {
+    const fallback = framed
+      ? `scale=${framed[0]}:${framed[1]}:force_original_aspect_ratio=increase,crop=${framed[0]}:${framed[1]},format=yuvj420p`
+      : `scale=${short}:${short}:force_original_aspect_ratio=increase,crop=${short}:${short},format=yuvj420p`;
     spawnSync(bin, [
       '-y', '-i', src,
-      '-vf', 'scale=720:720:force_original_aspect_ratio=increase,crop=720:720,format=yuvj420p',
+      '-vf', fallback,
       '-q:v', '3', '-frames:v', '1', out,
     ], { windowsHide: true });
   }
@@ -51,7 +62,16 @@ function configured() {
 }
 
 function videoModel() {
-  return process.env.FAL_VIDEO_MODEL || 'wan/v2.6/image-to-video';
+  const forced = String(process.env.FAL_VIDEO_MODEL || '').trim();
+  if (forced) return forced;
+  return 'fal-ai/kling-video/v3/standard/image-to-video';
+}
+
+function videoEngine(model) {
+  const name = String(model || '');
+  if (/kling/i.test(name)) return 'kling';
+  if (/seedance/i.test(name)) return 'seedance';
+  return 'wan';
 }
 
 function videoDuration(requested) {
@@ -60,15 +80,44 @@ function videoDuration(requested) {
   return '5';
 }
 
+function videoResolution(requested) {
+  return String(requested || '').trim() === '1080p' ? '1080p' : '720p';
+}
+
+function frameRatio(requested) {
+  const raw = String(requested || '').trim();
+  if (raw === '3:4' || raw === '4:5' || raw === '9:16' || raw === '1:1' || raw === '16:9') return raw;
+  return '';
+}
+
+function evenPx(n) {
+  const v = Math.round(Number(n) || 0);
+  return Math.max(2, v - (v % 2));
+}
+
+function framePixels(ratio, resolution) {
+  const picked = frameRatio(ratio);
+  if (!picked) return null;
+  const hd = videoResolution(resolution) === '1080p';
+  const short = hd ? 1080 : 720;
+  const long = hd ? 1920 : 1280;
+  if (picked === '1:1') return [short, short];
+  if (picked === '16:9') return [long, short];
+  if (picked === '9:16') return [short, long];
+  if (picked === '3:4') return [evenPx(long * 3 / 4), long];
+  if (picked === '4:5') return [evenPx(long * 4 / 5), long];
+  return null;
+}
+
 function engine() {
-  return configured() ? 'wan' : '';
+  return configured() ? 'kling' : '';
 }
 
 function creditCost(duration) {
   const sec = videoDuration(duration);
-  if (sec === '15') return 10;
-  if (sec === '10') return 7;
-  return 4;
+  if (sec === '15') return 9;
+  if (sec === '10') return 6;
+  return 3;
 }
 
 function parseDataUrl(url) {
@@ -92,7 +141,7 @@ function motionPrompt({ product, price, hook, style, duration: wanted }) {
     'Camera must NOT do a simple zoom in/out, Ken Burns, or dolly push on a face. Prefer lateral move, orbit, or locked tripod with only the scene animating.',
     `Hero product: ${name}. Packaging, logo, colors, and on-pack text stay pixel-stable.`,
     offer ? `Selling point: ${offer}.` : '',
-    'If a person is visible: keep the same face and identity—no morphing, no beauty retouch, no face swap. Animate product and background; person only subtle natural motion (blink/hair) if needed.',
+    'If a person is visible: keep the same face, hair, and outfit from the first frame. They walk slowly and turn during the clip so the clothing can be seen. Do not freeze the pose. Do not add a buckle or bow that is not already in the first frame.',
     'No new captions, subtitles, prices, watermarks, or logos. Single continuous shot. No lip-sync talking head.',
   ].filter(Boolean).join(' ');
 }
@@ -255,25 +304,45 @@ function audioMimeOf(mime) {
   return '';
 }
 
-async function submit({ images, product, price, hook, style, audio, audioUrl, voice, narration, duration: wanted, prompt }) {
+async function submit({ images, product, price, hook, style, audio, audioUrl, voice, narration, duration: wanted, prompt, resolution: wantedResolution, ratio }) {
   if (!configured()) throw new Error('圖生視頻尚未開通。');
   const first = Array.isArray(images) ? images[0] : '';
   if (!first) throw new Error('請先選商品圖');
   const file = parseDataUrl(first);
   const key = falKey();
-  const model = videoModel();
   const duration = videoDuration(wanted);
-  const still = prepareStill(Buffer.from(file.b64, 'base64'));
+  const resolution = videoResolution(wantedResolution);
+  const model = videoModel();
+  const kind = videoEngine(model);
+  const still = prepareStill(Buffer.from(file.b64, 'base64'), { ratio, resolution: kind === 'wan' ? resolution : '720p' });
   const imageUrl = await falUpload(key, still, 'image/jpeg', 'product.jpg');
-  const payload = {
-    prompt: prompt || motionPrompt({ product: product || '商品', price, hook, style, duration }),
-    image_url: imageUrl,
-    resolution: '720p',
-    duration,
-    enable_prompt_expansion: promptExpansionEnabled(),
-    multi_shots: false,
-    negative_prompt: negativeMotionPrompt(),
-  };
+  const promptText = prompt || motionPrompt({ product: product || '商品', price, hook, style, duration });
+  const payload = kind === 'kling'
+    ? {
+      prompt: promptText,
+      start_image_url: imageUrl,
+      duration,
+      generate_audio: false,
+      negative_prompt: negativeMotionPrompt(),
+    }
+    : kind === 'seedance'
+      ? {
+        prompt: promptText,
+        image_url: imageUrl,
+        resolution: /\/fast\//.test(model) ? '720p' : resolution,
+        duration,
+        aspect_ratio: 'auto',
+        generate_audio: false,
+      }
+      : {
+        prompt: promptText,
+        image_url: imageUrl,
+        resolution,
+        duration,
+        enable_prompt_expansion: promptExpansionEnabled(),
+        multi_shots: false,
+        negative_prompt: negativeMotionPrompt(),
+      };
   let music = audio && audio.buffer && audio.buffer.length ? audio : null;
   if (!music && audioUrl) music = await fetchPublicAudio(audioUrl);
   let speech = voice && voice.buffer && voice.buffer.length ? voice : null;
@@ -290,13 +359,16 @@ async function submit({ images, product, price, hook, style, audio, audioUrl, vo
       speech = null;
     }
   }
+  let audioPath = '';
   if (music && speech) {
     const mixed = await clipExport.mixAudio(music, speech);
-    payload.audio_url = await falUpload(key, mixed.buffer, audioMimeOf(mixed.mime) || 'audio/mpeg', 'mix.mp3');
+    if (kind !== 'wan') audioPath = writeAudioTemp(mixed.buffer, mixed.mime);
+    else payload.audio_url = await falUpload(key, mixed.buffer, audioMimeOf(mixed.mime) || 'audio/mpeg', 'mix.mp3');
   } else if (speech || music) {
     const one = speech || music;
     const mime = audioMimeOf(one.mime) || 'audio/mpeg';
-    payload.audio_url = await falUpload(key, one.buffer, mime, mime === 'audio/wav' ? 'track.wav' : 'track.mp3');
+    if (kind !== 'wan') audioPath = writeAudioTemp(one.buffer, mime);
+    else payload.audio_url = await falUpload(key, one.buffer, mime, mime === 'audio/wav' ? 'track.wav' : 'track.mp3');
   }
   const res = await fetch(`https://queue.fal.run/${model}`, {
     method: 'POST',
@@ -307,7 +379,7 @@ async function submit({ images, product, price, hook, style, audio, audioUrl, vo
   const requestId = body.request_id || body.requestId || '';
   if (!res.ok || !requestId) throw new Error(publicError(new Error(falMessage(body, res.status))));
   const urls = queueUrls(model, requestId, body);
-  return { requestId, model, duration, statusUrl: urls.statusUrl, responseUrl: urls.responseUrl };
+  return { requestId, model, duration, resolution: payload.resolution || '720p', audioPath, statusUrl: urls.statusUrl, responseUrl: urls.responseUrl };
 }
 
 async function check(job) {
@@ -358,9 +430,38 @@ async function check(job) {
   return { status: 'queued' };
 }
 
+function writeAudioTemp(buf, mime) {
+  const ext = /wav/i.test(mime || '') ? 'wav' : 'mp3';
+  const full = path.join(os.tmpdir(), `moose-audio-${Date.now()}.${ext}`);
+  fs.writeFileSync(full, buf);
+  return full;
+}
+
+function muxOntoVideo(videoBuf, audioPath) {
+  if (!audioPath || !fs.existsSync(audioPath)) return videoBuf;
+  const bin = ffmpegBin();
+  if (!bin) return videoBuf;
+  const src = path.join(os.tmpdir(), `moose-vid-${Date.now()}.mp4`);
+  const out = path.join(os.tmpdir(), `moose-vid-audio-${Date.now()}.mp4`);
+  fs.writeFileSync(src, videoBuf);
+  const result = spawnSync(bin, [
+    '-y', '-i', src, '-i', audioPath,
+    '-map', '0:v:0', '-map', '1:a:0',
+    '-c:v', 'copy', '-c:a', 'aac', '-shortest',
+    '-movflags', '+faststart', out,
+  ], { windowsHide: true });
+  let ready = videoBuf;
+  if (result.status === 0 && fs.existsSync(out) && fs.statSync(out).size > 2000) ready = fs.readFileSync(out);
+  try { fs.unlinkSync(src); } catch { /* 略過 */ }
+  try { fs.unlinkSync(out); } catch { /* 略過 */ }
+  try { fs.unlinkSync(audioPath); } catch { /* 略過 */ }
+  return ready;
+}
+
 async function finish(url, meta = {}) {
   const fileOut = await downloadVideo(url);
-  const playable = await clipExport.remuxPlayable(fileOut.buffer);
+  const withAudio = muxOntoVideo(fileOut.buffer, meta.audioPath);
+  const playable = await clipExport.remuxPlayable(withAudio);
   return {
     buffer: playable.buffer,
     mime: playable.mime || 'video/mp4',
@@ -403,15 +504,23 @@ async function render({ images, product, price, hook, style }) {
   const duration = videoDuration();
   const still = prepareStill(Buffer.from(file.b64, 'base64'));
   const imageUrl = await falUpload(key, still, 'image/jpeg', 'product.jpg');
-  const payload = {
-    prompt: motionPrompt({ product: product || '商品', price, hook, style }),
-    image_url: imageUrl,
-    resolution: '720p',
-    duration,
-    enable_prompt_expansion: promptExpansionEnabled(),
-    multi_shots: false,
-    negative_prompt: negativeMotionPrompt(),
-  };
+  const payload = videoEngine(model) === 'kling'
+    ? {
+      prompt: motionPrompt({ product: product || '商品', price, hook, style }),
+      start_image_url: imageUrl,
+      duration,
+      generate_audio: false,
+      negative_prompt: negativeMotionPrompt(),
+    }
+    : {
+      prompt: motionPrompt({ product: product || '商品', price, hook, style }),
+      image_url: imageUrl,
+      resolution: '720p',
+      duration,
+      enable_prompt_expansion: promptExpansionEnabled(),
+      multi_shots: false,
+      negative_prompt: negativeMotionPrompt(),
+    };
   let json;
   try {
     const res = await withTimeout(240000, (signal) => fetch(`https://fal.run/${model}`, {
@@ -461,4 +570,4 @@ async function recoverRecent(model) {
   };
 }
 
-module.exports = { configured, engine, creditCost, videoDuration, submit, check, finish, render, recoverRecent, falUpload, parseDataUrl, audioMimeOf, prepareStill, latestPaidVideo, videoUrlOf, queueUrls, falGet };
+module.exports = { configured, engine, creditCost, videoDuration, videoResolution, frameRatio, videoModel, videoEngine, submit, check, finish, render, recoverRecent, falUpload, parseDataUrl, audioMimeOf, prepareStill, latestPaidVideo, videoUrlOf, queueUrls, falGet };
