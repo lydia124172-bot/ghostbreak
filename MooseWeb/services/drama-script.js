@@ -14,7 +14,9 @@ function promptText({ topic, notes }) {
   return [
     '你是台灣短劇編劇。請寫一支直式 9:16、三鏡、每鏡約 5 秒、全長約 15 秒的 AI 短劇。',
     '語言：繁體中文（台灣，不可簡體）。不要寒暄、不要 JSON、不要 markdown。',
-    '嚴格用下面三塊，一行都不要少：',
+    '先寫兩行，再寫三鏡，一行都不要少。',
+    '第一行以「角色：」開頭，寫出出場的人，最多兩人，含年齡感、髮型、衣服、聲線。三鏡是同一批人。',
+    '第二行以「背景：」開頭，只寫一個地點，含時間、光線、地面、主要物件。三鏡不換地方。',
     'SCENE 1',
     'VISUAL: （畫面，寫實、可拍）',
     'LINE: （一句旁白或對白）',
@@ -34,8 +36,9 @@ function cleanScript(text) {
   const body = String(text || '')
     .replace(/^```[\w]*\s*|\s*```$/g, '')
     .trim();
+  if (!/角色\s*[:：]/.test(body) || !/背景\s*[:：]/.test(body)) throw new Error('沒有寫出角色或背景');
   if (!/SCENE\s*1/i.test(body) || !/SCENE\s*3/i.test(body)) throw new Error('沒有產出三鏡劇本');
-  return body.slice(0, 1600);
+  return body.slice(0, 2400);
 }
 
 async function withTimeout(ms, fn) {
@@ -50,7 +53,7 @@ async function withTimeout(ms, fn) {
 
 async function callGemini(model, parts) {
   const key = process.env.GEMINI_API_KEY;
-  const body = await withTimeout(16000, async (signal) => {
+  const body = await withTimeout(30000, async (signal) => {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
       method: 'POST',
       signal,
@@ -58,8 +61,8 @@ async function callGemini(model, parts) {
       body: JSON.stringify({
         contents: [{ role: 'user', parts }],
         generationConfig: /flash-lite/i.test(model)
-          ? { temperature: 0.7, maxOutputTokens: 800 }
-          : { temperature: 0.7, maxOutputTokens: 800, thinkingConfig: { thinkingBudget: 0 } },
+          ? { temperature: 0.7, maxOutputTokens: 1600 }
+          : { temperature: 0.7, maxOutputTokens: 1600, thinkingConfig: { thinkingBudget: 0 } },
       }),
     });
     const json = await res.json();
@@ -98,7 +101,7 @@ async function viaGemini({ topic, notes, images }) {
 
 function publicError(err) {
   const message = String(err && err.message || '');
-  if (/請先|圖片格式|小於|沒有產出|主題/.test(message)) return message;
+  if (/請先|圖片格式|小於|沒有產出|沒有寫出|主題/.test(message)) return message;
   if (/high demand|overloaded|unavailable|try again later|UNAVAILABLE|429|503/i.test(message)) {
     return '現在使用的人較多，請稍後再試，或先自己寫三鏡。';
   }

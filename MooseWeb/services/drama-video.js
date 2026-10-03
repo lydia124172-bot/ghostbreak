@@ -2,6 +2,8 @@ const clipVideo = require('./clip-video');
 const clipExport = require('./clip-export');
 
 const DEMO_SCRIPT = [
+  '角色：女，約二十八歲，黑長直髮，米色大衣，聲線平。男不入鏡，只在電話裡，聲線低。',
+  '背景：雨夜巷口，便利商店的白燈，地面有積水，霓虹反在水上。三鏡都在這裡。',
   'SCENE 1',
   'VISUAL: 雨夜巷口，女人撐黑傘，霓虹反在積水上。',
   'LINE: 他說會回來。',
@@ -45,15 +47,21 @@ function parseScenes(script) {
   return scenes;
 }
 
-async function stillFromText(visual) {
+function lookOf(script) {
+  const head = String(script || '').split(/SCENE\s*1/i)[0] || '';
+  return head.replace(/\s+/g, ' ').trim().slice(0, 500);
+}
+
+async function stillFromText(visual, look) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   if (!key) throw new Error('短劇畫面尚未開通。');
   const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
   const prompt = [
     '直式 9:16 寫實短劇劇照，電影光，像一格分鏡。',
     '不要任何文字、字幕、標題、浮水印。',
+    look ? `角色與背景，三鏡都要一致：${look}` : '',
     `畫面：${visual}`,
-  ].join('\n');
+  ].filter(Boolean).join('\n');
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
     {
@@ -76,11 +84,12 @@ async function stillFromText(visual) {
   return `data:image/jpeg;base64,${b64}`;
 }
 
-function scenePrompt(scene) {
+function scenePrompt(scene, look) {
   return [
     'Vertical 9:16 cinematic short-drama shot, 5 seconds, photoreal.',
     'Animate this still. Keep the same person, clothes, place, and lighting.',
     'Speak the Chinese line on camera in Mandarin. No captions, subtitles, prices, logos, or watermarks.',
+    look ? `Keep this cast and place: ${look}` : '',
     `Scene: ${scene.visual}`,
     scene.line ? `Spoken line: 「${scene.line}」` : '',
   ].filter(Boolean).join('\n');
@@ -100,18 +109,19 @@ async function waitScene(job) {
 async function produce({ script, images, onPhase }) {
   if (!configured()) throw new Error('AI 短劇尚未開通。');
   const scenes = parseScenes(script);
+  const look = lookOf(script);
   const refs = Array.isArray(images) ? images : [];
   const clips = [];
   for (let i = 0; i < scenes.length; i += 1) {
     if (onPhase) onPhase(`第 ${i + 1} 鏡`);
-    const still = refs[i] || await stillFromText(scenes[i].visual);
+    const still = refs[i] || await stillFromText(scenes[i].visual, look);
     const submitted = await clipVideo.submit({
       images: [still],
       product: scenes[i].visual,
       hook: scenes[i].line,
       style: 'ugc',
       duration: sceneDuration(),
-      prompt: scenePrompt(scenes[i]),
+      prompt: scenePrompt(scenes[i], look),
       generateAudio: true,
     });
     const url = await waitScene(submitted);
