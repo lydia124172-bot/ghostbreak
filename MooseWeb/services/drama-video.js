@@ -60,10 +60,11 @@ function imageDataUrl(part) {
   return `data:image/${kind};base64,${raw.data}`;
 }
 
-async function geminiImage(parts) {
+async function geminiImage(parts, imageSize) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   if (!key) throw new Error('短劇畫面尚未開通。');
-  const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
+  const model = 'gemini-3-pro-image';
+  const size = imageSize === '1K' ? '1K' : '2K';
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
     {
@@ -73,13 +74,18 @@ async function geminiImage(parts) {
         contents: [{ role: 'user', parts }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          imageConfig: { aspectRatio: '9:16', imageSize: '1K' },
+          imageConfig: { aspectRatio: '9:16', imageSize: size },
         },
       }),
+      signal: AbortSignal.timeout(120000),
     },
   );
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error?.message || `短劇畫面失敗 ${res.status}`);
+  if (!res.ok) {
+    const message = json.error?.message || `短劇畫面失敗 ${res.status}`;
+    if (size === '2K' && /invalid|imageSize|2K/i.test(message)) return geminiImage(parts, '1K');
+    throw new Error(message);
+  }
   const image = (json.candidates?.[0]?.content?.parts || []).map(imageDataUrl).find(Boolean);
   if (!image) throw new Error('沒有產出畫面，請再試一次。');
   return image;
@@ -233,11 +239,13 @@ async function makeCast({ topic, notes, script, prompt: wanted, who }) {
     images.push(await geminiImage([{
       text: [
         genderLock(gender),
-        '直式 9:16 寫實定妝照。只畫這一位，半身到大腿，臉清楚，電影光。',
+        '直式 9:16 寫實電影定妝照，2K。只畫這一位，半身，臉清楚。',
+        '85mm 鏡頭，自然膚質要有毛孔，不要塑膠磨皮，不要網紅臉，不要過度美顏。',
         '不要其他路人，不要文字、字幕、浮水印。',
-        '衣服和髮型必須照下面這句，不要換成別的衣服或髮型。',
+        '髮長、髮型、衣服顏色和款式必須完全照「原文」。長直髮就要披在肩上，禁止盤髮、丸子頭、馬尾、短髮。禁止換成別的衣服。',
+        `原文：${chosen[index]}`,
+        `可補的細節，不得推翻原文：${line}`,
         place ? `場景必須是：${place}。不要改成攝影棚、辦公室或其他地方。` : '',
-        `這一位：${line}`,
         genderLock(gender),
       ].filter(Boolean).join('\n'),
     }]));

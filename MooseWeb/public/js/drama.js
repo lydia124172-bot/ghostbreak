@@ -73,7 +73,7 @@ async function refreshPlan() {
       bar.textContent = '短劇出片尚未開通。';
       return;
     }
-    bar.textContent = '後台接案用。三鏡約 15 秒，有配音。一支模型費約 NT$66，不扣站上點數。嘴型不保證。';
+    bar.textContent = '後台接案用。三鏡約 15 秒，有配音。靜圖 Gemini 3 Pro 2K。一支約 NT$73，主角定妝另計，不扣站上點數。嘴型不保證。';
   } catch {
     bar.textContent = '請先登入後台再做短劇。';
   }
@@ -172,10 +172,10 @@ async function makeCast() {
       box.appendChild(img);
     });
     showMsg(who === 'both'
-      ? '兩位各一張。衣服和場景照劇本。約 NT$4。'
+      ? '兩位各一張。髮型和衣服照你寫的。約 NT$10。'
       : who === 'female'
-        ? '這次只生女主，畫成女生。衣服和場景照劇本。約 NT$2。'
-        : '這次只生男主，畫成男生。衣服和場景照劇本。約 NT$2。');
+        ? '這次只生女主，畫成女生。髮型和衣服照你寫的。約 NT$5。'
+        : '這次只生男主，畫成男生。髮型和衣服照你寫的。約 NT$5。');
   } finally {
     btn.disabled = false;
     btn.textContent = '生成主角';
@@ -186,7 +186,7 @@ async function produceDrama(script) {
   const line = String(script || document.getElementById('script').value || '').trim();
   const { images } = await collectInput();
   if (line.length < 20) throw new Error('請先有三鏡劇本，或按「AI 寫三鏡」。');
-  const ok = window.confirm('這會做三鏡、約 15 秒、有配音。模型費約 NT$66，不扣站上點數。某一鏡失敗重做會再計一次。確定要新做嗎？');
+  const ok = window.confirm('這會做三鏡、約 15 秒、有配音。三張分鏡約 NT$13，配音約 NT$60，一支約 NT$73，不扣站上點數。某一鏡失敗重做會再計一次。確定要新做嗎？');
   if (!ok) {
     showMsg('已取消。沒有新扣費。劇本仍留在欄位裡，可再改。');
     return;
