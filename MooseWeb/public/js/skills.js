@@ -149,7 +149,7 @@ const TRADES = [
       },
       {
         name: '劇本質感廣告',
-        need: '貼上分鏡或旁白，做成約 10 秒的直式廣告。',
+        need: '貼上分鏡或旁白，做成 10 或 15 秒、有配音的直式廣告。',
         saas: 'StoryClip 劇本廣告',
         status: '已上線',
         href: '/story',

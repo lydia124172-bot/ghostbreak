@@ -10,11 +10,13 @@ function parseDataUrl(url) {
   return { mime: m[1], b64: m[2] };
 }
 
-function promptText({ product, notes }) {
+function promptText({ product, notes, duration }) {
+  const seconds = duration === '15' ? '15' : '10';
+  const lines = seconds === '15' ? '6 至 10 行' : '4 至 8 行';
   return [
-    '你是台灣電商質感短片編劇。請寫一支約 10 秒、直式 9:16 的商品廣告劇本。',
+    `你是台灣電商質感短片編劇。請寫一支約 ${seconds} 秒、直式 9:16 的商品廣告劇本。`,
     '語言：繁體中文（台灣，不可簡體）。不要寒暄、不要標題、不要 JSON、不要 markdown。',
-    '直接輸出 4 至 8 行劇本。每一行一個鏡頭或一句旁白。',
+    `直接輸出 ${lines}。每一行一個鏡頭或一句旁白。`,
     '結構：開場看見商品 → 使用或細節 → 收尾一句賣點。',
     '要寫「不要字幕、不要浮水印」。旁白用「旁白：」開頭。',
     '有圖就必須對應圖中真實外觀、顏色與使用情境，不可換成別的商品。',
@@ -43,8 +45,8 @@ async function withTimeout(ms, fn) {
   }
 }
 
-async function viaOpenAI({ product, notes, images }) {
-  const content = [{ type: 'text', text: promptText({ product, notes }) }];
+async function viaOpenAI({ product, notes, images, duration }) {
+  const content = [{ type: 'text', text: promptText({ product, notes, duration }) }];
   (images || []).slice(0, 2).forEach((url) => {
     parseDataUrl(url);
     content.push({ type: 'image_url', image_url: { url, detail: 'low' } });
@@ -92,8 +94,8 @@ async function callGemini(model, parts) {
   return cleanScript(text);
 }
 
-async function viaGemini({ product, notes, images }) {
-  const parts = [{ text: promptText({ product, notes }) }];
+async function viaGemini({ product, notes, images, duration }) {
+  const parts = [{ text: promptText({ product, notes, duration }) }];
   (images || []).slice(0, 2).forEach((url) => {
     const file = parseDataUrl(url);
     parts.push({ inline_data: { mime_type: file.mime, data: file.b64 } });
@@ -130,13 +132,14 @@ function publicError(err) {
   return '寫稿失敗，請稍後再試或自行填劇本。';
 }
 
-async function writeScript({ product, notes, images }) {
+async function writeScript({ product, notes, images, duration }) {
   const name = String(product || '').trim();
   const pics = Array.isArray(images) ? images.filter(Boolean) : [];
+  const seconds = duration === '15' ? '15' : '10';
   if (!name && !pics.length) throw new Error('請先填商品名稱，或上傳商品圖。');
   try {
-    if (process.env.OPENAI_API_KEY) return { script: await viaOpenAI({ product: name, notes, images: pics }) };
-    if (process.env.GEMINI_API_KEY) return { script: await viaGemini({ product: name, notes, images: pics }) };
+    if (process.env.OPENAI_API_KEY) return { script: await viaOpenAI({ product: name, notes, images: pics, duration: seconds }) };
+    if (process.env.GEMINI_API_KEY) return { script: await viaGemini({ product: name, notes, images: pics, duration: seconds }) };
     throw new Error('寫稿暫時無法使用，請稍後再試。');
   } catch (err) {
     if (err.name === 'AbortError') throw new Error('寫稿逾時，請再試一次');

@@ -119,6 +119,17 @@ demo.addEventListener('error', () => {
   showMsg('示範片讀取中。可先讀劇本，稍後再重新整理。');
 });
 
+function selectedDuration() {
+  const active = document.querySelector('#durationPicks .clip-type.active');
+  return active && active.dataset.duration === '15' ? '15' : '10';
+}
+
+document.querySelectorAll('#durationPicks .clip-type').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#durationPicks .clip-type').forEach((el) => el.classList.toggle('active', el === btn));
+  });
+});
+
 async function collectStoryInput() {
   const product = document.getElementById('product').value.trim();
   const notes = document.getElementById('notes').value.trim();
@@ -133,7 +144,7 @@ async function writeStoryScript() {
   const res = await fetch('/api/story/script', {
     method: 'POST',
     headers: tokenHeaders(true),
-    body: JSON.stringify({ product, notes, images }),
+    body: JSON.stringify({ product, notes, images, duration: selectedDuration() }),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || '寫稿失敗');
@@ -147,7 +158,8 @@ async function produceStory(script) {
   const line = String(script || document.getElementById('script').value || '').trim();
   const { product, photo, images } = await collectStoryInput();
   if (line.length < 12) throw new Error('請先有一段劇本，或按「AI 寫劇本」。');
-  const ok = window.confirm('這會新做一支並扣一次。示範片可直接看，不必為了看效果再做。確定要新做嗎？');
+  const seconds = selectedDuration();
+  const ok = window.confirm(`這會新做一支 ${seconds} 秒並扣一次。示範片可直接看，不必為了看效果再做。確定要新做嗎？`);
   if (!ok) {
     showMsg('已取消。沒有新扣費。劇本仍留在欄位裡，可再改。');
     return;
@@ -164,7 +176,7 @@ async function produceStory(script) {
     showMsg(`質感片${phase}，已過 ${tick} 秒。通常約 1 到 2 分鐘，請不要重按。`);
   }, 1000);
   try {
-    const payload = { script: line, product };
+    const payload = { script: line, product, duration: seconds };
     if (photo) payload.images = images;
     const res = await fetch('/api/story/video', {
       method: 'POST',

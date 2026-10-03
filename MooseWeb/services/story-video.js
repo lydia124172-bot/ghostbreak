@@ -23,11 +23,9 @@ function creditCost() {
   return Number(process.env.FAL_STORY_CREDITS || 1) || 1;
 }
 
-function videoDuration() {
-  const raw = String(process.env.FAL_STORY_DURATION || '10').trim();
-  const n = Number(raw);
-  if (n >= 4 && n <= 10) return String(Math.round(n));
-  return '10';
+function videoDuration(requested) {
+  const raw = String(requested || process.env.FAL_STORY_DURATION || '10').trim();
+  return raw === '15' ? '15' : '10';
 }
 
 function preferredProvider() {
@@ -59,13 +57,14 @@ function engine() {
   return configured() ? 'seedance' : '';
 }
 
-function storyPrompt({ script, product }) {
+function storyPrompt({ script, product, duration }) {
   const body = String(script || '').trim();
   if (body.length < 12) throw new Error('請貼上至少一段劇本，寫分鏡或旁白即可。');
   if (body.length > 1200) throw new Error('劇本請在 1,200 字內。');
   const name = String(product || '').trim();
+  const seconds = videoDuration(duration);
   return [
-    `Vertical 9:16 cinematic product commercial, about ${videoDuration()} seconds, photoreal, premium lighting.`,
+    `Vertical 9:16 cinematic product commercial, about ${seconds} seconds, photoreal, premium lighting.`,
     'Follow this script beat by beat. Single premium ad. No on-screen captions, subtitles, prices, logos, or watermarks.',
     name ? `Keep this product recognizable: ${name}.` : '',
     'SCRIPT:',
@@ -73,11 +72,11 @@ function storyPrompt({ script, product }) {
   ].filter(Boolean).join('\n');
 }
 
-async function submitFal({ script, images, product }) {
+async function submitFal({ script, images, product, duration: wanted }) {
   if (!falKey()) throw new Error('劇本廣告尚未開通。');
   const first = Array.isArray(images) ? images[0] : '';
-  const duration = videoDuration();
-  const prompt = storyPrompt({ script, product });
+  const duration = videoDuration(wanted);
+  const prompt = storyPrompt({ script, product, duration });
   const payload = {
     prompt,
     resolution: '720p',
@@ -129,11 +128,11 @@ async function imageUrlForArk(first) {
   return `data:image/jpeg;base64,${still.toString('base64')}`;
 }
 
-async function submitArk({ script, images, product }) {
+async function submitArk({ script, images, product, duration: wanted }) {
   if (!arkKey()) throw new Error('劇本廣告尚未開通。');
   const first = Array.isArray(images) ? images[0] : '';
-  const duration = Number(videoDuration());
-  const prompt = storyPrompt({ script, product });
+  const duration = Number(videoDuration(wanted));
+  const prompt = storyPrompt({ script, product, duration: String(duration) });
   const content = [{ type: 'text', text: prompt }];
   if (first) {
     content.push({

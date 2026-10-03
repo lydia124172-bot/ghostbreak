@@ -1670,6 +1670,7 @@ app.get('/api/story/status', (req, res) => {
     videoEngine: storyVideo.engine(),
     videoProvider: storyVideo.preferredProvider(),
     videoDuration: storyVideo.videoDuration(),
+    durations: ['10', '15'],
     videoCredits: storyVideo.creditCost(),
     script: storyScript.configured(),
     scriptPaid: scriptAccess.unlimited,
@@ -1691,6 +1692,7 @@ app.post('/api/story/script', express.json({ limit: '8mb' }), async (req, res) =
       product: String(req.body?.product || '').trim(),
       notes: String(req.body?.notes || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
+      duration: storyVideo.videoDuration(req.body?.duration),
     });
     const extra = owner
       ? {}
@@ -1719,6 +1721,7 @@ app.post('/api/story/video', express.json({ limit: '8mb' }), async (req, res) =>
       script: String(req.body?.script || '').trim(),
       product: String(req.body?.product || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
+      duration: storyVideo.videoDuration(req.body?.duration),
     });
     pruneStoryJobs();
     const job = {

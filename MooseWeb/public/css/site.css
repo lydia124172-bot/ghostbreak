@@ -538,6 +538,7 @@ details.clip-panel > summary::-webkit-details-marker { color: var(--gold); }
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
+.story-durations { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 16px; }
 .clip-type {
   text-align: left;
   border: 1px solid var(--line);
@@ -585,7 +586,7 @@ details.clip-panel > summary::-webkit-details-marker { color: var(--gold); }
 }
 .clip-st.ok { color: #1b7a4a; }
 @media (max-width: 800px) {
-  .clip-types { grid-template-columns: 1fr; }
+  .clip-types, .story-durations { grid-template-columns: 1fr; }
   .clip-music { grid-template-columns: 1fr 1fr; }
   .clip-account { grid-template-columns: 1fr; }
 }
