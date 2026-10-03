@@ -140,7 +140,7 @@ async function writeDramaScript() {
   return script;
 }
 
-let castImage = '';
+let castImages = [];
 
 async function makeCast() {
   const { topic, notes } = await collectInput();
@@ -149,7 +149,7 @@ async function makeCast() {
   if (!prompt && topic.length < 2 && script.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
   const btn = document.getElementById('castBtn');
   btn.disabled = true;
-  btn.textContent = '生成主角中…';
+  btn.textContent = '優化並生成中…';
   try {
     const res = await fetch('/api/drama/cast', {
       method: 'POST',
@@ -158,11 +158,20 @@ async function makeCast() {
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '主角沒有生出來');
-    castImage = String(body.image || '');
-    const preview = document.getElementById('castPreview');
-    preview.src = castImage;
-    preview.hidden = false;
-    showMsg('主角已照提示詞生成。三鏡沒放照片時會用這張。這一張約 NT$2。');
+    if (body.prompt) document.getElementById('castPrompt').value = String(body.prompt);
+    castImages = (Array.isArray(body.images) ? body.images : []).filter(Boolean).slice(0, 2);
+    const box = document.getElementById('castPreviewBox');
+    box.innerHTML = '';
+    castImages.forEach((src) => {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = '主角';
+      img.style.cssText = 'max-width:240px;border-radius:8px;';
+      box.appendChild(img);
+    });
+    showMsg(castImages.length > 1
+      ? '提示詞已優化，兩位主角各一張。三鏡沒放照片時會用這兩張。約 NT$4。'
+      : '提示詞已優化，主角已生成。三鏡沒放照片時會用這張。約 NT$2。');
   } finally {
     btn.disabled = false;
     btn.textContent = '生成主角';
@@ -192,7 +201,7 @@ async function produceDrama(script) {
     const res = await fetch('/api/drama/video', {
       method: 'POST',
       headers: tokenHeaders(true),
-      body: JSON.stringify({ script: line, images, cast: castImage }),
+      body: JSON.stringify({ script: line, images, cast: castImages }),
     });
     const body = await res.json().catch(() => ({}));
     if (res.status === 401 || res.status === 404) throw new Error(body.error || '請先登入後台。');

@@ -1894,7 +1894,7 @@ app.post('/api/drama/cast', express.json({ limit: '8mb' }), async (req, res) => 
       script: String(req.body?.script || '').trim(),
       prompt: String(req.body?.prompt || '').trim(),
     });
-    res.json({ image: result.image });
+    res.json({ images: result.images, prompt: result.prompt || '' });
   } catch (err) {
     res.status(400).json({ error: err.message || '主角沒有生出來' });
   }
@@ -1931,7 +1931,10 @@ app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) =>
       cost,
       script: String(req.body?.script || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
-      cast: String(req.body?.cast || ''),
+      cast: (Array.isArray(req.body?.cast) ? req.body.cast : (req.body?.cast ? [req.body.cast] : []))
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+        .slice(0, 2),
       phase: '已送出',
       created: Date.now(),
       result: null,
@@ -1959,12 +1962,12 @@ app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) =>
           ...extra,
         };
         job.images = [];
-        job.cast = '';
+        job.cast = [];
         saveDramaJobs();
       }).catch((err) => {
         job.error = err.message || '短劇失敗';
         job.images = [];
-        job.cast = '';
+        job.cast = [];
         saveDramaJobs();
         console.log('[drama] failed', job.error);
       });

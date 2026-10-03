@@ -85,37 +85,96 @@ async function geminiImage(parts) {
   return image;
 }
 
-async function stillFromText(visual, look, castImage) {
+function peopleOf(text) {
+  return String(text || '')
+    .replace(/^角色\s*[:：]\s*/, '')
+    .split(/[。\n；;]/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 8 && !/^背景/.test(part))
+    .slice(0, 2);
+}
+
+function castSource({ prompt, script }) {
+  const line = String(prompt || '').trim();
+  if (line) return line.slice(0, 400);
+  const head = lookOf(script);
+  const role = head.match(/角色\s*[:：]\s*([\s\S]*?)(?=背景\s*[:：]|$)/);
+  return String(role ? role[1] : '').trim().slice(0, 400);
+}
+
+async function stillFromText(visual, look, castImages) {
+  const heroes = (Array.isArray(castImages) ? castImages : []).filter(Boolean).slice(0, 2);
   const prompt = [
     '直式 9:16 寫實短劇劇照，電影光，像一格分鏡。',
-    castImage ? '附圖是主角。人數、臉、髮型、衣服都跟附圖一樣，不要換成別人。只改這一鏡的動作和站位。' : '',
+    heroes.length ? `附圖是主角，一位一張，共 ${heroes.length} 位。臉、髮型、衣服都跟對應的附圖一樣，不要換成別人。只改這一鏡的動作和站位。` : '',
     '不要任何文字、字幕、標題、浮水印。',
     look ? `角色與背景，三鏡都要一致：${look}` : '',
     `畫面：${visual}`,
   ].filter(Boolean).join('\n');
   const parts = [{ text: prompt }];
-  if (castImage) {
-    const file = clipVideo.parseDataUrl(castImage);
+  heroes.forEach((url) => {
+    const file = clipVideo.parseDataUrl(url);
     parts.push({ inline_data: { mime_type: file.mime, data: file.b64 } });
-  }
+  });
   return geminiImage(parts);
 }
 
+async function optimizeCastText(source) {
+  const key = String(process.env.GEMINI_API_KEY || '').trim();
+  const raw = String(source || '').trim();
+  if (!key || raw.length < 2) return raw;
+  const ask = [
+    '你在幫寫實人像生圖寫提示詞。把客人的短句擴成可直接生圖的繁體中文。',
+    '客人寫到的特徵必須保留，不要改成相反的。沒寫的才補上：年齡感、髮型、五官、膚質、衣服、身形、光線。',
+    '要像定妝照：臉清楚、皮膚乾淨、電影光，不要網紅過度磨皮，不要奇幻。',
+    '一位就寫一段。兩位就分成兩段，一段一個人，段與段之間空一行。',
+    '不要寒暄，不要標題，不要解釋。',
+    `客人的話：${raw}`,
+  ].join('\n');
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: ask }] }],
+          generationConfig: { maxOutputTokens: 800 },
+        }),
+      },
+    );
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) return raw;
+    const text = (json.candidates?.[0]?.content?.parts || [])
+      .filter((part) => part && part.text && !part.thought)
+      .map((part) => part.text)
+      .join('\n')
+      .trim();
+    return text.slice(0, 500) || raw;
+  } catch {
+    return raw;
+  }
+}
+
 async function makeCast({ topic, notes, script, prompt: wanted }) {
-  const line = String(wanted || '').trim().slice(0, 400);
-  const look = lookOf(script);
+  const source = castSource({ prompt: wanted, script });
   const title = String(topic || '').trim();
   const extra = String(notes || '').trim();
-  if (!line && !look && title.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
-  const prompt = [
-    '直式 9:16 寫實定妝照。臉清楚，電影光。',
-    line ? '人數、長相、衣服都照提示詞，不要改成別人。' : '沒有提示詞時，只生成一位主角。',
-    '不要路人，不要文字、字幕、浮水印。',
-    line ? `提示詞：${line}` : (look || `依主題設計這一位主角：${title}。`),
-    !line && extra ? `補充：${extra}` : '',
-  ].filter(Boolean).join('\n');
-  const image = await geminiImage([{ text: prompt }]);
-  return { image };
+  if (!source && title.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
+  const optimized = await optimizeCastText(source || `${title}。${extra}`);
+  const people = peopleOf(optimized);
+  const list = people.length >= 2 ? people : [optimized];
+  const images = [];
+  for (const person of list.slice(0, 2)) {
+    images.push(await geminiImage([{
+      text: [
+        '直式 9:16 寫實定妝照。只畫這一位，半身到大腿，臉清楚，電影光。',
+        '不要其他路人，不要文字、字幕、浮水印。',
+        `這一位：${person}`,
+      ].join('\n'),
+    }]));
+  }
+  return { images, prompt: optimized };
 }
 
 function scenePrompt(scene, look) {
@@ -144,12 +203,12 @@ async function produce({ script, images, cast, onPhase }) {
   if (!configured()) throw new Error('AI 短劇尚未開通。');
   const scenes = parseScenes(script);
   const look = lookOf(script);
-  const hero = String(cast || '').trim();
+  const heroes = (Array.isArray(cast) ? cast : (cast ? [cast] : [])).filter(Boolean).slice(0, 2);
   const refs = Array.isArray(images) ? images : [];
   const clips = [];
   for (let i = 0; i < scenes.length; i += 1) {
     if (onPhase) onPhase(`第 ${i + 1} 鏡`);
-    const still = refs[i] || await stillFromText(scenes[i].visual, look, hero);
+    const still = refs[i] || await stillFromText(scenes[i].visual, look, heroes);
     const submitted = await clipVideo.submit({
       images: [still],
       product: scenes[i].visual,
