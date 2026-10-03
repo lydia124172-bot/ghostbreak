@@ -1902,6 +1902,50 @@ app.post('/api/drama/cast', express.json({ limit: '8mb' }), async (req, res) => 
   }
 });
 
+const DRAMA_CAST_FILE = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'drama-cast.json');
+
+function loadDramaCast() {
+  try {
+    const rows = JSON.parse(fs.readFileSync(DRAMA_CAST_FILE, 'utf8'));
+    return Array.isArray(rows) ? rows : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDramaCast(rows) {
+  const dir = path.dirname(DRAMA_CAST_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(DRAMA_CAST_FILE, JSON.stringify(rows.slice(-40), null, 2), 'utf8');
+}
+
+app.get('/api/drama/cast/kept', (req, res) => {
+  const images = loadDramaCast()
+    .filter((row) => row && row.id && clipStore.getMedia(row.id))
+    .slice(-40)
+    .map((row) => ({
+      id: row.id,
+      role: row.role === 'female' || row.role === 'other' ? row.role : 'male',
+      url: `/api/clip/media/${row.id}`,
+    }));
+  res.json({ images });
+});
+
+app.post('/api/drama/cast/keep', express.json({ limit: '12mb' }), (req, res) => {
+  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
+  try {
+    const role = req.body?.role === 'female' || req.body?.role === 'other' ? req.body.role : 'male';
+    const file = clipVideo.parseDataUrl(String(req.body?.image || ''));
+    const saved = clipStore.saveMedia(clipSid(req, res), 'image', Buffer.from(file.b64, 'base64'), file.mime);
+    const rows = loadDramaCast();
+    rows.push({ id: saved.id, role, created: Date.now() });
+    saveDramaCast(rows);
+    res.json({ id: saved.id, url: `/api/clip/media/${saved.id}` });
+  } catch (err) {
+    res.status(400).json({ error: err.message || '圖片沒有存下來' });
+  }
+});
+
 app.post('/api/drama/script', express.json({ limit: '8mb' }), async (req, res) => {
   if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
   try {

@@ -175,11 +175,49 @@ function pickCast(id) {
   castSlots[item.role] = item.src;
 }
 
-function addCast(role, src) {
+async function keepCast(role, src) {
+  if (!/^data:image\//.test(String(src || ''))) return;
+  await fetch('/api/drama/cast/keep', {
+    method: 'POST',
+    headers: tokenHeaders(true),
+    body: JSON.stringify({ role, image: src }),
+  });
+}
+
+async function addCast(role, src, saved) {
   if (!src) return;
   castSeq += 1;
-  castGallery.push({ id: castSeq, role, src, picked: false });
-  pickCast(castSeq);
+  const id = castSeq;
+  castGallery.push({ id, role, src, picked: false });
+  pickCast(id);
+  if (!saved) {
+    try { await keepCast(role, src); } catch { /* 這一頁還看得到 */ }
+  }
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('圖片沒有讀回來'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function restoreCast() {
+  const res = await fetch('/api/drama/cast/kept', { headers: tokenHeaders() });
+  if (!res.ok) return;
+  const body = await res.json().catch(() => ({}));
+  const images = Array.isArray(body.images) ? body.images : [];
+  for (const item of images) {
+    const file = await fetch(item.url);
+    if (!file.ok) continue;
+    const src = await blobToDataUrl(await file.blob());
+    await addCast(item.role, src, true);
+  }
+  if (!images.length) return;
+  renderCast();
+  showMsg(`已取回 ${images.length} 張之前的圖，沒有再扣費。點一下可改這次要用的人。`);
 }
 
 function renderCast() {
@@ -216,7 +254,7 @@ async function uploadCast(role, input) {
   input.value = '';
   if (!file) return;
   const src = await fileToJpegDataUrl(file);
-  addCast(role, src);
+  await addCast(role, src);
   renderCast();
   const name = role === 'female' ? '女主' : role === 'other' ? '其他人' : '男主';
   showMsg(`${name}的照片已留下，並設成這次要用的人。點別張可以改。`);
@@ -245,13 +283,15 @@ async function makeCast() {
     const fresh = (Array.isArray(body.images) ? body.images : []).filter(Boolean).slice(0, 2);
     const roles = Array.isArray(body.roles) ? body.roles : [];
     if (who === 'both') {
-      fresh.forEach((src, index) => addCast(roles[index] === 'female' ? 'female' : 'male', src));
+      for (let index = 0; index < fresh.length; index += 1) {
+        await addCast(roles[index] === 'female' ? 'female' : 'male', fresh[index]);
+      }
     } else if (who === 'female') {
-      addCast('female', fresh[0]);
+      await addCast('female', fresh[0]);
     } else if (who === 'other') {
-      addCast('other', fresh[0]);
+      await addCast('other', fresh[0]);
     } else {
-      addCast('male', fresh[0]);
+      await addCast('male', fresh[0]);
     }
     if (body.prompt) document.getElementById('castPrompt').value = String(body.prompt);
     castPayload();
@@ -408,3 +448,4 @@ photoInputs().forEach((input) => {
 refreshPhotoSlots();
 
 refreshPlan();
+restoreCast().catch(() => {});
