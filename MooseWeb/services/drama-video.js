@@ -88,7 +88,7 @@ async function geminiImage(parts) {
 async function stillFromText(visual, look, castImage) {
   const prompt = [
     '直式 9:16 寫實短劇劇照，電影光，像一格分鏡。',
-    castImage ? '附圖是主角。必須是同一個人：臉、髮型、衣服不要換。只改這一鏡的動作和站位。' : '',
+    castImage ? '附圖是主角。人數、臉、髮型、衣服都跟附圖一樣，不要換成別人。只改這一鏡的動作和站位。' : '',
     '不要任何文字、字幕、標題、浮水印。',
     look ? `角色與背景，三鏡都要一致：${look}` : '',
     `畫面：${visual}`,
@@ -101,16 +101,18 @@ async function stillFromText(visual, look, castImage) {
   return geminiImage(parts);
 }
 
-async function makeCast({ topic, notes, script }) {
+async function makeCast({ topic, notes, script, prompt: wanted }) {
+  const line = String(wanted || '').trim().slice(0, 400);
   const look = lookOf(script);
   const title = String(topic || '').trim();
   const extra = String(notes || '').trim();
-  if (!look && title.length < 2) throw new Error('請先填主題，或先按 AI 寫三鏡。');
+  if (!line && !look && title.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
   const prompt = [
-    '直式 9:16 寫實主角定妝照。一個人，半身到大腿，臉清楚，電影光。',
-    '不要其他路人，不要文字、字幕、浮水印。',
-    look || `依主題設計這一位主角：${title}。`,
-    extra ? `補充：${extra}` : '',
+    '直式 9:16 寫實定妝照。臉清楚，電影光。',
+    line ? '人數、長相、衣服都照提示詞，不要改成別人。' : '沒有提示詞時，只生成一位主角。',
+    '不要路人，不要文字、字幕、浮水印。',
+    line ? `提示詞：${line}` : (look || `依主題設計這一位主角：${title}。`),
+    !line && extra ? `補充：${extra}` : '',
   ].filter(Boolean).join('\n');
   const image = await geminiImage([{ text: prompt }]);
   return { image };
@@ -119,7 +121,7 @@ async function makeCast({ topic, notes, script }) {
 function scenePrompt(scene, look) {
   return [
     'Vertical 9:16 cinematic short-drama shot, 5 seconds, photoreal.',
-    'Animate this still. Keep the same person, clothes, place, and lighting.',
+    'Animate this still. Keep the same people, clothes, place, and lighting.',
     'Speak the Chinese line on camera in Mandarin. No captions, subtitles, prices, logos, or watermarks.',
     look ? `Keep this cast and place: ${look}` : '',
     `Scene: ${scene.visual}`,

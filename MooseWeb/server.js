@@ -1892,6 +1892,7 @@ app.post('/api/drama/cast', express.json({ limit: '8mb' }), async (req, res) => 
       topic: String(req.body?.topic || '').trim(),
       notes: String(req.body?.notes || '').trim(),
       script: String(req.body?.script || '').trim(),
+      prompt: String(req.body?.prompt || '').trim(),
     });
     res.json({ image: result.image });
   } catch (err) {

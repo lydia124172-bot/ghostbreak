@@ -145,7 +145,8 @@ let castImage = '';
 async function makeCast() {
   const { topic, notes } = await collectInput();
   const script = document.getElementById('script').value.trim();
-  if (topic.length < 2 && script.length < 2) throw new Error('請先填主題，或先按 AI 寫三鏡。');
+  const prompt = document.getElementById('castPrompt').value.trim();
+  if (!prompt && topic.length < 2 && script.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
   const btn = document.getElementById('castBtn');
   btn.disabled = true;
   btn.textContent = '生成主角中…';
@@ -153,7 +154,7 @@ async function makeCast() {
     const res = await fetch('/api/drama/cast', {
       method: 'POST',
       headers: tokenHeaders(true),
-      body: JSON.stringify({ topic, notes, script }),
+      body: JSON.stringify({ topic, notes, script, prompt }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '主角沒有生出來');
@@ -161,7 +162,7 @@ async function makeCast() {
     const preview = document.getElementById('castPreview');
     preview.src = castImage;
     preview.hidden = false;
-    showMsg('主角已生成。三鏡沒放照片時會用這張臉。這一張約 NT$2。');
+    showMsg('主角已照提示詞生成。三鏡沒放照片時會用這張。這一張約 NT$2。');
   } finally {
     btn.disabled = false;
     btn.textContent = '生成主角';
