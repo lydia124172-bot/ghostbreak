@@ -72,7 +72,7 @@ async function callGemini(model, parts) {
 
 async function viaGemini({ topic, notes, images }) {
   const parts = [{ text: promptText({ topic, notes }) }];
-  (images || []).slice(0, 2).forEach((url) => {
+  (images || []).filter(Boolean).slice(0, 3).forEach((url) => {
     const file = parseDataUrl(url);
     parts.push({ inline_data: { mime_type: file.mime, data: file.b64 } });
   });
