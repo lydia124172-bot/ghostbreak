@@ -80,15 +80,15 @@ function scenePrompt(scene) {
   return [
     'Vertical 9:16 cinematic short-drama shot, 5 seconds, photoreal.',
     'Animate this still. Keep the same person, clothes, place, and lighting.',
-    'Subtle natural motion only. No captions, subtitles, prices, or watermarks.',
+    'Speak the Chinese line on camera in Mandarin. No captions, subtitles, prices, logos, or watermarks.',
     `Scene: ${scene.visual}`,
-    scene.line ? `Spoken line, do not render as on-screen text: ${scene.line}` : '',
+    scene.line ? `Spoken line: 「${scene.line}」` : '',
   ].filter(Boolean).join('\n');
 }
 
 async function waitScene(job) {
   const started = Date.now();
-  while (Date.now() - started < 4 * 60 * 1000) {
+  while (Date.now() - started < 6 * 60 * 1000) {
     const peek = await clipVideo.check(job);
     if (peek.status === 'failed') throw new Error(peek.error || '這一鏡失敗');
     if (peek.status === 'done' && peek.videoUrl) return peek.videoUrl;
@@ -100,7 +100,7 @@ async function waitScene(job) {
 async function produce({ script, images, onPhase }) {
   if (!configured()) throw new Error('AI 短劇尚未開通。');
   const scenes = parseScenes(script);
-  const refs = Array.isArray(images) ? images.filter(Boolean) : [];
+  const refs = Array.isArray(images) ? images : [];
   const clips = [];
   for (let i = 0; i < scenes.length; i += 1) {
     if (onPhase) onPhase(`第 ${i + 1} 鏡`);
@@ -112,6 +112,7 @@ async function produce({ script, images, onPhase }) {
       style: 'ugc',
       duration: sceneDuration(),
       prompt: scenePrompt(scenes[i]),
+      generateAudio: true,
     });
     const url = await waitScene(submitted);
     const file = await clipVideo.finish(url, { duration: sceneDuration() });

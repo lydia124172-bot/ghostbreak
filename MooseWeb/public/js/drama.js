@@ -39,11 +39,11 @@ function fileToJpegDataUrl(file) {
 
 async function waitJob(jobId, onPhase) {
   const started = Date.now();
-  while (Date.now() - started < 12 * 60 * 1000) {
+    while (Date.now() - started < 18 * 60 * 1000) {
     await new Promise((resolve) => setTimeout(resolve, 2000));
     const res = await fetch(`/api/drama/video/job/${encodeURIComponent(jobId)}`, { headers: tokenHeaders() });
     const body = await res.json().catch(() => ({}));
-    if (res.status === 401 || res.status === 402) throw new Error(body.error || '請先申請 AI短劇方案。');
+    if (res.status === 401 || res.status === 404) throw new Error(body.error || '請先登入後台。');
     if (res.status === 404) throw new Error(body.error || '找不到這次短劇。');
     if (!res.ok) throw new Error(body.error || '短劇失敗');
     if (body.videoUrl) return body;
@@ -65,45 +65,18 @@ async function refreshPlan() {
   try {
     const st = await fetch('/api/drama/status', { headers: tokenHeaders() }).then((r) => r.json());
     if (st.demoScript) document.getElementById('demoScript').textContent = st.demoScript;
+    if (!st.owner) {
+      bar.textContent = '這頁只在後台。請先登入後台。';
+      return;
+    }
     if (!st.video) {
-      bar.textContent = 'AI短劇尚未開通。示範劇本仍可看。';
+      bar.textContent = '短劇出片尚未開通。';
       return;
     }
-    const me = await fetch('/api/account/me').then((r) => r.json());
-    const videoLine = me.ok && me.email && me.dramaPlan
-      ? `出片：${escapeHtml(me.dramaPlanName || 'AI短劇')}，剩餘 ${me.dramaCredits ?? 0} 次。`
-      : '出片需 AI短劇方案（扣次數）。';
-    if (st.scriptPaid) {
-      bar.innerHTML = `已購買付費工具方案，AI 寫三鏡不限次數。${videoLine}　<a href="/account">管理方案</a>`;
-      return;
-    }
-    const left = st.scriptLeft != null ? st.scriptLeft : 0;
-    const limit = st.scriptLimit != null ? st.scriptLimit : 1;
-    if (left > 0) {
-      bar.innerHTML = `AI 寫三鏡試用尚可 ${left} 次（限 ${limit} 次）。${videoLine}　<a href="/account">購買付費工具方案</a>寫稿不限次。`;
-    } else {
-      bar.innerHTML = `AI 寫三鏡試用已用完。${videoLine}　<a href="/account">購買付費工具方案</a>後寫稿不限次。`;
-    }
+    bar.textContent = '後台接案用。三鏡約 15 秒，有配音。一支模型費約 NT$66，不扣站上點數。嘴型不保證。';
   } catch {
-    bar.textContent = '未購也可看示範劇本。寫稿各限試用 1 次；出片需 AI短劇方案。';
+    bar.textContent = '請先登入後台再做短劇。';
   }
-}
-
-function renderPlans(plans) {
-  const box = document.getElementById('planGrid');
-  if (!box) return;
-  const rows = (plans || []).filter((plan) => plan.product === 'dramaclip');
-  box.innerHTML = rows.map((plan) => `
-    <article class="plan-card">
-      <p class="meta">${escapeHtml(plan.period)}</p>
-      <h3>${escapeHtml(plan.name)}</h3>
-      <p class="plan-scope">${escapeHtml(plan.scope || '')}</p>
-      <p class="plan-price">${escapeHtml(plan.priceLabel)}</p>
-      <p class="plan-quota">${escapeHtml(plan.quota || '')}</p>
-      <ul>${(plan.features || []).map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>
-      <a class="btn btn-copper" href="/account">${plan.id === 'drama-once' ? '先買單支' : '選擇月用'}</a>
-    </article>
-  `).join('');
 }
 
 function photoInputs() {
@@ -171,7 +144,7 @@ async function produceDrama(script) {
   const line = String(script || document.getElementById('script').value || '').trim();
   const { images } = await collectInput();
   if (line.length < 20) throw new Error('請先有三鏡劇本，或按「AI 寫三鏡」。');
-  const ok = window.confirm('這會做三鏡、約 15 秒，並扣一次。示範只看文字，不必為了看效果再做。確定要新做嗎？');
+  const ok = window.confirm('這會做三鏡、約 15 秒、有配音。模型費約 NT$66，不扣站上點數。某一鏡失敗重做會再計一次。確定要新做嗎？');
   if (!ok) {
     showMsg('已取消。沒有新扣費。劇本仍留在欄位裡，可再改。');
     return;
@@ -184,7 +157,7 @@ async function produceDrama(script) {
     tick += 1;
     const btn = document.getElementById('makeBtn');
     if (btn) btn.textContent = `${phase} ${tick} 秒`;
-    showMsg(`短劇${phase}，已過 ${tick} 秒。三鏡常要 3 到 6 分鐘，請不要重按。`);
+    showMsg(`短劇${phase}，已過 ${tick} 秒。三鏡有配音，常要 6 到 12 分鐘，請不要重按。`);
   }, 1000);
   try {
     const res = await fetch('/api/drama/video', {
@@ -193,7 +166,7 @@ async function produceDrama(script) {
       body: JSON.stringify({ script: line, images }),
     });
     const body = await res.json().catch(() => ({}));
-    if (res.status === 401 || res.status === 402) throw new Error(body.error || '請先申請 AI短劇方案。');
+    if (res.status === 401 || res.status === 404) throw new Error(body.error || '請先登入後台。');
     if (!res.ok) throw new Error(body.error || '短劇失敗');
     const done = body.videoUrl ? body : await waitJob(body.jobId, (next) => { phase = next; });
     showPreview(done.videoUrl);
@@ -269,9 +242,5 @@ photoInputs().forEach((input) => {
   if (input) input.addEventListener('change', refreshPhotoSlots);
 });
 refreshPhotoSlots();
-
-fetch('/api/config').then((r) => r.json()).then((data) => {
-  renderPlans((data.tree && data.tree.plans) || []);
-}).catch(() => {});
 
 refreshPlan();

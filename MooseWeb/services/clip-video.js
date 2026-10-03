@@ -304,7 +304,7 @@ function audioMimeOf(mime) {
   return '';
 }
 
-async function submit({ images, product, price, hook, style, audio, audioUrl, voice, narration, duration: wanted, prompt, resolution: wantedResolution, ratio }) {
+async function submit({ images, product, price, hook, style, audio, audioUrl, voice, narration, duration: wanted, prompt, resolution: wantedResolution, ratio, generateAudio }) {
   if (!configured()) throw new Error('圖生視頻尚未開通。');
   const first = Array.isArray(images) ? images[0] : '';
   if (!first) throw new Error('請先選商品圖');
@@ -317,12 +317,13 @@ async function submit({ images, product, price, hook, style, audio, audioUrl, vo
   const still = prepareStill(Buffer.from(file.b64, 'base64'), { ratio, resolution: kind === 'wan' ? resolution : '720p' });
   const imageUrl = await falUpload(key, still, 'image/jpeg', 'product.jpg');
   const promptText = prompt || motionPrompt({ product: product || '商品', price, hook, style, duration });
+  const withAudio = Boolean(generateAudio);
   const payload = kind === 'kling'
     ? {
       prompt: promptText,
       start_image_url: imageUrl,
       duration,
-      generate_audio: false,
+      generate_audio: withAudio,
       negative_prompt: negativeMotionPrompt(),
     }
     : kind === 'seedance'
@@ -332,7 +333,7 @@ async function submit({ images, product, price, hook, style, audio, audioUrl, vo
         resolution: /\/fast\//.test(model) ? '720p' : resolution,
         duration,
         aspect_ratio: 'auto',
-        generate_audio: false,
+        generate_audio: withAudio,
       }
       : {
         prompt: promptText,

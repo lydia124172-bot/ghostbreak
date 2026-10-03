@@ -276,7 +276,10 @@ app.get(['/works', '/agents'], (req, res) => redirectStudio(req, res, '/works'))
 app.get('/courses', (req, res) => redirectStudio(req, res, '/courses'));
 app.get('/course', (req, res) => redirectStudio(req, res, '/course'));
 app.get('/hire', (req, res) => redirectStudio(req, res, '/hire'));
-app.get('/drama', (_req, res) => res.redirect(302, '/story'));
+app.get('/drama', (req, res) => {
+  if (!isOwner(req)) return res.redirect(302, '/story');
+  return sendPage(req, res, 'drama.html');
+});
 
 Object.entries(pages).forEach(([route, file]) => {
   app.get(route, (req, res) => sendPage(req, res, file));
@@ -1693,6 +1696,7 @@ app.post('/api/story/script', express.json({ limit: '8mb' }), async (req, res) =
       notes: String(req.body?.notes || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
       duration: storyVideo.videoDuration(req.body?.duration),
+      mode: req.body?.mode,
     });
     const extra = owner
       ? {}
@@ -1863,47 +1867,32 @@ app.use([
   '/api/drama/script',
   '/api/drama/video',
 ], (req, res, next) => {
-  if (DRAMA_OPEN) return next();
-  return res.status(503).json({ error: 'AI短劇建置中，尚未開放。' });
+  if (isOwner(req)) return next();
+  return res.status(404).json({ error: '找不到這個功能。' });
 });
 
 app.get('/api/drama/status', (req, res) => {
-  const paid = currentAccount(req);
-  const account = paid ? accounts.publicAccount(paid) : null;
-  const scriptAccess = agentAccess(req, res, 'drama');
+  const owner = isOwner(req);
   res.json({
-    open: DRAMA_OPEN,
-    video: DRAMA_OPEN && dramaVideo.configured(),
-    script: DRAMA_OPEN && dramaScript.configured(),
+    open: owner,
+    video: owner && dramaVideo.configured(),
+    script: owner && dramaScript.configured(),
     scenes: dramaVideo.sceneCount(),
     duration: Number(dramaVideo.sceneDuration()) * dramaVideo.sceneCount(),
-    videoCredits: dramaVideo.creditCost(),
-    scriptPaid: scriptAccess.unlimited,
-    scriptLeft: scriptAccess.unlimited ? null : scriptAccess.left,
-    scriptLimit: scriptAccess.unlimited ? null : scriptAccess.limit,
-    demoScript: dramaVideo.DEMO_SCRIPT,
-    owner: isOwner(req),
-    dramaPlan: account && account.dramaPlan ? account.dramaPlan : '',
-    dramaCredits: account ? account.dramaCredits : 0,
+    demoScript: owner ? dramaVideo.DEMO_SCRIPT : '',
+    owner,
   });
 });
 
 app.post('/api/drama/script', express.json({ limit: '8mb' }), async (req, res) => {
-  const owner = isOwner(req);
-  const access = agentAccess(req, res, 'drama');
-  if (!owner && !access.unlimited && access.left <= 0) return denyAgentTrial(res);
+  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
   try {
     const result = await dramaScript.writeScript({
       topic: String(req.body?.topic || '').trim(),
       notes: String(req.body?.notes || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
     });
-    const extra = owner
-      ? {}
-      : access.unlimited
-        ? { paid: true, unlimited: true }
-        : { left: clipStore.consumeGuestAgentTrial(access.bucket, 'drama').left };
-    res.json({ script: result.script, ...extra });
+    res.json({ script: result.script });
   } catch (err) {
     const msg = err.name === 'AbortError' ? '寫稿逾時，請再試一次' : (err.message || '寫稿失敗');
     res.status(400).json({ error: msg });
@@ -1912,14 +1901,9 @@ app.post('/api/drama/script', express.json({ limit: '8mb' }), async (req, res) =
 
 app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) => {
   const owner = isOwner(req);
+  if (!owner) return res.status(404).json({ error: '找不到這個功能。' });
   const row = currentAccount(req);
-  const paid = row ? accounts.publicAccount(row) : null;
   const cost = dramaVideo.creditCost();
-  if (!owner && (!paid || Number(paid.dramaCredits || 0) < cost)) {
-    return res.status(402).json({
-      error: `請先看示範劇本，再到帳號申請 AI短劇方案。一次需 ${cost} 次。`,
-    });
-  }
   try {
     dramaVideo.parseScenes(String(req.body?.script || '').trim());
     pruneDramaJobs();
@@ -1984,12 +1968,7 @@ app.get('/api/drama/video/job/:jobId', (req, res) => {
 });
 
 app.get('/api/drama/video/last', (req, res) => {
-  const owner = isOwner(req);
-  const row = currentAccount(req);
-  const paid = row ? accounts.publicAccount(row) : null;
-  if (!owner && (!paid || !paid.dramaPlan)) {
-    return res.status(402).json({ error: '請先申請 AI短劇方案。' });
-  }
+  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
   const local = latestDramaJob(clipSid(req, res));
   if (local && local.result) return res.json({ ...local.result, recovered: true });
   return res.status(404).json({ error: '沒有可取回的短劇。請不要重按產出。' });

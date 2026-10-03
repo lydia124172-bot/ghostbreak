@@ -1,12 +1,75 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8" />
-  <title>劇本廣告 — 麋鹿網</title>
-  <meta http-equiv="refresh" content="0;url=/story" />
-  <link rel="canonical" href="/story" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>接案短劇 — 麋鹿網後台</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=story15" />
 </head>
 <body>
-  <p>這項已改由<a href="/story">劇本廣告</a>製作。</p>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/admin">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>內容後台</small></span>
+      </a>
+      <div class="admin-actions">
+        <a class="nav-link" href="/admin">回後台</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <p class="kicker">後台　只給自己接案</p>
+      <h1>短劇</h1>
+      <p class="lead">三鏡接成約 15 秒，每一鏡都有配音。客人不賣、也看不到。一支模型費約 NT$66，不扣站上點數。嘴型不保證。某一鏡重做會再計一次。</p>
+      <p class="clip-plan" id="dramaPlan"></p>
+    </section>
+
+    <section class="panel">
+      <h2>示範劇本</h2>
+      <pre id="demoScript" class="story-script"></pre>
+    </section>
+
+    <form id="dramaForm" class="panel">
+      <h2>做一支</h2>
+      <label class="field" for="topic">主題</label>
+      <input id="topic" class="form-input" maxlength="80" placeholder="例如：雨夜巷口，她決定先走" />
+      <label class="field" for="notes">補充（選填）</label>
+      <textarea id="notes" class="form-input" rows="3" maxlength="400" placeholder="例如：女聲，語氣平靜，不要字幕"></textarea>
+      <p class="field">三鏡參考圖（可空。空的那鏡由 AI 生畫面）</p>
+      <p class="lead" id="photoCount">尚未選圖。</p>
+      <label class="field" for="photo1">第 1 鏡</label>
+      <input id="photo1" type="file" accept="image/*" />
+      <img id="photoPreview1" alt="" hidden />
+      <p class="lead" id="photoName1">未選</p>
+      <label class="field" for="photo2">第 2 鏡</label>
+      <input id="photo2" type="file" accept="image/*" />
+      <img id="photoPreview2" alt="" hidden />
+      <p class="lead" id="photoName2">未選</p>
+      <label class="field" for="photo3">第 3 鏡</label>
+      <input id="photo3" type="file" accept="image/*" />
+      <img id="photoPreview3" alt="" hidden />
+      <p class="lead" id="photoName3">未選</p>
+      <label class="field" for="script">三鏡劇本</label>
+      <textarea id="script" class="form-input" rows="14" maxlength="2000" placeholder="按 AI 寫三鏡，或貼上含 SCENE、VISUAL、LINE 的三鏡。"></textarea>
+      <div class="admin-actions">
+        <button class="btn btn-cream" id="writeBtn" type="button">AI 寫三鏡</button>
+        <button class="btn btn-cream" id="writeMakeBtn" type="button">一鍵寫好並產出</button>
+        <button class="btn btn-copper" id="makeBtn" type="submit">用現有劇本產出</button>
+        <button class="btn btn-ghost" id="recoverBtn" type="button">取回剛才的短劇</button>
+      </div>
+      <p id="dramaMsg" class="lead"></p>
+      <div id="previewBox" class="hidden">
+        <video id="preview" class="clip-video" controls playsinline></video>
+        <a class="btn btn-copper" id="downloadBtn" href="#" download>下載</a>
+      </div>
+    </form>
+  </main>
+  <script src="/js/drama.js?v=owner1"></script>
 </body>
 </html>
