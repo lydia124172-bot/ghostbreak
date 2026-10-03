@@ -148,6 +148,8 @@ async function makeCast() {
   const prompt = document.getElementById('castPrompt').value.trim();
   const whoBtn = document.querySelector('#castWho .clip-type.active');
   const who = whoBtn && whoBtn.dataset.who ? whoBtn.dataset.who : 'male';
+  const appealBtn = document.querySelector('#castAppeal .clip-type.active');
+  const appeal = appealBtn && appealBtn.dataset.appeal ? appealBtn.dataset.appeal : 'pretty';
   if (!prompt && topic.length < 2 && script.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
   const btn = document.getElementById('castBtn');
   btn.disabled = true;
@@ -156,7 +158,7 @@ async function makeCast() {
     const res = await fetch('/api/drama/cast', {
       method: 'POST',
       headers: tokenHeaders(true),
-      body: JSON.stringify({ topic, notes, script, prompt, who }),
+      body: JSON.stringify({ topic, notes, script, prompt, who, appeal }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '主角沒有生出來');
@@ -171,11 +173,12 @@ async function makeCast() {
       img.style.cssText = 'max-width:240px;border-radius:8px;';
       box.appendChild(img);
     });
+    const face = appeal === 'rough' ? '這次照難看。' : '這次先好看。';
     showMsg(who === 'both'
-      ? '兩位各一張。髮型和衣服照你寫的。約 NT$10。'
+      ? `兩位各一張。${face}三鏡會用這兩位，表情和狀態照劇情。約 NT$10。`
       : who === 'female'
-        ? '這次只生女主，畫成女生。髮型和衣服照你寫的。約 NT$5。'
-        : '這次只生男主，畫成男生。髮型和衣服照你寫的。約 NT$5。');
+        ? `這次只生女主。${face}三鏡會用這一位，表情和狀態照劇情。約 NT$5。`
+        : `這次只生男主。${face}三鏡會用這一位，表情和狀態照劇情。約 NT$5。`);
   } finally {
     btn.disabled = false;
     btn.textContent = '生成主角';
@@ -205,7 +208,12 @@ async function produceDrama(script) {
     const res = await fetch('/api/drama/video', {
       method: 'POST',
       headers: tokenHeaders(true),
-      body: JSON.stringify({ script: line, images, cast: castImages }),
+      body: JSON.stringify({
+        script: line,
+        images,
+        cast: castImages,
+        castPrompt: document.getElementById('castPrompt').value.trim(),
+      }),
     });
     const body = await res.json().catch(() => ({}));
     if (res.status === 401 || res.status === 404) throw new Error(body.error || '請先登入後台。');
@@ -231,9 +239,10 @@ document.getElementById('dramaForm').addEventListener('submit', async (event) =>
   }
 });
 
-document.querySelectorAll('#castWho .clip-type').forEach((btn) => {
+document.querySelectorAll('#castWho .clip-type, #castAppeal .clip-type').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('#castWho .clip-type').forEach((el) => el.classList.toggle('active', el === btn));
+    const box = btn.closest('.clip-types');
+    box.querySelectorAll('.clip-type').forEach((el) => el.classList.toggle('active', el === btn));
   });
 });
 

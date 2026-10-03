@@ -1894,6 +1894,7 @@ app.post('/api/drama/cast', express.json({ limit: '8mb' }), async (req, res) => 
       script: String(req.body?.script || '').trim(),
       prompt: String(req.body?.prompt || '').trim(),
       who: String(req.body?.who || '').trim(),
+      appeal: String(req.body?.appeal || '').trim(),
     });
     res.json({ images: result.images, prompt: result.prompt || '' });
   } catch (err) {
@@ -1936,6 +1937,7 @@ app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) =>
         .map((item) => String(item || '').trim())
         .filter(Boolean)
         .slice(0, 2),
+      castPrompt: String(req.body?.castPrompt || '').trim().slice(0, 800),
       phase: '已送出',
       created: Date.now(),
       result: null,
@@ -1948,6 +1950,7 @@ app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) =>
         script: job.script,
         images: job.images,
         cast: job.cast,
+        castPrompt: job.castPrompt,
         onPhase: (phase) => { job.phase = phase; },
       }).then((fileOut) => {
         const saved = clipStore.saveMedia(job.sid, 'video', fileOut.buffer, fileOut.mime || 'video/mp4');

@@ -108,14 +108,16 @@ function castSource({ prompt, script }) {
   return String(role ? role[1] : '').trim().slice(0, 400);
 }
 
-async function stillFromText(visual, look, castImages) {
+async function stillFromText(visual, look, castImages, castPrompt) {
   const heroes = (Array.isArray(castImages) ? castImages : []).filter(Boolean).slice(0, 2);
   const prompt = [
     '直式 9:16 寫實短劇劇照，電影光，像一格分鏡。',
-    heroes.length ? `附圖是主角，一位一張，共 ${heroes.length} 位。臉、髮型、衣服都跟對應的附圖一樣，不要換成別人。只改這一鏡的動作和站位。` : '',
+    heroes.length ? `附圖是主角，一位一張，共 ${heroes.length} 位。臉型、五官、髮型、衣服跟附圖一樣，不要換成別人。` : '',
+    castPrompt ? `這是誰：${castPrompt}。只鎖定這個人的年齡、臉、髮型、衣服。不要把這段裡的一種表情用在每一鏡。` : '',
+    '這一鏡的表情、情緒、身體狀態必須照下面的畫面。可以笑、哭、怒、累、受傷、狼狽。三鏡不要同一張臉。',
     '不要任何文字、字幕、標題、浮水印。',
-    look ? `角色與背景，三鏡都要一致：${look}` : '',
-    `畫面：${visual}`,
+    look ? `角色與地點只用來認人和認場景，表情以這一鏡為準：${look}` : '',
+    `這一鏡的畫面：${visual}`,
   ].filter(Boolean).join('\n');
   const parts = [{ text: prompt }];
   heroes.forEach((url) => {
@@ -173,6 +175,14 @@ function forceGender(text, gender) {
   return line;
 }
 
+function appealLock(appeal, gender) {
+  if (appeal === 'rough') {
+    return '臉要不好看、不討喜。可以疲憊、粗糙、黑眼圈、膚色不均。不要畫成俊男美女。五官仍要清楚。';
+  }
+  const lead = gender === 'female' ? '女主角' : '男主角';
+  return `臉要好看，像電影${lead}。五官端正、膚色乾淨均匀、眼神有神。禁止疲憊、黑眼圈、傷痕、蠟黃、油膩、邋遢。光線要討好這張臉。仍是寫實照片，不要塑膠網紅臉。`;
+}
+
 function genderLock(gender) {
   if (gender === 'female') {
     return '這一位是成年女性。必須畫成女人，女性的臉和身形。禁止畫成男人。adult woman, female face, not a man.';
@@ -180,16 +190,20 @@ function genderLock(gender) {
   return '這一位是成年男性。必須畫成男人，男性的臉、喉結和身形。禁止畫成女人，禁止女性化。adult man, male face, not a woman.';
 }
 
-async function optimizeCastText(source, place, gender) {
+async function optimizeCastText(source, place, gender, appeal) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   const raw = String(source || '').trim();
   if (!key || raw.length < 2) return raw;
   const ask = [
     '你在幫寫實人像生圖寫提示詞。把這一位的短句擴成可直接生圖的繁體中文。',
     genderLock(gender),
+    appealLock(appeal, gender),
+    appeal === 'rough'
+      ? '客人寫到的疲憊、粗糙可以留下。'
+      : '這次要好看。即使原文寫疲憊、憔悴、傷痕，也不要寫進提示詞。',
     '只寫這一位。禁止再寫另一個人。',
-    '客人寫到的年齡、髮型、衣服、聲線必須原樣保留，不要換成大衣、西裝、別的髮型。',
-    '沒寫的才補五官和膚質。要像定妝照：臉清楚、電影光，不要過度磨皮，不要奇幻。',
+    '客人寫到的年齡、髮型、衣服必須原樣保留，不要換成大衣、西裝、別的髮型。',
+    '沒寫的才補五官。要像定妝照：臉清楚、電影光。',
     place ? `場景必須沿用這句，不要改成攝影棚或其他地方：${place}` : '不要自作主張換成攝影棚。',
     '只輸出一段。不要寒暄，不要標題。',
     `這一位：${raw}`,
@@ -219,8 +233,9 @@ async function optimizeCastText(source, place, gender) {
   }
 }
 
-async function makeCast({ topic, notes, script, prompt: wanted, who }) {
+async function makeCast({ topic, notes, script, prompt: wanted, who, appeal }) {
   const pickedWho = who === 'female' || who === 'both' ? who : 'male';
+  const pickedAppeal = appeal === 'rough' ? 'rough' : 'pretty';
   const typed = String(wanted || '').trim();
   const roleText = castSource({ prompt: '', script });
   const source = typed || roleText;
@@ -234,17 +249,18 @@ async function makeCast({ topic, notes, script, prompt: wanted, who }) {
   const images = [];
   for (let index = 0; index < chosen.length; index += 1) {
     const gender = genderFor(chosen[index], pickedWho, index);
-    const line = forceGender(await optimizeCastText(chosen[index], place, gender), gender);
+    const line = forceGender(await optimizeCastText(chosen[index], place, gender, pickedAppeal), gender);
     optimized.push(line);
     images.push(await geminiImage([{
       text: [
         genderLock(gender),
+        appealLock(pickedAppeal, gender),
         '直式 9:16 寫實電影定妝照，2K。只畫這一位，半身，臉清楚。',
-        '85mm 鏡頭，自然膚質要有毛孔，不要塑膠磨皮，不要網紅臉，不要過度美顏。',
-        '不要其他路人，不要文字、字幕、浮水印。',
+        '85mm 鏡頭。不要其他路人，不要文字、字幕、浮水印。',
         '髮長、髮型、衣服顏色和款式必須完全照「原文」。長直髮就要披在肩上，禁止盤髮、丸子頭、馬尾、短髮。禁止換成別的衣服。',
+        pickedAppeal === 'rough' ? '臉的氣質可以照原文的疲憊或粗糙。' : '臉要好看。原文若寫疲憊、傷痕、難看，這次不要畫。',
         `原文：${chosen[index]}`,
-        `可補的細節，不得推翻原文：${line}`,
+        `可補的細節：${line}`,
         place ? `場景必須是：${place}。不要改成攝影棚、辦公室或其他地方。` : '',
         genderLock(gender),
       ].filter(Boolean).join('\n'),
@@ -253,12 +269,14 @@ async function makeCast({ topic, notes, script, prompt: wanted, who }) {
   return { images, prompt: optimized.join('\n') };
 }
 
-function scenePrompt(scene, look) {
+function scenePrompt(scene, look, castPrompt) {
   return [
     'Vertical 9:16 cinematic short-drama shot, 5 seconds, photoreal.',
-    'Animate this still. Keep the same people, clothes, place, and lighting.',
+    'Animate this still. Keep the same face, hair, and clothes.',
+    'Let the expression, emotion, and body state follow this scene. Do not hold one frozen look.',
     'Speak the Chinese line on camera in Mandarin. No captions, subtitles, prices, logos, or watermarks.',
-    look ? `Keep this cast and place: ${look}` : '',
+    castPrompt ? `Same person: ${castPrompt}` : '',
+    look ? `Same cast and place: ${look}` : '',
     `Scene: ${scene.visual}`,
     scene.line ? `Spoken line: 「${scene.line}」` : '',
   ].filter(Boolean).join('\n');
@@ -275,23 +293,24 @@ async function waitScene(job) {
   throw new Error('這一鏡逾時。請不要重按。');
 }
 
-async function produce({ script, images, cast, onPhase }) {
+async function produce({ script, images, cast, castPrompt, onPhase }) {
   if (!configured()) throw new Error('AI 短劇尚未開通。');
   const scenes = parseScenes(script);
   const look = lookOf(script);
   const heroes = (Array.isArray(cast) ? cast : (cast ? [cast] : [])).filter(Boolean).slice(0, 2);
+  const leadPrompt = String(castPrompt || '').trim().slice(0, 800);
   const refs = Array.isArray(images) ? images : [];
   const clips = [];
   for (let i = 0; i < scenes.length; i += 1) {
     if (onPhase) onPhase(`第 ${i + 1} 鏡`);
-    const still = refs[i] || await stillFromText(scenes[i].visual, look, heroes);
+    const still = refs[i] || await stillFromText(scenes[i].visual, look, heroes, leadPrompt);
     const submitted = await clipVideo.submit({
       images: [still],
       product: scenes[i].visual,
       hook: scenes[i].line,
       style: 'ugc',
       duration: sceneDuration(),
-      prompt: scenePrompt(scenes[i], look),
+      prompt: scenePrompt(scenes[i], look, leadPrompt),
       generateAudio: true,
     });
     const url = await waitScene(submitted);

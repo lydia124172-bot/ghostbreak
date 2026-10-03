@@ -42,17 +42,21 @@
       <label class="field" for="notes">補充（選填）</label>
       <textarea id="notes" class="form-input" rows="3" maxlength="400" placeholder="例如：女聲，語氣平靜，不要字幕"></textarea>
       <p class="field">主角</p>
-      <p class="lead">男主一定畫成男生，女主一定畫成女生。髮型和衣服照你寫的句子。一張約 NT$5，兩張約 NT$10。</p>
+      <p class="lead">預設先好看。先定這個人的臉、髮型、衣服。三鏡再用這位主角，表情和狀態照每一鏡的劇情。一張約 NT$5，兩張約 NT$10。</p>
       <div class="clip-types story-durations" id="castWho">
         <button class="clip-type active" type="button" data-who="male"><strong>男主</strong><span>只生男生</span></button>
         <button class="clip-type" type="button" data-who="female"><strong>女主</strong><span>只生女生</span></button>
         <button class="clip-type" type="button" data-who="both"><strong>兩位</strong><span>各一張</span></button>
       </div>
+      <div class="clip-types story-durations" id="castAppeal">
+        <button class="clip-type active" type="button" data-appeal="pretty"><strong>好看</strong><span>先把臉畫好看</span></button>
+        <button class="clip-type" type="button" data-appeal="rough"><strong>難看</strong><span>疲憊、粗糙</span></button>
+      </div>
       <label class="field" for="castPrompt">主角提示詞</label>
       <textarea id="castPrompt" class="form-input" rows="3" maxlength="500" placeholder="例如：高，皮膚白，臉很美。兩位就分成兩句。"></textarea>
       <button class="btn btn-cream" id="castBtn" type="button">生成主角</button>
       <div id="castPreviewBox" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;"></div>
-      <p class="field">三鏡參考圖（可空。空的那鏡用主角，再照劇本生畫面）</p>
+      <p class="field">三鏡參考圖（可空。空的那鏡用上面的主角，表情和狀態照該鏡劇情）</p>
       <p class="lead" id="photoCount">尚未選圖。</p>
       <label class="field" for="photo1">第 1 鏡</label>
       <input id="photo1" type="file" accept="image/*" />
@@ -81,6 +85,6 @@
       </div>
     </form>
   </main>
-  <script src="/js/drama.js?v=owner8"></script>
+  <script src="/js/drama.js?v=owner10"></script>
 </body>
 </html>
