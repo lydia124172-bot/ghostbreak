@@ -187,7 +187,7 @@ function genderLock(gender) {
   if (gender === 'female') {
     return '這一位是成年女性。必須畫成女人，女性的臉和身形。禁止畫成男人。adult woman, female face, not a man.';
   }
-  return '這一位是成年男性。必須畫成男人，男性的臉、喉結和身形。禁止畫成女人，禁止女性化。adult man, male face, not a woman.';
+  return '這一位是成年男性。必須畫成男人，男性的臉、喉結和身形。畫面裡只能有這個男人。禁止畫成女人，禁止長髮女生，禁止女性化。adult man, male face, not a woman.';
 }
 
 async function optimizeCastText(source, place, gender, appeal) {

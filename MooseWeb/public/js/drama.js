@@ -141,6 +141,40 @@ async function writeDramaScript() {
 }
 
 let castImages = [];
+const castSlots = { male: '', female: '' };
+const castGallery = [];
+
+function syncCastImages() {
+  castImages = [castSlots.male, castSlots.female].filter(Boolean);
+}
+
+function addCast(role, src) {
+  if (!src) return;
+  castGallery.push({ role, src });
+  castSlots[role] = src;
+}
+
+function renderCast() {
+  const box = document.getElementById('castPreviewBox');
+  box.innerHTML = '';
+  const count = { male: 0, female: 0 };
+  castGallery.forEach((item) => {
+    count[item.role] += 1;
+    const label = `${item.role === 'female' ? '女主' : '男主'} ${count[item.role]}`;
+    const wrap = document.createElement('figure');
+    wrap.style.cssText = 'margin:0;';
+    const img = document.createElement('img');
+    img.src = item.src;
+    img.alt = label;
+    img.style.cssText = 'max-width:240px;border-radius:8px;display:block;';
+    const cap = document.createElement('figcaption');
+    cap.className = 'lead';
+    cap.textContent = label;
+    wrap.appendChild(img);
+    wrap.appendChild(cap);
+    box.appendChild(wrap);
+  });
+}
 
 async function makeCast() {
   const { topic, notes } = await collectInput();
@@ -162,23 +196,22 @@ async function makeCast() {
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '主角沒有生出來');
+    const fresh = (Array.isArray(body.images) ? body.images : []).filter(Boolean).slice(0, 2);
+    if (who === 'both') {
+      addCast('male', fresh[0]);
+      addCast('female', fresh[1]);
+    } else if (who === 'female') {
+      addCast('female', fresh[0]);
+    } else {
+      addCast('male', fresh[0]);
+    }
     if (body.prompt && who !== 'both') document.getElementById('castPrompt').value = String(body.prompt);
-    castImages = (Array.isArray(body.images) ? body.images : []).filter(Boolean).slice(0, 2);
-    const box = document.getElementById('castPreviewBox');
-    box.innerHTML = '';
-    castImages.forEach((src) => {
-      const img = document.createElement('img');
-      img.src = src;
-      img.alt = '主角';
-      img.style.cssText = 'max-width:240px;border-radius:8px;';
-      box.appendChild(img);
-    });
+    syncCastImages();
+    renderCast();
     const face = appeal === 'rough' ? '這次照難看。' : '這次先好看。';
     showMsg(who === 'both'
-      ? `兩位各一張。${face}三鏡會用這兩位，表情和狀態照劇情。約 NT$10。`
-      : who === 'female'
-        ? `這次只生女主。${face}三鏡會用這一位，表情和狀態照劇情。約 NT$5。`
-        : `這次只生男主。${face}三鏡會用這一位，表情和狀態照劇情。約 NT$5。`);
+      ? `新的兩張已留下，舊圖也還在。三鏡用最新的男主和女主。${face}約 NT$10。`
+      : `新的一張已留下，之前的圖也還在。三鏡用最新的男主和女主。${face}約 NT$5。`);
   } finally {
     btn.disabled = false;
     btn.textContent = '生成主角';
