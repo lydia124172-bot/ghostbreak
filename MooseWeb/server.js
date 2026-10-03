@@ -760,12 +760,14 @@ app.get('/api/dress/status', (req, res) => {
   const paid = row ? accounts.publicAccount(row) : null;
   const videoCost = clipVideo.creditCost('5');
   const videoCost10 = clipVideo.creditCost('10');
+  const videoCost15 = clipVideo.creditCost('15');
   const last = clipStore.getLastDress(clipSid(req, res));
   res.json({
     ready: dressAgent.configured(),
     videoReady: clipVideo.configured(),
     videoCost,
     videoCost10,
+    videoCost15,
     scenes: dressAgent.publicScenes(),
     owner,
     loggedIn: Boolean(paid && paid.ok),
@@ -916,8 +918,7 @@ app.post('/api/dress/video', express.json({ limit: '8mb' }), async (req, res) =>
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
-  const wanted = String(req.body?.duration || '5').trim();
-  const duration = wanted === '10' ? '10' : '5';
+  const duration = clipVideo.videoDuration(String(req.body?.duration || '5').trim());
   const cost = clipVideo.creditCost(duration);
   if (!owner && (!paid || Number(paid.credits || 0) < cost)) {
     return res.status(402).json({

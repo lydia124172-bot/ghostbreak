@@ -4,6 +4,7 @@ const state = {
   image: '',
   videoCost: 4,
   videoCost10: 7,
+  videoCost15: 10,
   videoReady: false,
   scenes: [],
   scene: '',
@@ -112,6 +113,7 @@ async function refreshPlan() {
     state.videoReady = Boolean(data.videoReady);
     state.videoCost = Number(data.videoCost || 4) || 4;
     state.videoCost10 = Number(data.videoCost10 || 7) || 7;
+    state.videoCost15 = Number(data.videoCost15 || 10) || 10;
     paintScenes(data.scenes || []);
     const recoverBtn = document.getElementById('recoverBtn');
     if (recoverBtn) recoverBtn.classList.toggle('hidden', !data.hasLast);
@@ -120,7 +122,7 @@ async function refreshPlan() {
       return;
     }
     const motion = data.videoReady
-      ? `換裝／換背景各 1 點；動起來 5 秒 ${state.videoCost} 點、10 秒 ${state.videoCost10} 點。`
+      ? `換裝／換背景各 1 點；動起來 5 秒 ${state.videoCost} 點、10 秒 ${state.videoCost10} 點、15 秒 ${state.videoCost15} 點。`
       : '換裝／換背景可用。讓圖動起來暫時無法使用。';
     if (!data.loggedIn) {
       bar.textContent = `需先到方案頁登入。${motion}`;
@@ -283,8 +285,9 @@ async function makeMotion() {
     note.textContent = '讓圖動起來暫時無法使用。';
     return;
   }
-  const duration = document.getElementById('motionSec').value === '10' ? '10' : '5';
-  const points = duration === '10' ? state.videoCost10 : state.videoCost;
+  const picked = document.getElementById('motionSec').value;
+  const duration = picked === '10' || picked === '15' ? picked : '5';
+  const points = duration === '15' ? state.videoCost15 : (duration === '10' ? state.videoCost10 : state.videoCost);
   note.textContent = `正在送出 ${duration} 秒短片，扣 ${points} 點，請不要重按。`;
   btn.disabled = true;
   document.getElementById('videoBox').classList.add('hidden');
