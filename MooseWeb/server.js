@@ -1735,7 +1735,7 @@ app.post('/api/story/video', express.json({ limit: '8mb' }), async (req, res) =>
       owner,
       accountId: row && row.id,
       cost,
-      engine: 'seedance',
+      engine: submitted.engine || storyVideo.engine(),
       provider: submitted.provider || 'fal',
       duration: submitted.duration,
       created: Date.now(),
@@ -1768,9 +1768,9 @@ app.get('/api/story/video/job/:jobId', async (req, res) => {
       return res.status(400).json({ error: job.error });
     }
     if (peek.status !== 'done') return res.json({ jobId: job.id, status: peek.status });
-    const fileOut = await storyVideo.finish(peek.videoUrl, { engine: 'seedance', duration: job.duration });
+    const fileOut = await storyVideo.finish(peek.videoUrl, { engine: job.engine, duration: job.duration });
     const saved = clipStore.saveMedia(job.sid, 'video', fileOut.buffer, fileOut.mime || 'video/mp4');
-    const extra = { recovered: false, engine: 'seedance', duration: job.duration };
+    const extra = { recovered: false, engine: job.engine, duration: job.duration };
     if (job.owner) extra.owner = true;
     else if (job.accountId) extra.storyCredits = accounts.consumeStoryCredit(job.accountId, job.cost).storyCredits;
     job.result = {
@@ -1803,7 +1803,7 @@ app.get('/api/story/video/last', async (req, res) => {
       status: 'done',
       videoId: saved.id,
       videoUrl: `/api/clip/media/${saved.id}`,
-      engine: 'seedance',
+      engine: recovered.engine || storyVideo.engine(),
       duration: recovered.duration,
       recovered: true,
       owner: Boolean(owner),

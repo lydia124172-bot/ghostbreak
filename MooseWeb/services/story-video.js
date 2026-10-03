@@ -38,11 +38,15 @@ function preferredProvider() {
 }
 
 function i2vModel() {
-  return process.env.FAL_STORY_MODEL || 'bytedance/seedance-2.0/fast/image-to-video';
+  return process.env.FAL_STORY_MODEL || 'fal-ai/kling-video/v3/standard/image-to-video';
 }
 
 function t2vModel() {
-  return process.env.FAL_STORY_T2V_MODEL || 'bytedance/seedance-2.0/fast/text-to-video';
+  return process.env.FAL_STORY_T2V_MODEL || 'fal-ai/kling-video/v3/standard/text-to-video';
+}
+
+function isKling(model) {
+  return /kling/i.test(String(model || ''));
 }
 
 function arkModel() {
@@ -54,7 +58,9 @@ function arkBase() {
 }
 
 function engine() {
-  return configured() ? 'seedance' : '';
+  if (!configured()) return '';
+  if (preferredProvider() === 'byteplus') return 'seedance';
+  return isKling(i2vModel()) ? 'kling' : 'seedance';
 }
 
 function storyPrompt({ script, product, duration }) {
@@ -65,7 +71,8 @@ function storyPrompt({ script, product, duration }) {
   const seconds = videoDuration(duration);
   return [
     `Vertical 9:16 cinematic product commercial, about ${seconds} seconds, photoreal, premium lighting.`,
-    'Follow this script beat by beat. Single premium ad. No on-screen captions, subtitles, prices, logos, or watermarks.',
+    'Follow this script beat by beat: opening, product use or detail, then one closing selling line.',
+    'Speak narration lines in Chinese. No on-screen captions, subtitles, prices, logos, or watermarks.',
     name ? `Keep this product recognizable: ${name}.` : '',
     'SCRIPT:',
     body,
@@ -77,20 +84,34 @@ async function submitFal({ script, images, product, duration: wanted }) {
   const first = Array.isArray(images) ? images[0] : '';
   const duration = videoDuration(wanted);
   const prompt = storyPrompt({ script, product, duration });
+  let model = t2vModel();
   const payload = {
     prompt,
-    resolution: '720p',
     duration,
-    aspect_ratio: '9:16',
     generate_audio: true,
-    bitrate_mode: 'standard',
   };
-  let model = t2vModel();
   if (first) {
     const file = clipVideo.parseDataUrl(first);
-    const still = clipVideo.prepareStill(Buffer.from(file.b64, 'base64'));
-    payload.image_url = await clipVideo.falUpload(falKey(), still, 'image/jpeg', 'story.jpg');
+    const still = clipVideo.prepareStill(Buffer.from(file.b64, 'base64'), { ratio: '9:16' });
     model = i2vModel();
+    if (isKling(model)) {
+      payload.start_image_url = await clipVideo.falUpload(falKey(), still, 'image/jpeg', 'story.jpg');
+      payload.shot_type = 'intelligent';
+      payload.negative_prompt = 'blur, distort, low quality, subtitles, captions, watermark, logos, on-screen text';
+    } else {
+      payload.image_url = await clipVideo.falUpload(falKey(), still, 'image/jpeg', 'story.jpg');
+      payload.resolution = '720p';
+      payload.aspect_ratio = '9:16';
+      payload.bitrate_mode = 'standard';
+    }
+  } else if (isKling(model)) {
+    payload.aspect_ratio = '9:16';
+    payload.shot_type = 'intelligent';
+    payload.negative_prompt = 'blur, distort, low quality, subtitles, captions, watermark, logos, on-screen text';
+  } else {
+    payload.resolution = '720p';
+    payload.aspect_ratio = '9:16';
+    payload.bitrate_mode = 'standard';
   }
   const res = await fetch(`https://queue.fal.run/${model}`, {
     method: 'POST',
@@ -107,7 +128,7 @@ async function submitFal({ script, images, product, duration: wanted }) {
     requestId,
     model,
     duration,
-    engine: 'seedance',
+    engine: isKling(model) ? 'kling' : 'seedance',
     provider: 'fal',
     statusUrl: urls.statusUrl,
     responseUrl: urls.responseUrl,
@@ -210,7 +231,7 @@ async function recoverRecent() {
   if (!falKey()) return null;
   for (const model of [i2vModel(), t2vModel()]) {
     const paid = await clipVideo.recoverRecent(model);
-    if (paid && paid.buffer) return { ...paid, engine: 'seedance', duration: videoDuration() };
+    if (paid && paid.buffer) return { ...paid, engine: isKling(model) ? 'kling' : 'seedance', duration: videoDuration() };
   }
   return null;
 }
