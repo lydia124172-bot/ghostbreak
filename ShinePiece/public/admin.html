@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=32" />
+  <link rel="stylesheet" href="/css/site.css?v=33" />
 </head>
 <body>
   <header class="site-header admin-header">
@@ -20,6 +20,7 @@
       <div class="admin-actions">
         <a href="/issue" target="_blank" rel="noopener">本月專區</a>
         <a href="/qr" target="_blank" rel="noopener">直播 QR</a>
+        <a href="https://shine.bafuholdings.com/track" target="_blank" rel="noopener">訂單追蹤</a>
         <nav id="adminJump" class="admin-jump hidden" aria-label="後台捷徑">
           <a href="#products-panel">上架</a>
           <a href="#stock-panel">追蹤庫存</a>
@@ -60,15 +61,23 @@
             <div class="dropzone" id="infoZone" tabindex="0">
               <input id="infoInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden />
               <b>拖曳、點擊或貼上廠商給的資訊截圖</b>
-              <span>AI 會讀出商品名稱、產地、售價與介紹，自動填進下方商品說明。截圖不會放到前台。貼上前先點一下這個框。沒設 AI 金鑰時，請直接在下方「商品說明」手動填，一樣可以上架。</span>
+              <span>AI 會讀出商品名稱、產地、售價與介紹，自動填進下方商品說明；有讀到售價會帶入「售價（新台幣）」。截圖不會放到前台。貼上前先點一下這個框。沒設 AI 金鑰時，請手動填說明與售價，一樣可以上架。</span>
             </div>
             <p id="infoHint" class="lead hidden" style="margin:8px 0 0;color:#8a6a2a;"></p>
             <p id="infoStatus" class="lead hidden" style="margin:8px 0 0;"></p>
           </div>
           <div>
             <label class="field" for="listingText">商品說明</label>
-            <p class="lead" style="margin:-4px 0 8px;">文字與價格寫在這裡。YouTube 也可貼在說明裡；自己的 MP4 請用下面「親測短片」上傳或貼網址。</p>
-            <textarea id="listingText" class="form-input listing-text" rows="8" placeholder="【紫瑄老闆親測推薦】台灣鑄鐵鍋（附私房煎牛排時間表）&#10;台灣&#10;NT$ 1680&#10;自己用了很久，這個月想推薦給你。"></textarea>
+            <p class="lead" style="margin:-4px 0 8px;">寫特色與規格即可。YouTube 也可貼在說明裡；自己的 MP4 請用下面「親測短片」上傳或貼網址。</p>
+            <textarea id="listingText" class="form-input listing-text" rows="8" placeholder="【紫瑄老闆親測推薦】台灣鑄鐵鍋（附私房煎牛排時間表）&#10;台灣&#10;自己用了很久，這個月想推薦給你。"></textarea>
+          </div>
+          <div>
+            <label class="field" for="priceInput">售價（新台幣）</label>
+            <div class="admin-actions" style="align-items:center;gap:10px;margin-bottom:4px;">
+              <span class="price-field-prefix" aria-hidden="true">NT$</span>
+              <input id="priceInput" class="form-input price-field-input" type="number" min="1" max="9999999" step="1" inputmode="numeric" placeholder="1280" />
+            </div>
+            <p class="lead" style="margin:0;">前台商品頁與結帳金額以這裡為準；上方小標籤也會顯示「價格」。</p>
           </div>
           <div>
             <label class="field" for="videoInput">親測／廠商短片</label>
@@ -376,6 +385,22 @@
     function escapeHtml(v) {
       return String(v || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
+    function formatPriceInput(raw) {
+      const n = Math.floor(Number(String(raw || '').replace(/[^\d]/g, '')));
+      if (!Number.isFinite(n) || n < 1) return '';
+      return `NT$ ${n.toLocaleString('en-US')}`;
+    }
+    function priceFromField() {
+      return formatPriceInput($('priceInput').value);
+    }
+    function syncPriceFromText() {
+      if (String($('priceInput').value || '').trim()) return;
+      const raw = $('listingText').value;
+      const priceM = raw.match(/(?:NT\$?|TWD|售價[:：\s]*|價格[:：\s]*|＄|\$)\s*[\d,]+/i) || raw.match(/[\d,]{2,}\s*元/);
+      if (!priceM) return;
+      const n = Number(String(priceM[0]).replace(/[^\d]/g, ''));
+      if (n > 0) $('priceInput').value = String(n);
+    }
     function parseLocal(text, filename) {
       const raw = String(text || '').trim();
       const lines = raw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
@@ -390,7 +415,7 @@
         name,
         badge: badgeM ? badgeM[1] : '紫瑄老闆親測推薦',
         origin,
-        price: priceM ? priceM[0] : '',
+        price: priceFromField() || (priceM ? priceM[0] : ''),
         stock: /缺貨|售完|完售/.test(raw) ? '缺貨' : '有貨',
         video: $('videoInput').value.trim() ? '已設定短片' : (/youtu|vimeo|\.mp4/i.test(raw) ? '已讀取短片' : ''),
       };
@@ -488,6 +513,7 @@
       coverPick = { kind: 'saved', index: 0 };
       $('productId').value = '';
       $('listingText').value = '';
+      $('priceInput').value = '';
       $('qtyInput').value = '';
       $('videoInput').value = '';
       $('videoCaption').value = '';
@@ -524,7 +550,7 @@
         const health = await fetch('/api/health').then((r) => r.json());
         const hint = $('infoHint');
         if (!health.aiListing) {
-          hint.textContent = '提示：正式站還沒設 GEMINI_API_KEY 時，AI 讀截圖不能用；請直接在「商品說明」手動填寫，仍可上架。';
+          hint.textContent = '提示：正式站還沒設 GEMINI_API_KEY 時，AI 讀截圖不能用；請手動填「商品說明」與「售價」，仍可上架。';
           hint.classList.remove('hidden');
         } else {
           hint.textContent = '';
@@ -593,7 +619,9 @@
             if (si >= 0) coverPick = { kind: 'saved', index: si };
           }
           $('productId').value = row.id;
-          $('listingText').value = row.summary || [row.name, row.origin, row.price].filter(Boolean).join('\n');
+          $('listingText').value = row.summary || [row.name, row.origin].filter(Boolean).join('\n');
+          const priceNum = Number(String(row.price || '').replace(/[^\d]/g, ''));
+          $('priceInput').value = priceNum > 0 ? String(priceNum) : '';
           $('videoInput').value = row.video || '';
           $('videoCaption').value = row.videoCaption || '';
           $('videoStatus').textContent = row.video ? '已連結短片' : '';
@@ -1021,6 +1049,7 @@
         const data = await api('/api/admin/read-listing', { method: 'POST', body: JSON.stringify({ images }) });
         const current = $('listingText').value.trim();
         $('listingText').value = current && !confirm('商品說明已經有內容，要換成 AI 讀到的內容嗎？') ? current : data.text;
+        syncPriceFromText();
         renderChips();
         infoMessage(`已填入商品說明，上架前請再確認名稱與售價。${data.note ? `提醒：${data.note}` : ''}`);
         $('listingText').focus();
@@ -1048,7 +1077,8 @@
       readInfo(e.target.files);
       e.target.value = '';
     });
-    $('listingText').addEventListener('input', renderChips);
+    $('listingText').addEventListener('input', () => { syncPriceFromText(); renderChips(); });
+    $('priceInput').addEventListener('input', renderChips);
     $('videoInput').addEventListener('input', renderChips);
     $('videoPickBtn').onclick = () => $('videoFile').click();
     $('videoFile').addEventListener('change', () => {
@@ -1102,6 +1132,13 @@
           return;
         }
         const description = $('listingText').value.trim();
+        const parsed = parseLocal(description, firstFilename());
+        const price = priceFromField() || parsed.price;
+        if (!price) {
+          setStatus(false, '請在「售價（新台幣）」填數字。');
+          $('priceInput').focus();
+          return;
+        }
         const id = $('productId').value;
         const data = await api(id ? '/api/admin/products/' + id : '/api/admin/products', {
           method: id ? 'PATCH' : 'POST',
@@ -1110,6 +1147,7 @@
             coverImage,
             coverIndex,
             description,
+            price,
             filename: firstFilename(),
             qty: $('qtyInput').value,
             video: $('videoInput').value.trim(),

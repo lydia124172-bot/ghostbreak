@@ -123,6 +123,18 @@ button[disabled] { opacity: 0.5; cursor: not-allowed; }
 .order-tools { display: grid; gap: 8px; min-width: 200px; }
 .order-tools .form-input { padding: 8px 10px; font-size: 15px; }
 .qty-input { width: 90px; }
+.price-field-prefix {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.price-field-input {
+  width: 160px;
+  max-width: 100%;
+  font-size: 18px;
+  font-weight: 600;
+}
 .status-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #efe8d6; color: var(--olive-deep); font-size: 14px; }
 .status-pill.is-cancel { background: #f6e1de; color: #b42318; }
 .status-pill.is-done { background: #e2efe5; color: #2f7a4a; }

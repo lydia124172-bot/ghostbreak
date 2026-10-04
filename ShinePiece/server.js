@@ -118,6 +118,7 @@ function listingBody(body) {
     description: body?.description || body?.summary,
     summary: body?.description || body?.summary,
     filename: body?.filename,
+    price: body?.price,
     ...(body && 'qty' in body ? { qty: body.qty } : {}),
   };
 }
