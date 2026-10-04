@@ -426,8 +426,11 @@ button[disabled] { opacity: 0.5; cursor: not-allowed; }
 }
 .spread-photo img {
   width: 100%;
-  height: 320px;
-  object-fit: cover;
+  height: auto;
+  max-height: 480px;
+  object-fit: contain;
+  display: block;
+  background: var(--soft);
 }
 .spread-copy h2 {
   font-family: "Noto Serif TC", serif;
@@ -1229,10 +1232,26 @@ body[data-page="home"] .footer-line { color: #d4c9a8; }
   background: #ebe4d6;
   min-height: 180px;
 }
-.feature-photo img {
+.feature-photo > img {
   width: 100%;
-  height: 280px;
-  object-fit: cover;
+  height: auto;
+  max-height: min(520px, 72vh);
+  object-fit: contain;
+  display: block;
+}
+.feature-photo .photo-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.feature-photo .photo-stack img {
+  width: 100%;
+  height: auto;
+  max-height: 480px;
+  min-height: 0;
+  object-fit: contain;
+  display: block;
+  background: #ebe4d6;
 }
 .feature-copy h2 {
   font-family: "Noto Serif TC", serif;
@@ -1317,8 +1336,11 @@ body[data-page="home"] .site-footer {
 .item-page { padding: 28px 0 80px; }
 .item-hero {
   width: 100%;
-  max-height: 520px;
-  object-fit: cover;
+  max-height: 560px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  background: var(--soft);
   margin-bottom: 16px;
 }
 .item-gallery {
@@ -1329,8 +1351,11 @@ body[data-page="home"] .site-footer {
 }
 .item-gallery img {
   width: 100%;
-  height: 220px;
-  object-fit: cover;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
+  display: block;
+  background: var(--soft);
   margin-bottom: 0;
 }
 .photo-stack {
@@ -1341,10 +1366,11 @@ body[data-page="home"] .site-footer {
 }
 .photo-stack img {
   width: 100%;
-  height: 100%;
-  min-height: 160px;
+  height: auto;
   max-height: 280px;
-  object-fit: cover;
+  object-fit: contain;
+  display: block;
+  background: var(--soft);
 }
 .body-text { line-height: 1.75; }
 .item-layout { display: grid; gap: 28px; }
@@ -1404,7 +1430,7 @@ body[data-page="home"] .site-footer {
   .essay-photo img { height: 420px; }
   .mag-cols { grid-template-columns: repeat(3, 1fr); gap: 36px; }
   .spread { grid-template-columns: 1.15fr 0.85fr; align-items: center; gap: 40px; }
-  .spread-photo img { height: 420px; }
+  .spread-photo img { max-height: 520px; }
   .issue-row { grid-template-columns: 1fr 1fr; gap: 48px; }
   .story { grid-template-columns: 1fr 1fr; gap: 48px; padding: 40px 0 72px; }
   .story-photo img { height: 420px; }
@@ -1462,7 +1488,8 @@ body[data-page="home"] .site-footer {
     margin-bottom: 56px;
   }
   .feature-row:nth-child(even) .feature-photo { order: 1; }
-  .feature-photo img { height: 420px; }
+  .feature-photo > img { max-height: 560px; }
+  .feature-photo .photo-stack img { max-height: 520px; }
   .item-layout { grid-template-columns: 1.2fr 0.8fr; align-items: start; gap: 40px; }
 }
 
