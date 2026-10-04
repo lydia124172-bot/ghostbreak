@@ -208,10 +208,10 @@ function renderList(origin, siteName) {
         <a class="more" href="/journal/${encodeURIComponent(post.slug)}">閱讀全文</a>
       </div>
     </article>`;
-  }).join('') || '<p class="empty-note">第一篇專欄準備中。</p>';
-  const description = `${siteName}主編專欄：一位教了二十六年英文的牛排館老闆，分享日本、韓國、泰國、台灣的生活好物、使用心得與挑選眼光。`;
+  }).join('') || '<p class="empty-note">第一篇部落格準備中。</p>';
+  const description = `${siteName}主編部落格：一位教了二十六年英文的牛排館老闆，分享日本、韓國、泰國、台灣的生活好物、使用心得與挑選眼光。`;
   return shell({
-    title: `主編專欄 — ${siteName}`,
+    title: `主編部落格 — ${siteName}`,
     description,
     canonical: `${origin}/journal`,
     image: `${origin}/og.jpg`,
@@ -219,7 +219,7 @@ function renderList(origin, siteName) {
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'Blog',
-      name: `${siteName}主編專欄`,
+      name: `${siteName}主編部落格`,
       url: `${origin}/journal`,
       description,
       blogPost: posts.slice(0, 20).map((post) => ({
@@ -231,8 +231,8 @@ function renderList(origin, siteName) {
     },
     main: `
     <section class="page-head">
-      <p class="issue-folio"><span>JOURNAL</span><span>主編專欄</span></p>
-      <h1>主編專欄</h1>
+      <p class="issue-folio"><span>JOURNAL</span><span>主編部落格</span></p>
+      <h1>主編部落格</h1>
       <p class="lead">用過的，才寫下來。好物背後的故事、使用心得與挑選眼光。</p>
     </section>
     <section class="journal-list">${items}
@@ -247,7 +247,7 @@ function renderPost(post, origin, siteName) {
   const others = publishedPosts().filter((row) => row.id !== post.id).slice(0, 3);
   const more = others.length ? `
     <aside class="journal-more">
-      <h2>更多專欄</h2>
+      <h2>更多文章</h2>
       <ul>${others.map((row) => `<li><a href="/journal/${encodeURIComponent(row.slug)}">${escapeHtml(row.title)}</a></li>`).join('')}</ul>
     </aside>` : '';
   return shell({
@@ -272,14 +272,14 @@ function renderPost(post, origin, siteName) {
     },
     main: `
     <article class="journal-post">
-      <p class="issue-folio"><span><a href="/journal">主編專欄</a></span><span>${escapeHtml(formatDate(post.publishedAt))}</span></p>
+      <p class="issue-folio"><span><a href="/journal">主編部落格</a></span><span>${escapeHtml(formatDate(post.publishedAt))}</span></p>
       <h1>${escapeHtml(post.title)}</h1>
       ${post.summary ? `<p class="lead">${escapeHtml(post.summary)}</p>` : ''}
       ${post.cover ? `<img class="journal-cover" src="${escapeHtml(post.cover)}" alt="${escapeHtml(post.title)}">` : ''}
       <div class="journal-body">
 ${renderBody(post.body)}
       </div>
-      <p class="journal-cta"><a class="btn btn-ink" href="/issue">看本月開箱</a>　<a class="more" href="/journal">回專欄列表</a></p>
+      <p class="journal-cta"><a class="btn btn-ink" href="/issue">看本月開箱</a>　<a class="more" href="/journal">回部落格列表</a></p>
     </article>${more}`,
   });
 }

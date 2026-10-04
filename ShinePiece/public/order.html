@@ -108,8 +108,8 @@
       const paid = params.get('paid') === '1';
       document.getElementById('doneBox').classList.remove('hidden');
       document.getElementById('doneBox').innerHTML = paid
-        ? `<h2>已付款</h2><p>單號 ${escapeHtml(done)}。我們會安排出貨。</p>`
-        : `<h2>訂單已成立</h2><p>單號 ${escapeHtml(done)}。若尚未完成付款，可用原方式再試一次，或等我們傳連結。</p>`;
+        ? `<h2>已付款</h2><p>單號 ${escapeHtml(done)}。我們會安排出貨。<a class="more" href="/track?id=${encodeURIComponent(done)}">查詢出貨進度</a></p>`
+        : `<h2>訂單已成立</h2><p>單號 ${escapeHtml(done)}。若尚未完成付款，可用原方式再試一次。出貨後可用 <a class="more" href="/track?id=${encodeURIComponent(done)}">訂單追蹤</a> 查物流。</p>`;
       document.getElementById('orderForm').classList.add('hidden');
     }
 

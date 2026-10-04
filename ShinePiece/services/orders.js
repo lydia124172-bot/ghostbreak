@@ -36,6 +36,15 @@ function findOrder(id) {
   return loadOrders().find((row) => row.id === id) || null;
 }
 
+function findRetailOrder({ id, trackingNo } = {}) {
+  const list = loadOrders().filter((row) => row.kind === '零售訂單');
+  const tid = String(trackingNo || '').trim();
+  if (tid) return list.find((row) => String(row.trackingNo || '').trim() === tid) || null;
+  const oid = String(id || '').trim();
+  if (oid) return list.find((row) => row.id === oid) || null;
+  return null;
+}
+
 function updateOrder(id, patch) {
   const list = loadOrders();
   const idx = list.findIndex((row) => row.id === id);
@@ -45,4 +54,4 @@ function updateOrder(id, patch) {
   return list[idx];
 }
 
-module.exports = { loadOrders, addOrder, removeOrder, findOrder, updateOrder };
+module.exports = { loadOrders, addOrder, removeOrder, findOrder, findRetailOrder, updateOrder };

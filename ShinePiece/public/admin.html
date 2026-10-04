@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=24" />
+  <link rel="stylesheet" href="/css/site.css?v=32" />
 </head>
 <body>
   <header class="site-header admin-header">
@@ -20,6 +20,11 @@
       <div class="admin-actions">
         <a href="/issue" target="_blank" rel="noopener">本月專區</a>
         <a href="/qr" target="_blank" rel="noopener">直播 QR</a>
+        <nav id="adminJump" class="admin-jump hidden" aria-label="後台捷徑">
+          <a href="#products-panel">上架</a>
+          <a href="#stock-panel">追蹤庫存</a>
+          <a href="#orders-panel">訂單出貨</a>
+        </nav>
         <button id="logoutBtn" class="btn btn-ghost hidden" type="button">登出</button>
       </div>
     </div>
@@ -36,7 +41,7 @@
       </form>
     </section>
     <section id="appBox" class="hidden" style="display:grid;gap:22px;">
-      <section class="panel">
+      <section id="products-panel" class="panel">
         <h2>本月集選</h2>
         <p class="lead">換月請用「封存本期」。說明第一行寫【紫瑄老闆親測推薦】與商品名，可貼 YouTube 實測短片連結。</p>
         <form id="productForm" class="admin-grid">
@@ -46,7 +51,7 @@
             <div class="dropzone" id="dropzone" tabindex="0">
               <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
               <b>拖曳、點擊或貼上照片</b>
-              <span>可一次多張，第一張為封面。jpg／png／webp，單張 8MB 內。</span>
+              <span>可一次多張。點照片下方「設為封面」= 首頁小圖與購物車縮圖。jpg／png／webp，單張 8MB 內。</span>
             </div>
             <div class="photo-row" id="photoRow"></div>
           </div>
@@ -55,13 +60,28 @@
             <div class="dropzone" id="infoZone" tabindex="0">
               <input id="infoInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden />
               <b>拖曳、點擊或貼上廠商給的資訊截圖</b>
-              <span>AI 會讀出商品名稱、產地、售價與介紹，自動填進下方商品說明。截圖不會放到前台。貼上前先點一下這個框。</span>
+              <span>AI 會讀出商品名稱、產地、售價與介紹，自動填進下方商品說明。截圖不會放到前台。貼上前先點一下這個框。沒設 AI 金鑰時，請直接在下方「商品說明」手動填，一樣可以上架。</span>
             </div>
+            <p id="infoHint" class="lead hidden" style="margin:8px 0 0;color:#8a6a2a;"></p>
             <p id="infoStatus" class="lead hidden" style="margin:8px 0 0;"></p>
           </div>
           <div>
             <label class="field" for="listingText">商品說明</label>
-            <textarea id="listingText" class="form-input listing-text" rows="8" placeholder="【紫瑄老闆親測推薦】台灣鑄鐵鍋（附私房煎牛排時間表）&#10;台灣&#10;NT$ 1680&#10;https://youtu.be/xxxxxxxx&#10;自己用了很久，這個月想推薦給你。"></textarea>
+            <p class="lead" style="margin:-4px 0 8px;">文字與價格寫在這裡。YouTube 也可貼在說明裡；自己的 MP4 請用下面「親測短片」上傳或貼網址。</p>
+            <textarea id="listingText" class="form-input listing-text" rows="8" placeholder="【紫瑄老闆親測推薦】台灣鑄鐵鍋（附私房煎牛排時間表）&#10;台灣&#10;NT$ 1680&#10;自己用了很久，這個月想推薦給你。"></textarea>
+          </div>
+          <div>
+            <label class="field" for="videoInput">親測／廠商短片</label>
+            <p class="lead" style="margin:-4px 0 8px;">可上傳你的 MP4，或貼廠商給的公開影片網址（https://…mp4）。也可用 YouTube。封面會先用商品第一張照片，點 🎬 進商品頁播放。</p>
+            <div class="admin-actions" style="flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:8px;">
+              <input id="videoInput" class="form-input" type="text" placeholder="廠商影片網址或 /uploads/products/…mp4" style="flex:1;min-width:200px;" />
+              <input id="videoFile" type="file" accept="video/mp4,video/webm,.mp4,.webm" hidden />
+              <button class="btn btn-ghost" type="button" id="videoPickBtn">選擇 MP4</button>
+              <button class="btn btn-ghost" type="button" id="videoUploadBtn">上傳短片</button>
+            </div>
+            <label class="field" for="videoCaption" style="margin-top:8px;">短片標題（前台 🎬 下方文字）</label>
+            <input id="videoCaption" class="form-input" type="text" maxlength="48" placeholder="例如：廠商實拍示範、親測開箱" />
+            <p id="videoStatus" class="lead hidden" style="margin:0;"></p>
           </div>
           <div>
             <label class="field" for="qtyInput">庫存數量（空白＝不限量）</label>
@@ -77,14 +97,14 @@
         </form>
         <div class="list" id="productList"></div>
       </section>
-      <section class="panel">
-        <h2>庫存</h2>
-        <p class="lead">填數量後，顧客下單會自動扣庫存，扣到 0 前台自動顯示「售完」。取消訂單會自動補回。空白＝不限量。</p>
+      <section id="stock-panel" class="panel">
+        <h2>追蹤庫存（貨品數量）</h2>
+        <p class="lead">每一項本月上架的商品都會列在這裡。填數字＝可賣幾件，客人下單會自動扣，扣到 0 前台顯示「售完」。空白＝不限量。上架時也可在上方「庫存數量」先填好。</p>
         <div class="list" id="stockList"></div>
       </section>
-      <section class="panel">
-        <h2>訂單</h2>
-        <p class="lead">新訂單同時會寄到信箱。改狀態、填物流單號後按「儲存」，會員可在「我的訂單」看到。</p>
+      <section id="orders-panel" class="panel">
+        <h2>訂單與出貨追蹤</h2>
+        <p class="lead">客人下的零售訂單在這裡。改狀態、填<strong>物流單號</strong>後按「儲存」，會員在「我的訂單」可追蹤。新訂單也會寄到你的信箱。</p>
         <div class="order-tabs" id="orderTabs"></div>
         <div class="list" id="orderList"></div>
       </section>
@@ -208,7 +228,7 @@
           </div>
           <div>
             <label class="field" for="tagline">副標</label>
-            <input id="tagline" class="form-input" maxlength="80" />
+            <input id="tagline" class="form-input" maxlength="80" placeholder="例如：本月精選商品" />
           </div>
           <div>
             <label class="field" for="email">聯絡 Email</label>
@@ -232,7 +252,7 @@
           </div>
           <div>
             <label class="field" for="coverLabel">封面小標</label>
-            <input id="coverLabel" class="form-input" maxlength="40" />
+            <input id="coverLabel" class="form-input" maxlength="40" placeholder="例如：本月精選，實測過才推" />
           </div>
           <div>
             <label class="field" for="coverEnglish">封面英文句</label>
@@ -306,6 +326,35 @@
     const $ = (id) => document.getElementById(id);
     let savedPhotos = [];
     let pending = [];
+    /** @type {{ kind: 'saved'|'pending', index: number }} */
+    let coverPick = { kind: 'saved', index: 0 };
+
+    function adjustCoverAfterRemove(kind, removedIndex) {
+      if (coverPick.kind !== kind) return;
+      if (coverPick.index === removedIndex) {
+        coverPick = savedPhotos.length
+          ? { kind: 'saved', index: 0 }
+          : (pending.length ? { kind: 'pending', index: 0 } : { kind: 'saved', index: 0 });
+      } else if (coverPick.index > removedIndex) {
+        coverPick.index -= 1;
+      }
+    }
+    function isCoverChip(kind, index) {
+      return coverPick.kind === kind && coverPick.index === index;
+    }
+    function globalCoverIndex() {
+      return coverPick.kind === 'saved' ? coverPick.index : savedPhotos.length + coverPick.index;
+    }
+    function resolveCoverUrl(uploaded) {
+      const images = savedPhotos.concat(uploaded);
+      if (coverPick.kind === 'pending') {
+        const url = uploaded[coverPick.index];
+        if (url) return url;
+      } else if (savedPhotos[coverPick.index]) {
+        return savedPhotos[coverPick.index];
+      }
+      return images[0] || '';
+    }
 
     function token() { return localStorage.getItem(tokenKey) || ''; }
     function headers() {
@@ -322,6 +371,7 @@
       $('loginBox').classList.toggle('hidden', on);
       $('appBox').classList.toggle('hidden', !on);
       $('logoutBtn').classList.toggle('hidden', !on);
+      $('adminJump').classList.toggle('hidden', !on);
     }
     function escapeHtml(v) {
       return String(v || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -342,7 +392,7 @@
         origin,
         price: priceM ? priceM[0] : '',
         stock: /缺貨|售完|完售/.test(raw) ? '缺貨' : '有貨',
-        video: /youtu|vimeo|\.mp4/i.test(raw) ? '已讀取短片' : '',
+        video: $('videoInput').value.trim() ? '已設定短片' : (/youtu|vimeo|\.mp4/i.test(raw) ? '已讀取短片' : ''),
       };
     }
     function firstFilename() {
@@ -361,31 +411,63 @@
       $('parseChips').innerHTML = bits.map(([k, v]) => `<span><em>${k}</em>${escapeHtml(v)}</span>`).join('');
     }
     function renderPhotos() {
-      const chips = savedPhotos.map((url, i) => `
-        <div class="photo-chip">
-          <img src="${escapeHtml(url)}" alt="">
-          <button type="button" data-saved="${i}" aria-label="移除">×</button>
-        </div>`).join('') + pending.map((row, i) => `
-        <div class="photo-chip">
-          <img src="${escapeHtml(row.url)}" alt="">
-          <button type="button" data-pending="${i}" aria-label="移除">×</button>
-        </div>`).join('');
-      $('photoRow').innerHTML = chips;
-      $('photoRow').querySelectorAll('[data-saved]').forEach((btn) => {
-        btn.onclick = () => {
-          savedPhotos.splice(Number(btn.dataset.saved), 1);
-          renderPhotos();
-        };
-      });
-      $('photoRow').querySelectorAll('[data-pending]').forEach((btn) => {
-        btn.onclick = () => {
-          const row = pending[Number(btn.dataset.pending)];
-          if (row) URL.revokeObjectURL(row.url);
-          pending.splice(Number(btn.dataset.pending), 1);
-          renderPhotos();
-          renderChips();
-        };
-      });
+      const chip = (url, i, kind) => {
+        const isCover = isCoverChip(kind, i);
+        const removeKey = kind === 'saved' ? 'remove-saved' : 'remove-pending';
+        const coverKey = kind === 'saved' ? 'cover-saved' : 'cover-pending';
+        return `
+        <div class="photo-chip${isCover ? ' is-cover' : ''}">
+          <div class="photo-chip-img">
+            <img src="${escapeHtml(url)}" alt="">
+            <button type="button" class="photo-remove" data-${removeKey}="${i}" aria-label="移除">×</button>
+          </div>
+          <button type="button" class="photo-cover-btn${isCover ? ' is-on' : ''}" data-${coverKey}="${i}">${isCover ? '封面' : '設為封面'}</button>
+        </div>`;
+      };
+      $('photoRow').innerHTML = savedPhotos.map((url, i) => chip(url, i, 'saved')).join('')
+        + pending.map((row, i) => chip(row.url, i, 'pending')).join('');
+    }
+    function onPhotoRowClick(e) {
+      const row = $('photoRow');
+      if (!row || !row.contains(e.target)) return;
+      const rmSaved = e.target.closest('[data-remove-saved]');
+      if (rmSaved) {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = Number(rmSaved.dataset.removeSaved);
+        savedPhotos.splice(idx, 1);
+        adjustCoverAfterRemove('saved', idx);
+        renderPhotos();
+        return;
+      }
+      const rmPending = e.target.closest('[data-remove-pending]');
+      if (rmPending) {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = Number(rmPending.dataset.removePending);
+        const row = pending[idx];
+        if (row) URL.revokeObjectURL(row.url);
+        pending.splice(idx, 1);
+        adjustCoverAfterRemove('pending', idx);
+        renderPhotos();
+        renderChips();
+        return;
+      }
+      const covSaved = e.target.closest('[data-cover-saved]');
+      if (covSaved) {
+        e.preventDefault();
+        e.stopPropagation();
+        coverPick = { kind: 'saved', index: Number(covSaved.dataset.coverSaved) };
+        renderPhotos();
+        return;
+      }
+      const covPending = e.target.closest('[data-cover-pending]');
+      if (covPending) {
+        e.preventDefault();
+        e.stopPropagation();
+        coverPick = { kind: 'pending', index: Number(covPending.dataset.coverPending) };
+        renderPhotos();
+      }
     }
     function addFiles(list) {
       const files = Array.from(list || []).filter((file) => /^image\//.test(file.type));
@@ -393,6 +475,9 @@
       files.slice(0, Math.max(0, room)).forEach((file) => {
         pending.push({ file, url: URL.createObjectURL(file) });
       });
+      if (!coverPick || (coverPick.kind === 'saved' && !savedPhotos.length && pending.length)) {
+        coverPick = pending.length ? { kind: 'pending', index: 0 } : { kind: 'saved', index: 0 };
+      }
       renderPhotos();
       renderChips();
     }
@@ -400,9 +485,15 @@
       pending.forEach((row) => URL.revokeObjectURL(row.url));
       pending = [];
       savedPhotos = [];
+      coverPick = { kind: 'saved', index: 0 };
       $('productId').value = '';
       $('listingText').value = '';
       $('qtyInput').value = '';
+      $('videoInput').value = '';
+      $('videoCaption').value = '';
+      $('videoStatus').textContent = '';
+      $('videoStatus').classList.add('hidden');
+      $('videoFile').value = '';
       $('publishBtn').textContent = '放到本月集選';
       $('cancelEdit').classList.add('hidden');
       renderPhotos();
@@ -429,6 +520,19 @@
     }
     async function loadAll() {
       const content = await api('/api/admin/content');
+      try {
+        const health = await fetch('/api/health').then((r) => r.json());
+        const hint = $('infoHint');
+        if (!health.aiListing) {
+          hint.textContent = '提示：正式站還沒設 GEMINI_API_KEY 時，AI 讀截圖不能用；請直接在「商品說明」手動填寫，仍可上架。';
+          hint.classList.remove('hidden');
+        } else {
+          hint.textContent = '';
+          hint.classList.add('hidden');
+        }
+      } catch {
+        $('infoHint').classList.add('hidden');
+      }
       $('tagline').value = content.tagline || '';
       $('email').value = content.email || '';
       $('lineUrl').value = content.lineUrl || '';
@@ -462,7 +566,7 @@
       $('wishLead').value = content.wishLead || '';
       $('productList').innerHTML = (content.products || []).map((p) => `
         <article class="item">
-          ${p.image ? `<img class="item-thumb" src="${escapeHtml(p.image)}" alt="">` : ''}
+          ${(p.coverImage || p.image) ? `<img class="item-thumb" src="${escapeHtml(p.coverImage || p.image)}" alt="">` : ''}
           <div>
             <p class="meta">${escapeHtml([p.origin, p.price, p.stock, qtyLabel(p)].filter(Boolean).join(' · '))}</p>
             <h3>${escapeHtml(p.name)}</h3>
@@ -482,8 +586,18 @@
           pending.forEach((item) => URL.revokeObjectURL(item.url));
           pending = [];
           savedPhotos = (row.images && row.images.length) ? row.images.slice() : (row.image ? [row.image] : []);
+          coverPick = { kind: 'saved', index: 0 };
+          const cv = row.coverImage || row.image || '';
+          if (cv) {
+            const si = savedPhotos.indexOf(cv);
+            if (si >= 0) coverPick = { kind: 'saved', index: si };
+          }
           $('productId').value = row.id;
           $('listingText').value = row.summary || [row.name, row.origin, row.price].filter(Boolean).join('\n');
+          $('videoInput').value = row.video || '';
+          $('videoCaption').value = row.videoCaption || '';
+          $('videoStatus').textContent = row.video ? '已連結短片' : '';
+          $('videoStatus').classList.toggle('hidden', !row.video);
           $('qtyInput').value = row.qty === null || row.qty === undefined ? '' : row.qty;
           $('publishBtn').textContent = '更新上架';
           $('cancelEdit').classList.remove('hidden');
@@ -672,13 +786,14 @@
           <div>
             <p class="meta">${escapeHtml([p.origin, p.price, p.stock].filter(Boolean).join(' · '))}</p>
             <h3>${escapeHtml(p.name)}</h3>
+            <p class="meta"><strong>${escapeHtml(qtyLabel(p))}</strong></p>
           </div>
           <div class="admin-actions">
             <input class="form-input qty-input" type="number" min="0" max="99999" placeholder="不限" value="${p.qty === null || p.qty === undefined ? '' : p.qty}" data-qty="${p.id}" />
             <button class="btn btn-ghost" type="button" data-qtysave="${p.id}">儲存</button>
           </div>
         </article>
-      `).join('') || '<p class="lead">尚未上架商品。</p>';
+      `).join('') || '<p class="lead">尚未上架商品。請先在上方「本月集選」上架，才會出現在這裡追蹤數量。</p>';
       $('stockList').querySelectorAll('[data-qtysave]').forEach((btn) => {
         btn.onclick = async () => {
           const input = $('stockList').querySelector(`[data-qty="${btn.dataset.qtysave}"]`);
@@ -845,6 +960,7 @@
     }
 
     $('dropzone').addEventListener('click', () => $('photoInput').click());
+    $('photoRow').addEventListener('click', onPhotoRowClick);
     $('dropzone').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('photoInput').click(); }
     });
@@ -909,7 +1025,12 @@
         infoMessage(`已填入商品說明，上架前請再確認名稱與售價。${data.note ? `提醒：${data.note}` : ''}`);
         $('listingText').focus();
       } catch (err) {
-        infoMessage(err.message || '讀圖失敗，請再試一次。', true);
+        const msg = String(err.message || '讀圖失敗，請再試一次。');
+        if (/AI 金鑰/.test(msg)) {
+          infoMessage('AI 讀圖尚未設定。請改在下方「商品說明」手動填寫後按「放到本月集選」。', true);
+        } else {
+          infoMessage(msg, true);
+        }
       }
     }
     $('infoZone').addEventListener('click', () => $('infoInput').click());
@@ -928,31 +1049,82 @@
       e.target.value = '';
     });
     $('listingText').addEventListener('input', renderChips);
+    $('videoInput').addEventListener('input', renderChips);
+    $('videoPickBtn').onclick = () => $('videoFile').click();
+    $('videoFile').addEventListener('change', () => {
+      const file = $('videoFile').files && $('videoFile').files[0];
+      if (!file) return;
+      $('videoStatus').textContent = `已選擇：${file.name}（按「上傳短片」）`;
+      $('videoStatus').classList.remove('hidden');
+    });
+    $('videoUploadBtn').onclick = async () => {
+      const file = $('videoFile').files && $('videoFile').files[0];
+      if (!file) {
+        $('videoStatus').textContent = '請先按「選擇 MP4」';
+        $('videoStatus').classList.remove('hidden');
+        return;
+      }
+      $('videoStatus').textContent = '短片上傳中…';
+      $('videoStatus').classList.remove('hidden');
+      try {
+        const body = new FormData();
+        body.append('video', file);
+        const res = await fetch('/api/admin/upload-video', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token() },
+          body,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || '上傳失敗');
+        $('videoInput').value = data.url || '';
+        $('videoStatus').textContent = '短片已上傳，記得按「放到本月集選」存檔。';
+        renderChips();
+      } catch (err) {
+        $('videoStatus').textContent = err.message || '上傳失敗';
+      }
+    };
     $('cancelEdit').onclick = () => resetListing();
     $('productForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       setStatus(true, '');
       $('productStatus').classList.add('hidden');
       if (!$('listingText').value.trim()) {
-        setStatus(false, '請先填商品說明：可把廠商資訊截圖貼到「商品資訊截圖」框，AI 會自動填。');
+        setStatus(false, '請先填「商品說明」（可手動打，或用 AI 讀截圖自動填）。');
         return;
       }
       try {
         const uploaded = await uploadPending();
         const images = savedPhotos.concat(uploaded);
+        const coverImage = resolveCoverUrl(uploaded);
+        const coverIndex = globalCoverIndex();
+        if (!images.length) {
+          setStatus(false, '請至少上傳一張商品照片。');
+          return;
+        }
         const description = $('listingText').value.trim();
         const id = $('productId').value;
-        await api(id ? '/api/admin/products/' + id : '/api/admin/products', {
+        const data = await api(id ? '/api/admin/products/' + id : '/api/admin/products', {
           method: id ? 'PATCH' : 'POST',
           body: JSON.stringify({
             images,
+            coverImage,
+            coverIndex,
             description,
             filename: firstFilename(),
             qty: $('qtyInput').value,
+            video: $('videoInput').value.trim(),
+            videoCaption: $('videoCaption').value.trim(),
           }),
         });
+        const saved = (data.content && data.content.products || []).find((p) => p.id === id)
+          || (data.content && data.content.products && data.content.products[data.content.products.length - 1]);
+        const savedCover = saved && (saved.coverImage || saved.image);
+        const coverNote = savedCover ? savedCover.split('/').pop() : '';
+        const pickNote = Number.isFinite(coverIndex) ? `第 ${coverIndex + 1} 張` : '';
         resetListing();
-        setStatus(true, '已放到本月集選');
+        setStatus(true, id
+          ? `已更新上架${coverNote ? `（封面${pickNote}：${coverNote}）` : ''}`
+          : '已放到本月集選');
         await loadAll();
       } catch (err) {
         setStatus(false, err.message);

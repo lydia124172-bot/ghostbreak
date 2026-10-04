@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const defaults = require('../data/site');
-const { parseListing, displayName } = require('./listing');
+const { parseListing, displayName, parseVideo } = require('./listing');
 
 function fail(message) {
   const err = new Error(message);
@@ -12,7 +12,7 @@ function fail(message) {
 function collectImages(src) {
   const images = [];
   const extra = Array.isArray(src.images) ? src.images : [];
-  extra.concat([src.image]).forEach((url) => {
+  extra.concat([src.image, src.coverImage]).forEach((url) => {
     const u = String(url || '').trim();
     if (!u || u.length > 300 || u.includes('..')) return;
     const ok = /^https?:\/\//i.test(u)
@@ -21,6 +21,24 @@ function collectImages(src) {
     if (ok && !images.includes(u) && images.length < 12) images.push(u);
   });
   return images;
+}
+
+function safeProductImage(raw, fallback = '') {
+  const u = String(raw || '').trim();
+  if (!u || u.length > 300 || u.includes('..')) return fallback;
+  if (/^https?:\/\//i.test(u) || /^\/uploads\/products\/[A-Za-z0-9._-]+$/.test(u) || /^\/images\/[A-Za-z0-9._-]+$/.test(u)) return u;
+  return fallback;
+}
+
+function finalizeProductImages(images, { coverImage = '', coverIndex = -1, fallbackCover = '' } = {}) {
+  const list = images.filter(Boolean);
+  if (!list.length) return { images: [], coverImage: '', image: '' };
+  let idx = Number.isFinite(Number(coverIndex)) ? Math.floor(Number(coverIndex)) : -1;
+  let cover = safeProductImage(coverImage, '');
+  if (!cover && idx >= 0 && idx < list.length) cover = list[idx];
+  if (!cover) cover = safeProductImage(fallbackCover, list[0]);
+  const ordered = list[0] === cover ? list.slice() : [cover, ...list.filter((u) => u !== cover)];
+  return { images: ordered, coverImage: cover, image: cover };
 }
 
 function pickImages(item, fallback) {
@@ -130,13 +148,27 @@ function normQty(raw) {
 function cleanProduct(item, fallback = {}) {
   const src = item || {};
   const parsed = parseListing(src.description || src.summary, src.filename);
-  const images = pickImages(src, fallback);
+  const rawImages = pickImages(src, fallback);
+  const coverIndex = src.coverIndex !== undefined && src.coverIndex !== null && String(src.coverIndex).trim() !== ''
+    ? Math.floor(Number(src.coverIndex))
+    : -1;
+  const finalized = finalizeProductImages(rawImages, {
+    coverImage: src.coverImage,
+    coverIndex,
+    fallbackCover: fallback.coverImage || fallback.image || '',
+  });
+  const images = finalized.images;
+  const coverImage = finalized.coverImage;
   const qty = src.qty !== undefined ? normQty(src.qty) : normQty(fallback.qty);
   const baseStock = String(src.stock || '').trim() || parsed.stock || String(fallback.stock || '').trim() || '有貨';
-  const name = String(src.name || '').trim() || parsed.name || String(fallback.name || '').trim();
+  let name = String(src.name || '').trim() || parsed.name || String(fallback.name || '').trim();
+  if (/^【[^】]{1,24}】\s*$/.test(name) && parsed.name && !/^【[^】]+】\s*$/.test(parsed.name)) {
+    name = parsed.name;
+  }
   const badge = String(src.badge || '').trim() || parsed.badge || String(fallback.badge || '').trim();
   const perk = String(src.perk || '').trim() || parsed.perk || String(fallback.perk || '').trim();
   const video = String(src.video || '').trim() || parsed.video || String(fallback.video || '').trim();
+  const videoNorm = parseVideo(video) || parseVideo(String(src.description || src.summary || '')) || video;
   return {
     id: String(src.id || fallback.id || '').trim(),
     origin: String(src.origin || '').trim() || parsed.origin || String(fallback.origin || '').trim(),
@@ -144,13 +176,15 @@ function cleanProduct(item, fallback = {}) {
     name,
     badge,
     perk,
-    video,
+    video: videoNorm,
+    videoCaption: String(src.videoCaption || '').trim().slice(0, 48) || '親測／廠商短片',
     displayName: displayName({ name, badge, perk }),
     price: String(src.price || '').trim() || parsed.price || String(fallback.price || '').trim(),
     qty,
     stock: qty === 0 ? '售完' : (baseStock === '售完' ? '有貨' : baseStock),
     summary: String(src.summary || src.description || fallback.summary || '').trim() || parsed.summary,
-    image: images[0] || '',
+    image: finalized.image || images[0] || '',
+    coverImage: coverImage || finalized.image || images[0] || '',
     images,
     flash: Boolean(src.flash),
   };
@@ -169,6 +203,7 @@ function cleanArchiveProduct(item) {
     price: row.price,
     summary: row.summary,
     image: row.image,
+    coverImage: row.coverImage || row.image,
     images: row.images,
     qty: row.qty,
     wishCount: Math.max(0, Number(item && item.wishCount) || 0),
@@ -230,6 +265,8 @@ function mergeContent(saved) {
   });
   if (merged.liveTitle === '客廳裡的兩場閒聊') merged.liveTitle = '蝦皮賣場直播間';
   if (merged.liveWhen === '每週兩場，每場一次' || merged.liveWhen === '開播時間以蝦皮賣場為準') merged.liveWhen = '';
+  if (merged.heroTitle === '月刊生活指南。') merged.heroTitle = '主編部落格。';
+  if (merged.tagline === '月刊生活指南') merged.tagline = '本月精選商品';
   return merged;
 }
 

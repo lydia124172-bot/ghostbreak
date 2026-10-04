@@ -3,51 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>瑄品集選 — 月刊生活指南</title>
-  <meta name="description" content="瑄品集選月刊生活指南。教了二十六年英文的牛排館老闆，每個月開箱一個國家的生活好物。" />
+  <title>瑄品集選 — Shine Piece</title>
+  <meta name="description" content="瑄品集選：教了二十六年英文的牛排館老闆，用挑剔眼光每月精選生活好物。" />
   <link rel="icon" href="/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=25" />
+  <link rel="stylesheet" href="/css/site.css?v=34" />
 </head>
 <body data-page="home">
   <div data-shell="header"></div>
-  <div class="hero-frame is-cover">
-    <img class="hero-photo" id="themeVisual" src="/images/hero-tea.jpg" alt="月刊生活指南封面" />
+  <div class="hero-frame is-cover is-compact">
+    <img class="hero-photo" id="themeVisual" src="/images/hero-tea.jpg" alt="瑄品集選封面" />
     <div class="cover-veil"></div>
     <div class="cover-type">
       <p class="cover-kicker" id="coverIssue">Vol. 2026.09</p>
       <p class="cover-display">SHINE<br>PIECE</p>
       <p class="cover-zh">瑄品集選</p>
       <strong class="hidden" id="themeTitle"></strong>
-      <p class="cover-label" id="coverLabel">本月開箱一個國家</p>
+      <p class="cover-label" id="coverLabel">本月精選，實測過才推</p>
       <em id="coverEnglish">From a steakhouse table, with a teacher's eye.</em>
     </div>
   </div>
 
   <section class="ed-board">
+    <a class="ed-tile is-photo is-mid" href="/issue">
+      <img src="/images/hero-tea.jpg" alt="">
+      <span>本月精選商品</span>
+    </a>
+    <article class="ed-tile is-olive" id="country">
+      <p class="month-mark" id="monthLabel">本月國家</p>
+      <h2 id="countryHead">每一期，只深讀一個地方。</h2>
+      <p class="lead hidden" id="countryLead"></p>
+      <p class="country-unbox">本月精選商品</p>
+      <div id="countryProducts" class="country-products" aria-label="本月精選商品"></div>
+      <a class="more" href="/issue">更多</a>
+    </article>
+
     <a class="ed-tile is-photo is-wide" href="#letter">
       <img src="/images/ed-table.jpg" alt="">
       <span>01　主編的話</span>
     </a>
     <article class="ed-tile is-cream" id="letter">
       <p class="news-title">FROM THE EDITOR</p>
-      <h1 id="heroTitle">月刊生活指南。</h1>
+      <h1 id="heroTitle">主編部落格。</h1>
       <p class="letter-body" id="heroLead">一位教了二十六年英文的牛排館老闆，用挑剔的眼光與國際視野，每個月帶你開箱一個國家的生活好物。</p>
       <blockquote class="pull-quote" id="pullQuote">每個月只深讀一個國家。用過的，才寫進這一期。</blockquote>
       <p class="letter-sign">瑄品集選　Shine Piece</p>
-      <a class="more" href="/journal">閱讀主編專欄</a>
+      <a class="more" href="/journal">閱讀主編部落格</a>
     </article>
 
-    <a class="ed-tile is-photo is-mid" href="/issue">
-      <img src="/images/hero-tea.jpg" alt="">
-      <span>本月開箱</span>
-    </a>
-    <article class="ed-tile is-olive" id="country">
-      <p class="month-mark" id="monthLabel">本月國家</p>
-      <h2 id="countryHead">每一期，只深讀一個地方。</h2>
-      <p class="lead hidden" id="countryLead"></p>
-      <a class="more" href="/issue">本月開箱</a>
-    </article>
     <a class="ed-tile is-photo is-mid" id="livePhoto" href="https://s.shopee.tw/W77I6hhQ2" target="_blank" rel="noopener noreferrer">
       <img src="/images/ed-room.jpg" alt="">
       <span>蝦皮直播</span>
@@ -93,17 +96,8 @@
 
   <nav class="ed-origins" id="origins"></nav>
 
-  <section class="hidden mag-picks wrap" id="featuredSection">
-    <div class="section-head">
-      <h2 id="featuredTitle">本月開箱筆記</h2>
-      <a href="/issue">MORE</a>
-    </div>
-    <div id="leadPick"></div>
-    <ol class="toc-picks" id="tocPicks"></ol>
-  </section>
-
   <div data-shell="footer"></div>
-  <script src="/js/site.js?v=23"></script>
+  <script src="/js/site.js?v=33"></script>
   <script>
     const notes = { 日本: 'Japan', 韓國: 'Korea', 中國: 'China', 泰國: 'Thailand', 台灣: 'Taiwan' };
     fetch('/api/config').then((r) => r.json()).then((data) => {
@@ -115,12 +109,14 @@
         <li><a href="/wish"><b>${month.themeTitle || month.label}</b><span>${month.label}</span></a></li>
       `).join('') || '<li>尚無過刊。換月封存後會出現在這裡。</li>';
       const list = data.products || [];
-      if (!list.length) return;
-      document.getElementById('featuredSection').classList.remove('hidden');
-      document.getElementById('leadPick').innerHTML = editorialLead(list[0]);
-      document.getElementById('tocPicks').innerHTML = list.map((p, i) => tocPick(p, i)).join('');
-      bindAddButtons(document.getElementById('leadPick'));
-      bindBuyButtons(document.getElementById('leadPick'));
+      const country = document.getElementById('country');
+      const countryProducts = document.getElementById('countryProducts');
+      if (list.length && countryProducts) {
+        countryProducts.innerHTML = list.slice(0, 4).map((p) => countryPick(p)).join('');
+        country.classList.add('has-picks');
+      } else if (countryProducts) {
+        countryProducts.innerHTML = '<p class="country-empty">本月精選商品準備中。</p>';
+      }
     });
   </script>
 </body>

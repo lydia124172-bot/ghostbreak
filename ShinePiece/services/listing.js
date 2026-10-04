@@ -25,11 +25,15 @@ function originKeys() {
 }
 
 function parseVideo(raw) {
-  const yt = String(raw || '').match(/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{6,})/i);
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  if (/^\/uploads\/products\/[A-Za-z0-9._-]+\.(?:mp4|webm)$/i.test(s)) return s;
+  if (/^https?:\/\/[^\s"'<>]+\.(?:mp4|webm)(?:\?\S*)?$/i.test(s)) return s.match(/^https?:\/\/[^\s"'<>]+\.(?:mp4|webm)(?:\?\S*)?$/i)[0];
+  const yt = s.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{6,})/i);
   if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
-  const vm = String(raw || '').match(/https?:\/\/(?:www\.)?vimeo\.com\/(?:video\/)?(\d+)/i);
+  const vm = s.match(/https?:\/\/(?:www\.)?vimeo\.com\/(?:video\/)?(\d+)/i);
   if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
-  const file = String(raw || '').match(/https?:\/\/\S+\.(?:mp4|webm)(?:\?\S*)?/i);
+  const file = s.match(/https?:\/\/\S+\.(?:mp4|webm)(?:\?\S*)?/i);
   return file ? file[0] : '';
 }
 
@@ -100,14 +104,21 @@ function parseListing(text, filename = '') {
     return false;
   };
 
-  let name = lines.find((line) => !skipLine(line)) || '';
-  name = name
-    .replace(/^[【\[]\s*(日本|韓國|韩国|中國|中国|泰國|泰国|台灣|台湾|臺灣)\s*[】\]]\s*/, '')
-    .replace(/(?:NT\$?|TWD|＄|\$)\s*[\d,]+/i, '')
-    .replace(/[\d,]{2,}\s*元/, '')
-    .replace(/[|｜]\s*$/, '')
-    .trim()
-    .slice(0, 120);
+  const badgeOnly = (line) => /^【[^】]{1,24}】\s*$/.test(String(line || '').trim());
+
+  let name = '';
+  for (const line of lines) {
+    if (skipLine(line) || badgeOnly(line)) continue;
+    const tagged = line.match(/^【[^】]+】\s*(.+)$/);
+    name = (tagged ? tagged[1] : line)
+      .replace(/^[【\[]\s*(日本|韓國|韩国|中國|中国|泰國|泰国|台灣|台湾|臺灣)\s*[】\]]\s*/, '')
+      .replace(/(?:NT\$?|TWD|＄|\$)\s*[\d,]+/i, '')
+      .replace(/[\d,]{2,}\s*元/, '')
+      .replace(/[|｜]\s*$/, '')
+      .trim();
+    if (name) break;
+  }
+  name = name.slice(0, 120);
 
   if (!name) {
     const fromFile = String(filename || '')

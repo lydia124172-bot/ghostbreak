@@ -10,9 +10,9 @@ const { publicConfig, loadContent, saveContent, upsertItem, removeItem, archiveC
 const members = require('./services/members');
 const journal = require('./services/journal');
 const { parseListing } = require('./services/listing');
-const { readListing } = require('./services/read-listing');
+const { configured: aiListingConfigured, readListing } = require('./services/read-listing');
 const { writePost } = require('./services/write-post');
-const { loadOrders, addOrder, removeOrder, findOrder, updateOrder } = require('./services/orders');
+const { loadOrders, addOrder, removeOrder, findOrder, findRetailOrder, updateOrder } = require('./services/orders');
 const { INQUIRE_EMAIL, initMail, sendMail, orderMail, partnerMail, wishMail, mailConfigured } = require('./services/mail');
 const { METHODS, buildEcpay, verifyEcpay, instructions, publicPay, parseAmount } = require('./services/pay');
 
@@ -40,11 +40,14 @@ const pages = {
   '/partner': 'partner.html',
   '/wish': 'wish.html',
   '/member': 'member.html',
+  '/track': 'track.html',
+  '/privacy': 'privacy.html',
+  '/terms': 'terms.html',
   '/admin': 'admin.html',
 };
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, site: publicConfig().name, admin: adminConfigured() });
+  res.json({ ok: true, site: publicConfig().name, admin: adminConfigured(), aiListing: aiListingConfigured() });
 });
 
 app.get('/api/config', (_req, res) => {
@@ -82,11 +85,36 @@ const upload = multer({
   },
 });
 
+const videoUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+      cb(null, UPLOAD_DIR);
+    },
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname || '').toLowerCase();
+      const safeExt = ['.mp4', '.webm'].includes(ext) ? ext : '.mp4';
+      cb(null, `${Date.now()}-${crypto.randomBytes(4).toString('hex')}${safeExt}`);
+    },
+  }),
+  limits: { fileSize: 80 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const mime = String(file.mimetype || '').toLowerCase();
+    const ok = /\.(mp4|webm)$/.test(ext) || /^video\/(mp4|webm|quicktime)$/.test(mime);
+    cb(ok ? null : new Error('請上傳 MP4 或 WEBM'), ok);
+  },
+});
+
 function listingBody(body) {
   return {
     id: body?.id,
     images: body?.images,
     image: body?.image,
+    coverImage: body?.coverImage,
+    coverIndex: body?.coverIndex,
+    video: body?.video,
+    videoCaption: body?.videoCaption,
     description: body?.description || body?.summary,
     summary: body?.description || body?.summary,
     filename: body?.filename,
@@ -105,6 +133,17 @@ app.post('/api/admin/upload', requireAdmin, (req, res) => {
       name: path.parse(file.originalname || '').name,
     }));
     res.json({ files });
+  });
+});
+
+app.post('/api/admin/upload-video', requireAdmin, (req, res) => {
+  videoUpload.single('video')(req, res, (err) => {
+    if (err) {
+      const error = err.code === 'LIMIT_FILE_SIZE' ? '短片請小於 80MB' : (err.message || '短片上傳失敗');
+      return res.status(400).json({ error });
+    }
+    if (!req.file) return res.status(400).json({ error: '請選擇 MP4 檔案' });
+    res.json({ url: `/uploads/products/${req.file.filename}` });
   });
 });
 
@@ -322,18 +361,73 @@ function requireMember(req, res, next) {
 function memberOrders(id) {
   return loadOrders()
     .filter((o) => o.memberId === id && o.kind === '零售訂單')
-    .map((o) => ({
-      id: o.id,
-      createdAt: o.createdAt,
-      status: o.status,
-      payment: o.payment,
-      shipping: o.shipping,
-      trackingNo: o.trackingNo || '',
-      payInfo: o.status === '待付款' ? o.payInfo || '' : '',
-      amount: Number(o.amount) || parseAmount(o.items),
-      items: (o.items || []).map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
-    }));
+    .map((o) => publicOrderView(o));
 }
+
+function publicOrderView(o) {
+  const shipping = String(o.shipping || '').trim();
+  let shipNote = shipping;
+  if (shipping === '宅配' && o.address) {
+    const addr = String(o.address).trim();
+    shipNote = `宅配 · ${addr.slice(0, 6)}${addr.length > 6 ? '…' : ''}`;
+  } else if (shipping === '超商取貨') {
+    shipNote = [o.storeBrand, o.store].filter(Boolean).join(' ') || '超商取貨';
+  }
+  return {
+    id: o.id,
+    createdAt: o.createdAt,
+    status: o.status,
+    payment: o.payment,
+    shipping: shipNote,
+    trackingNo: o.trackingNo || '',
+    payInfo: o.status === '待付款' ? o.payInfo || '' : '',
+    amount: Number(o.amount) || parseAmount(o.items),
+    items: (o.items || []).map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
+  };
+}
+
+function verifyOrderContact(order, { email = '', phone = '' } = {}) {
+  const wantEmail = String(email || '').trim().toLowerCase();
+  const wantPhone = String(phone || '').trim().replace(/\D/g, '');
+  const orderEmail = String(order.email || '').trim().toLowerCase();
+  const orderPhone = String(order.phone || '').trim().replace(/\D/g, '');
+  if (wantEmail && orderEmail && wantEmail === orderEmail) return true;
+  if (wantPhone && orderPhone) {
+    if (orderPhone === wantPhone) return true;
+    if (wantPhone.length >= 4 && orderPhone.endsWith(wantPhone)) return true;
+  }
+  return false;
+}
+
+const trackAttempts = new Map();
+function trackThrottle(req, res, next) {
+  const key = req.ip || 'x';
+  const now = Date.now();
+  const hits = (trackAttempts.get(key) || []).filter((t) => now - t < 15 * 60 * 1000);
+  if (hits.length >= 30) return res.status(429).json({ error: '查詢太多次，請 15 分鐘後再試' });
+  hits.push(now);
+  trackAttempts.set(key, hits);
+  next();
+}
+
+app.post('/api/order/track', trackThrottle, (req, res) => {
+  const trackingNo = String(req.body?.trackingNo || '').trim().slice(0, 60);
+  const orderId = String(req.body?.orderId || '').trim().slice(0, 40);
+  const email = String(req.body?.email || '').trim().slice(0, 120);
+  const phone = String(req.body?.phone || '').trim().slice(0, 30);
+  if (!trackingNo && !orderId) {
+    return res.status(400).json({ error: '請填物流單號或訂單編號' });
+  }
+  if (!email && !phone) {
+    return res.status(400).json({ error: '請填下單時的 Email 或電話，以確認是本人' });
+  }
+  const order = findRetailOrder({ id: orderId, trackingNo });
+  if (!order || !verifyOrderContact(order, { email, phone })) {
+    return res.status(404).json({ error: '查無符合的訂單，請確認單號與 Email／電話是否正確' });
+  }
+  res.json({ ok: true, order: publicOrderView(order) });
+});
+
 app.post('/api/member/register', memberThrottle, (req, res) => {
   try {
     res.json(members.register(req.body || {}));
@@ -649,4 +743,5 @@ app.listen(PORT, async () => {
   console.log(`直播 QR      ${BASE_URL}/qr`);
   console.log(`訂單信箱 → ${INQUIRE_EMAIL || '未設定'}`);
   console.log(`Mail: ${mailConfigured() ? '已設定' : '未設定（請在 .env 放 RESEND_API_KEY）'}`);
+  console.log(`AI 讀圖: ${aiListingConfigured() ? '已設定' : '未設定（請在 .env 或 Render 放 GEMINI_API_KEY）'}`);
 });

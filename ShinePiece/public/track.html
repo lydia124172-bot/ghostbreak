@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>訂單追蹤 — 瑄品集選</title>
+  <meta name="description" content="用物流單號或訂單編號查詢瑄品集選訂單狀態與出貨進度。" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=34" />
+</head>
+<body data-page="track">
+  <div data-shell="header"></div>
+  <main class="wrap" style="padding-bottom:80px;">
+    <section class="page-head">
+      <p class="issue-folio"><span>TRACK</span><span>訂單追蹤</span></p>
+      <h1>查詢出貨進度</h1>
+      <p class="lead">輸入<strong>物流單號</strong>（出貨後我們會提供），或<strong>訂單編號</strong>，並用下單時的 Email 或電話確認身份。會員也可到 <a class="more" href="/member">我的訂單</a> 查看。</p>
+    </section>
+
+    <form id="trackForm" class="panel track-form" style="max-width:520px;">
+      <label class="field" for="trackingNo">物流單號（出貨編號）</label>
+      <input id="trackingNo" class="form-input" maxlength="60" placeholder="出貨後的黑貓／郵局等單號" autocomplete="off" />
+      <p class="lead track-or">或</p>
+      <label class="field" for="orderId">訂單編號</label>
+      <input id="orderId" class="form-input" maxlength="40" placeholder="例如：O-1791129525476" autocomplete="off" />
+      <label class="field" for="trackEmail">下單 Email（擇一填寫）</label>
+      <input id="trackEmail" type="email" class="form-input" maxlength="120" autocomplete="email" />
+      <label class="field" for="trackPhone">或下單電話</label>
+      <input id="trackPhone" class="form-input" maxlength="30" inputmode="tel" autocomplete="tel" />
+      <p id="trackErr" class="status-err hidden"></p>
+      <button class="btn btn-ink" type="submit" style="width:100%;margin-top:16px;">查詢訂單</button>
+    </form>
+
+    <section id="trackResult" class="panel hidden track-result" style="margin-top:24px;max-width:640px;"></section>
+  </main>
+  <div data-shell="footer"></div>
+  <script src="/js/site.js?v=34"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    if (params.get('id')) document.getElementById('orderId').value = params.get('id');
+    if (params.get('no')) document.getElementById('trackingNo').value = params.get('no');
+
+    function pill(status) {
+      const cls = status === '已取消' ? ' is-cancel' : (status === '已完成' || status === '已出貨' ? ' is-done' : '');
+      return `<span class="status-pill${cls}">${escapeHtml(status || '')}</span>`;
+    }
+    function showErr(msg) {
+      const el = document.getElementById('trackErr');
+      el.textContent = msg || '';
+      el.classList.toggle('hidden', !msg);
+    }
+    function renderOrder(o) {
+      const box = document.getElementById('trackResult');
+      box.classList.remove('hidden');
+      box.innerHTML = `
+        <p class="meta">${escapeHtml(new Date(o.createdAt).toLocaleString('zh-TW'))} · ${escapeHtml(o.id)}</p>
+        <h2 style="margin:8px 0 12px;">${pill(o.status)}　NT$ ${Number(o.amount || 0).toLocaleString('en-US')}</h2>
+        <p>${escapeHtml(o.items.map((i) => `${i.name} × ${i.qty}`).join('、'))}</p>
+        <p class="product-cat">${escapeHtml([o.payment, o.shipping].filter(Boolean).join(' · '))}</p>
+        ${o.trackingNo
+          ? `<p class="track-highlight"><strong>物流單號</strong>　${escapeHtml(o.trackingNo)}</p>`
+          : '<p class="product-cat">尚未出貨，物流單號會在寄出後顯示於此。</p>'}
+        ${o.payInfo ? `<p class="product-cat">${escapeHtml(o.payInfo)}</p>` : ''}
+      `;
+    }
+    document.getElementById('trackForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      showErr('');
+      document.getElementById('trackResult').classList.add('hidden');
+      const trackingNo = document.getElementById('trackingNo').value.trim();
+      const orderId = document.getElementById('orderId').value.trim();
+      const email = document.getElementById('trackEmail').value.trim();
+      const phone = document.getElementById('trackPhone').value.trim();
+      if (!trackingNo && !orderId) {
+        showErr('請填物流單號或訂單編號。');
+        return;
+      }
+      if (!email && !phone) {
+        showErr('請填 Email 或電話，以確認是本人訂單。');
+        return;
+      }
+      try {
+        const res = await fetch('/api/order/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trackingNo, orderId, email, phone }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || '查詢失敗');
+        renderOrder(data.order);
+      } catch (err) {
+        showErr(err.message || '查詢失敗');
+      }
+    });
+  </script>
+</body>
+</html>
