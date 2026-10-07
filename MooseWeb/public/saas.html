@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
@@ -7,10 +7,11 @@
   <meta name="description" content="麋鹿工具包 MOOSE WEB KIT：商品短片、模特兒換裝、真人口播對嘴。排版可先試，進階功能用點數。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=plans1" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=look2" />
+  <link rel="stylesheet" href="/css/kit.css?v=7" />
 </head>
-<body>
+<body class="kit">
   <header class="site-header">
     <div class="wrap header-row">
       <a class="brand" href="/">
@@ -28,34 +29,22 @@
     </div>
   </header>
 
-  <main class="wrap">
-    <section class="page-head">
-      <p class="kicker">MOOSE WEB KIT</p>
-      <h1>麋鹿工具包</h1>
-      <p class="lead">寫稿（口播腳本、直播稿、個人 IP、熱問、提示詞、爆文鉤子）：沒買方案時每個只能用 1 次，買了方案可以一直寫，不扣點。點數只在做出成品時扣，而且只扣你這個帳號：生一張圖 1 點、換一次裝 1 點、改一張圖 1 點、短片 5 秒 3 點、10 秒 6 點、15 秒 9 點、對嘴每秒 1 點。排版不扣點。識圖寫文案沒買方案可試 1 次。劇本廣告另計次數，不扣上面的點。</p>
+  <main>
+    <section class="kit-hero">
+      <div class="wrap kit-hero-grid">
+        <div class="kit-intro">
+          <p class="kicker">MOOSE WEB KIT</p>
+          <h1>麋鹿工具包</h1>
+        </div>
+        <div class="kit-stage" aria-hidden="true">
+          <img class="kit-hero-art" src="/images/kit/hero.jpg?v=4" alt="">
+        </div>
+        <p class="lead">寫稿（口播腳本、直播稿、個人 IP、熱問、提示詞、爆文鉤子）：沒買方案時每個只能用 1 次，買了方案可以一直寫，不扣點。點數只在做出成品時扣，而且只扣你這個帳號：生一張圖 1 點、換一次裝 1 點、改一張圖 1 點、短片 5 秒 3 點、10 秒 6 點、15 秒 9 點、對嘴每秒 1 點。排版不扣點。識圖寫文案沒買方案可試 1 次。劇本廣告另計次數，不扣上面的點。</p>
+      </div>
     </section>
-
-    <ol class="tool-list" id="toolList"></ol>
-
-    <section class="page-head hidden" id="toolBacklogHead">
-      <p class="kicker">還沒做成自助工具</p>
-      <h2>可先委託開發</h2>
-      <p class="lead">下面這項還沒做成自己開通的工具。店家留單包含在品牌官網裡。</p>
-    </section>
-    <ol class="tool-list tool-list-backlog hidden" id="toolBacklog"></ol>
-
-    <section class="page-head">
-      <p class="kicker">方案與點數</p>
-      <h2>月費點數</h2>
-      <p class="lead">四張卡只差月費和點數。扣點方式相同，寫在下面。</p>
-    </section>
-    <section class="plan-grid" id="planGrid"></section>
-    <ul class="plan-rules">
-      <li>生圖、換裝、改圖：各 1 點</li>
-      <li>短片：5 秒 3 點、10 秒 6 點、15 秒 9 點</li>
-      <li>數字人對嘴：每秒 1 點</li>
-      <li>做出來才扣點。排版不扣點。識圖寫文案沒買方案可試 1 次</li>
-    </ul>
+    <div class="wrap">
+      <ol class="tool-list" id="toolList"></ol>
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -78,62 +67,55 @@
     function statusRank(status) {
       if (status === '已上線' || status === '付費方案') return 0;
       if (status === '建置中') return 1;
-      if (status === '籌備中') return 2;
-      return 3;
+      return 2;
     }
 
     fetch('/api/config').then((r) => r.json()).then((data) => {
       const tree = data.tree || {};
-      const tools = (tree.products || []).slice().sort((a, b) => {
+      const tools = (tree.products || []).filter((p) => p.status === '已上線' || p.status === '建置中' || p.status === '試用中').sort((a, b) => {
         const byStatus = statusRank(a.status) - statusRank(b.status);
         if (byStatus) return byStatus;
         return Number(a.order || 99) - Number(b.order || 99);
       });
-      const liveTools = tools.filter((p) => p.status === '已上線' || p.status === '建置中' || p.status === '試用中');
-      const backlog = tools.filter((p) => p.status === '籌備中');
 
-      function renderToolRow(p, i, backlogMode) {
+      function shotFor(id) {
+        const shots = {
+          mooseclip: '/images/kit/clip.jpg?v=4',
+          'dress-fit': '/images/kit/dress.jpg?v=4',
+          'photo-edit': '/images/kit/edit.jpg?v=4',
+          'photo-move': '/images/kit/move.jpg?v=4',
+          storyclip: '/images/kit/story.jpg?v=4',
+          talkclip: '/images/kit/talk.jpg?v=4',
+          'ugc-script': '/images/kit/script.jpg?v=4',
+          'live-script': '/images/kit/live.jpg?v=4',
+          'persona-ip': '/images/kit/ip.jpg?v=4',
+          'hot-ask': '/images/kit/hot.jpg?v=4',
+          'prompt-maker': '/images/kit/prompt.jpg?v=4',
+          'hook-caption': '/images/kit/hook.jpg?v=4',
+        };
+        const src = shots[id] || '/images/kit/script.jpg?v=4';
+        return `<div class="kit-shot" aria-hidden="true"><img src="${src}" alt=""></div>`;
+      }
+
+      function renderToolRow(p, i) {
         const live = p.status === '已上線';
         const soon = p.status === '建置中' || p.status === '試用中';
-        const label = backlogMode ? '籌備中' : (live ? '已上線' : soon ? p.status : p.status);
-        const hireHref = '/hire?service=assistant';
-        const href = backlogMode ? hireHref : (live || soon ? (p.href || '/saas') : (p.href || '/hire'));
-        const btn = backlogMode ? '先諮詢委託' : (live ? '開始使用' : soon ? '查看說明' : '了解委託');
+        const label = live ? '已上線' : soon ? p.status : p.status;
+        const href = live || soon ? (p.href || '/saas') : (p.href || '/hire');
+        const btn = live ? '開始使用' : soon ? '查看說明' : '了解委託';
         return `
-          <li class="${live && !backlogMode ? 'live' : ''}">
-            <p class="meta">${i + 1}　${label}</p>
-            <h3>${escapeHtml(p.name)}</h3>
-            <p>${escapeHtml(p.summary || '')}</p>
-            <a class="btn ${live && !backlogMode ? 'btn-copper' : 'btn-cream'}" href="${escapeHtml(href)}">${btn}</a>
+          <li class="${live ? 'live' : ''}">
+            ${shotFor(p.id)}
+            <div class="kit-copy">
+              <p class="meta">${i + 1}　${label}</p>
+              <h3>${escapeHtml(p.name)}</h3>
+              <p>${escapeHtml(p.summary || '')}</p>
+              <a class="btn ${live ? 'btn-copper' : 'btn-cream'}" href="${escapeHtml(href)}">${btn}</a>
+            </div>
           </li>`;
       }
 
-      document.getElementById('toolList').innerHTML = liveTools.map((p, i) => renderToolRow(p, i, false)).join('');
-
-      const backlogHead = document.getElementById('toolBacklogHead');
-      const backlogEl = document.getElementById('toolBacklog');
-      if (backlog.length) {
-        backlogHead.classList.remove('hidden');
-        backlogEl.classList.remove('hidden');
-        backlogEl.innerHTML = backlog.map((p, i) => renderToolRow(p, i, true)).join('');
-      }
-      function planCard(plan, href, label) {
-        return `
-        <article class="plan-card">
-          <p class="meta">${escapeHtml(plan.period)}</p>
-          <h3>${escapeHtml(plan.name)}</h3>
-          <p class="plan-price">${escapeHtml(plan.priceLabel)}</p>
-          <p class="plan-quota">${escapeHtml(plan.quota || '')}</p>
-          <p class="plan-scope">${escapeHtml(plan.scope || '')}</p>
-          <a class="btn btn-copper" href="${href}">${label}</a>
-        </article>`;
-      }
-      const clipPlans = (tree.plans || []).filter((plan) => (plan.product || 'mooseclip') === 'mooseclip');
-      document.getElementById('planGrid').innerHTML = clipPlans.map((plan) => planCard(
-        plan,
-        plan.id === 'free' ? '/clip' : '/account',
-        plan.id === 'free' ? '去排版' : '選擇方案'
-      )).join('');
+      document.getElementById('toolList').innerHTML = tools.map((p, i) => renderToolRow(p, i)).join('');
     });
   </script>
 </body>

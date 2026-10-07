@@ -7,10 +7,11 @@
   <meta name="description" content="麋鹿工具包：口播腳本、直播稿、個人 IP、熱問、提示詞、爆文鉤子，未購方案各可試用 1 次。商品短片、換裝、真人口播對嘴用點數。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=fields2" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=look2" />
+  <link rel="stylesheet" href="/css/kit.css?v=7" />
 </head>
-<body>
+<body class="kit">
   <header class="site-header">
     <div class="wrap header-row">
       <a class="brand" href="/">
@@ -26,26 +27,40 @@
     </div>
   </header>
 
-  <main class="wrap">
-    <section class="hero">
-      <p class="kicker">麋鹿網</p>
-      <h1 id="heroTitle">寫稿、出圖、短片、<br>換裝與對嘴。</h1>
-      <p class="lead" id="heroLead">下面的寫稿，沒買方案時每個只能用 1 次；買了方案可以一直寫，不扣點。生圖、短片、換裝、對嘴才扣你帳號裡的點，從麋鹿工具包進去。</p>
-      <div class="actions">
-        <a class="btn btn-copper" href="/saas">看麋鹿工具包</a>
+  <main>
+    <section class="kit-hero">
+      <div class="wrap kit-hero-grid">
+        <div class="kit-intro">
+          <p class="kicker">麋鹿網</p>
+          <h1 id="heroTitle">寫稿、出圖、短片、<br>換裝與對嘴。</h1>
+          <div class="actions">
+            <a class="btn btn-copper" href="/saas">看麋鹿工具包</a>
+          </div>
+        </div>
+        <div class="kit-stage" aria-hidden="true">
+          <img class="kit-hero-art" src="/images/kit/hero.jpg?v=2" alt="">
+        </div>
+        <p class="lead" id="heroLead">下面的寫稿，沒買方案時每個只能用 1 次；買了方案可以一直寫，不扣點。生圖、短片、換裝、對嘴才扣你帳號裡的點，從麋鹿工具包進去。</p>
       </div>
     </section>
 
+    <div class="wrap">
     <section class="path-grid">
       <a class="card" href="/saas">
-        <p class="meta">付費點數</p>
-        <h3>麋鹿工具包</h3>
-        <p>商品短片、換裝、改圖、讓圖動起來、真人口播對嘴、口播腳本、直播稿、個人 IP、熱問、提示詞、爆文鉤子、劇本廣告。方案在工具包裡。</p>
+        <img class="card-art" src="/images/kit/home-kit.jpg?v=4" alt="">
+        <div class="card-body">
+          <p class="meta">付費點數</p>
+          <h3>麋鹿工具包</h3>
+          <p>商品短片、換裝、改圖、讓圖動起來、真人口播對嘴、口播腳本、直播稿、個人 IP、熱問、提示詞、爆文鉤子、劇本廣告。方案在工具包裡。</p>
+        </div>
       </a>
       <a class="card" href="#free">
-        <p class="meta">有免費試用次數</p>
-        <h3>寫稿試用</h3>
-        <p>沒買方案時，這六個寫稿每個只能用 1 次。買了方案可以一直寫，不扣點。</p>
+        <img class="card-art" src="/images/kit/home-try.jpg?v=4" alt="">
+        <div class="card-body">
+          <p class="meta">有免費試用次數</p>
+          <h3>寫稿試用</h3>
+          <p>沒買方案時，這六個寫稿每個只能用 1 次。買了方案可以一直寫，不扣點。</p>
+        </div>
       </a>
     </section>
 
@@ -56,36 +71,55 @@
     </section>
     <section class="grid-4 more-grid">
       <a class="card" href="/script">
-        <p class="meta">試用 1 次</p>
-        <h3>真人口播腳本</h3>
-        <p>AI 寫約 30 秒口播。對嘴出鏡影片請到麋鹿工具包。</p>
+        <img class="card-art" src="/images/kit/home-script.jpg?v=4" alt="">
+        <div class="card-body">
+          <p class="meta">試用 1 次</p>
+          <h3>真人口播腳本</h3>
+          <p>AI 寫約 30 秒口播。對嘴出鏡影片請到麋鹿工具包。</p>
+        </div>
       </a>
       <a class="card" href="/live">
-        <p class="meta">試用 1 次</p>
-        <h3>直播稿</h3>
-        <p>選行業或填商品，一次產出十二則可開播唸的講稿。</p>
+        <img class="card-art" src="/images/kit/home-live.jpg?v=4" alt="">
+        <div class="card-body">
+          <p class="meta">試用 1 次</p>
+          <h3>直播稿</h3>
+          <p>選行業或填商品，一次產出十二則可開播唸的講稿。</p>
+        </div>
       </a>
       <a class="card" href="/ip">
-        <p class="meta">試用 1 次</p>
-        <h3>個人IP</h3>
-        <p>貼上簡介與目標粉數，寫四週每日攻略，並分析臉書、IG、TikTok、YouTube、Threads 怎麼拍。</p>
+        <img class="card-art" src="/images/kit/home-ip.jpg?v=4" alt="">
+        <div class="card-body">
+          <p class="meta">試用 1 次</p>
+          <h3>個人IP</h3>
+          <p>貼上簡介與目標粉數，寫四週每日攻略，並分析臉書、IG、TikTok、YouTube、Threads 怎麼拍。</p>
+        </div>
       </a>
       <a class="card" href="/hot">
-        <p class="meta">試用 1 次</p>
-        <h3>熱問短片</h3>
-        <p>填行業，查台灣現在常問的題與國外近一年商業思維，整理成可拍短片的清單，可下載 PDF。</p>
+        <img class="card-art" src="/images/kit/home-hot.jpg?v=4" alt="">
+        <div class="card-body">
+          <p class="meta">試用 1 次</p>
+          <h3>熱問短片</h3>
+          <p>填行業，查台灣現在常問的題與國外近一年商業思維，整理成可拍短片的清單，可下載 PDF。</p>
+        </div>
       </a>
       <a class="card" href="/prompt">
-        <p class="meta">試用 1 次</p>
-        <h3>提示詞產生器</h3>
-        <p>寫一句中文想法，產出可直接貼進 AI 的圖片、影片、文案提示詞，中文、英文都有。</p>
+        <img class="card-art" src="/images/kit/home-prompt.jpg?v=4" alt="">
+        <div class="card-body">
+          <p class="meta">試用 1 次</p>
+          <h3>提示詞產生器</h3>
+          <p>寫一句中文想法，產出可直接貼進 AI 的圖片、影片、文案提示詞，中文、英文都有。</p>
+        </div>
       </a>
       <a class="card" href="/hook">
-        <p class="meta">試用 1 次</p>
-        <h3>爆文鉤子</h3>
-        <p>上傳一張圖，勾選 IG、臉書、Threads、小紅書、TikTok、Shorts，寫出各自的鉤子與標籤。另外給 3 句留言鉤子。</p>
+        <img class="card-art" src="/images/kit/home-hook.jpg?v=4" alt="">
+        <div class="card-body">
+          <p class="meta">試用 1 次</p>
+          <h3>爆文鉤子</h3>
+          <p>上傳一張圖，勾選 IG、臉書、Threads、小紅書、TikTok、Shorts，寫出各自的鉤子與標籤。另外給 3 句留言鉤子。</p>
+        </div>
       </a>
     </section>
+    </div>
   </main>
 
   <footer class="site-footer">
