@@ -64,8 +64,15 @@ module.exports = {
       id: 'storyclip',
       name: '劇本廣告',
       status: '已上線',
-      summary: '照劇本走：開場看見商品，兩人短對話，收尾一句賣點。10 或 15 秒。',
+      summary: '上傳圖片，選旁白式或對話式再寫劇本。10 秒或 15 秒。',
       href: '/story',
+    },
+    {
+      id: 'talkclip',
+      name: '數字人對嘴口播短片',
+      status: '已上線',
+      summary: '數字人對嘴 MP4，依旁白或音檔秒數扣點（每秒 1 點）。寫稿在真人口播腳本。',
+      href: '/script#talk',
     },
   ],
   works: [
