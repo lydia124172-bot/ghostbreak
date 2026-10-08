@@ -77,6 +77,13 @@ module.exports = {
       href: 'https://steak.bafuholdings.com/',
     },
     {
+      id: 'zixuan-english',
+      name: '紫瑄英語教室',
+      kind: '品牌官網',
+      summary: '商用英文課程站，含程度分級、AI 口說練習、早鳥報名與家教問答。',
+      href: 'https://english.bafuholdings.com/',
+    },
+    {
       id: 'mooseweb-site',
       name: '麋鹿網官網',
       kind: '品牌官網',
@@ -236,6 +243,11 @@ module.exports = {
           title: '八斧牛排官網',
           caption: '雙分店、線上訂位、公告後台',
           href: 'https://steak.bafuholdings.com/',
+        },
+        {
+          title: '紫瑄英語教室',
+          caption: '程度分級、口說練習、報名與後台',
+          href: 'https://english.bafuholdings.com/',
         },
         {
           title: '麋鹿網',
