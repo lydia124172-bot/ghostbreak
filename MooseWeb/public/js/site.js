@@ -19,6 +19,41 @@ function applyPublicNav() {
 
 applyPublicNav();
 
+function logoutAccount() {
+  return fetch('/api/account/logout', { method: 'POST' }).finally(() => {
+    location.href = '/account';
+  });
+}
+
+function ensureLogoutControls(logged) {
+  const row = document.querySelector('.header-row');
+  const headerBtn = row && row.querySelector('.header-logout');
+  const navBtn = document.getElementById('navLogout');
+  if (!logged) {
+    if (headerBtn) headerBtn.remove();
+    if (navBtn) navBtn.remove();
+    return;
+  }
+  if (row && !headerBtn) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'header-logout';
+    btn.textContent = '登出';
+    btn.addEventListener('click', logoutAccount);
+    const menu = document.getElementById('menuBtn');
+    row.insertBefore(btn, menu || null);
+  }
+  if (nav && !navBtn) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'navLogout';
+    btn.className = 'nav-logout';
+    btn.textContent = '登出';
+    btn.addEventListener('click', logoutAccount);
+    nav.appendChild(btn);
+  }
+}
+
 if (menuBtn && nav) {
   menuBtn.addEventListener('click', () => nav.classList.toggle('open'));
 }
@@ -92,11 +127,13 @@ function applyAccountNav(me) {
   const logged = Boolean(me && me.ok && me.email);
   if (!logged) {
     slot.textContent = '登入';
+    ensureLogoutControls(false);
     return;
   }
   const who = String(me.name || '').trim() || String(me.email).split('@')[0];
   const points = Number(me.credits || 0);
   slot.textContent = `${who}（${navPlan(me)}・${points} 點）`;
+  ensureLogoutControls(true);
 }
 
 fetch('/api/account/me').then((r) => r.json()).then(applyAccountNav).catch(() => applyAccountNav(null));

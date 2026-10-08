@@ -1054,6 +1054,9 @@ body.kit .page-head .lead {
     box-shadow: 0 14px 28px rgba(70, 48, 24, 0.1);
     backdrop-filter: none;
   }
+  body.kit .nav-logout {
+    color: #3a2e24;
+  }
   body.kit .kit-hero { padding: 16px 0 6px; }
   body.kit .kit-hero h1 { font-size: 32px; }
   body.kit .kit-hero-art { border-radius: 22px; }
