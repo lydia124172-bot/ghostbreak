@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=plans1" />
+  <link rel="stylesheet" href="/css/site.css?v=look5" />
 </head>
 <body>
   <header class="site-header">
@@ -93,7 +93,6 @@
           <a class="btn btn-cream" href="/clip">前往商品短片</a>
           <a class="btn btn-cream" href="/story">劇本廣告</a>
           <a class="btn btn-line hidden" data-line href="#">透過 LINE 聯繫</a>
-          <button class="btn btn-ghost" type="button" id="logoutBtn">登出</button>
         </div>
         <p id="planMsg" class="combo-fit"></p>
       </article>
@@ -122,7 +121,7 @@
       </nav>
     </div>
   </footer>
-  <script src="/js/site.js?v=studio6"></script>
+  <script src="/js/site.js?v=studio10"></script>
   <script>
     const $ = (id) => document.getElementById(id);
     let tree = { plans: [], billingNote: '' };
@@ -207,6 +206,7 @@
       $('loginMsg').textContent = '';
       try {
         await api('/api/account/login', { email: $('loginEmail').value, password: $('loginPass').value });
+        if (window.mooseRefreshNav) await window.mooseRefreshNav();
         await refresh();
       } catch (err) {
         $('loginMsg').textContent = err.message;
@@ -252,6 +252,7 @@
       try {
         await api('/api/account/reset', { token, password: $('resetPass').value });
         history.replaceState({}, '', '/account');
+        if (window.mooseRefreshNav) await window.mooseRefreshNav();
         await refresh();
       } catch (err) {
         $('resetMsg').textContent = err.message;
@@ -263,6 +264,7 @@
       $('regMsg').textContent = '';
       try {
         await api('/api/account/register', { name: $('regName').value, email: $('regEmail').value, password: $('regPass').value });
+        if (window.mooseRefreshNav) await window.mooseRefreshNav();
         await refresh();
       } catch (err) {
         $('regMsg').textContent = err.message;
@@ -281,7 +283,7 @@
       }
     });
 
-    $('logoutBtn').addEventListener('click', async () => {
+    if ($('logoutBtn')) $('logoutBtn').addEventListener('click', async () => {
       await fetch('/api/account/logout', { method: 'POST' });
       showGuest();
     });

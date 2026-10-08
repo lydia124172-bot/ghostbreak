@@ -27,6 +27,12 @@ body.kit .nav a.active {
   color: #3a2e24;
 }
 
+body.kit .header-logout {
+  border-color: #c4b09a;
+  background: #fffdf8;
+  color: #3a2e24;
+}
+
 body.kit h1,
 body.kit h2,
 body.kit h3 {

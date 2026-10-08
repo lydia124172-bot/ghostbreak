@@ -27,21 +27,22 @@ function logoutAccount() {
 
 function ensureLogoutControls(logged) {
   const row = document.querySelector('.header-row');
-  const headerBtn = row && row.querySelector('.header-logout');
+  let headerBtn = row && row.querySelector('.header-logout');
   const navBtn = document.getElementById('navLogout');
   if (!logged) {
     if (headerBtn) headerBtn.remove();
     if (navBtn) navBtn.remove();
     return;
   }
-  if (row && !headerBtn) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'header-logout';
-    btn.textContent = '登出';
-    btn.addEventListener('click', logoutAccount);
-    const menu = document.getElementById('menuBtn');
-    row.insertBefore(btn, menu || null);
+  if (row) {
+    if (!headerBtn) {
+      headerBtn = document.createElement('button');
+      headerBtn.type = 'button';
+      headerBtn.className = 'header-logout';
+      headerBtn.textContent = '登出';
+      headerBtn.addEventListener('click', logoutAccount);
+    }
+    row.appendChild(headerBtn);
   }
   if (nav && !navBtn) {
     const btn = document.createElement('button');

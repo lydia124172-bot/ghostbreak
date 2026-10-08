@@ -89,15 +89,17 @@ img { max-width: 100%; }
 
 .header-logout {
   margin-left: 12px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--cream);
+  border: 1px solid #1d4ed8;
+  background: #fff;
+  color: #1d4ed8;
   border-radius: 999px;
   padding: 8px 14px;
   font: inherit;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .nav-logout {
@@ -1306,11 +1308,9 @@ a.item {
   .header-logout {
     display: inline-flex;
     align-items: center;
-    margin-left: auto;
+    margin-left: 8px;
     padding: 8px 12px;
-    white-space: nowrap;
   }
-  .header-logout + .menu-btn { margin-left: 8px; }
   .nav {
     display: none;
     position: absolute;
