@@ -54,8 +54,22 @@ function ensureLogoutControls(logged) {
   }
 }
 
+async function refreshNav() {
+  try {
+    const me = await fetch('/api/account/me', { credentials: 'same-origin' }).then((r) => r.json());
+    applyAccountNav(me);
+  } catch {
+    applyAccountNav(null);
+  }
+}
+
+window.mooseRefreshNav = refreshNav;
+
 if (menuBtn && nav) {
-  menuBtn.addEventListener('click', () => nav.classList.toggle('open'));
+  menuBtn.addEventListener('click', () => {
+    nav.classList.toggle('open');
+    if (nav.classList.contains('open')) refreshNav();
+  });
 }
 
 function applyFooterExtras() {
@@ -136,4 +150,4 @@ function applyAccountNav(me) {
   ensureLogoutControls(true);
 }
 
-fetch('/api/account/me').then((r) => r.json()).then(applyAccountNav).catch(() => applyAccountNav(null));
+refreshNav();

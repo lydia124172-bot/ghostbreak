@@ -101,7 +101,22 @@ img { max-width: 100%; }
 }
 
 .nav-logout {
-  display: none;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (min-width: 801px) {
+  .nav-logout { display: none; }
 }
 
 .menu-btn {
@@ -1288,21 +1303,14 @@ a.item {
     padding: 8px 14px;
   }
   .nav { margin-left: 0; }
-  .header-logout { display: none; }
-  .nav-logout {
-    display: block;
-    width: 100%;
-    margin: 0;
-    padding: 12px 14px;
-    border: 0;
-    border-radius: 12px;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    font-size: 13px;
-    text-align: left;
-    cursor: pointer;
+  .header-logout {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+    padding: 8px 12px;
+    white-space: nowrap;
   }
+  .header-logout + .menu-btn { margin-left: 8px; }
   .nav {
     display: none;
     position: absolute;
