@@ -98,6 +98,39 @@ module.exports = {
       href: '/',
     },
     {
+      id: 'pet-reminder',
+      name: '毛孩管家',
+      kind: 'SaaS',
+      summary: '可愛寵物語音陪伴與生活提醒。飼主建立寵物後，用童聲把今天要做的事說出來，並記下生活記事。',
+      features: [
+        '寵物檔案：名字、動物、品種、提醒口氣',
+        '今天、提醒、記事',
+        '童聲試聽，聲音與通知可開關',
+      ],
+    },
+    {
+      id: 'yt-news-script',
+      name: '全球 AI 商業新聞 YT 腳本生產器',
+      kind: 'SaaS',
+      summary: '前台輸入想找的新聞，抓近期 AI 與科技商業時事，寫成可以直接念的 YouTube 口播腳本。',
+      features: [
+        '可改搜尋題，預設抓過去 24 小時',
+        '產出約 10 分鐘、可直接念的口播腳本',
+        '腳本可一鍵複製',
+      ],
+    },
+    {
+      id: 'social-observer',
+      name: '跨領域社會觀察',
+      kind: 'SaaS',
+      summary: '指定社會話題，或留白讓它挑今天的現象，用一個跨領域專有名詞寫成可直接念的口播稿。',
+      features: [
+        '話題可留白，先找近期社會、商業與科技討論',
+        '從心理學、哲學、經濟或 AI 挑一個概念來解釋',
+        '口播有鉤子與反轉，可直接複製',
+      ],
+    },
+    {
       id: 'native-chinese-check',
       name: 'Native Chinese Check',
       kind: 'SaaS',
