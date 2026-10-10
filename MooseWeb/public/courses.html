@@ -59,7 +59,7 @@
       document.getElementById('courses').innerHTML = rows.length
         ? rows.map((c) => {
           const price = Array.isArray(c.plans) && c.plans.length
-            ? c.plans.map((plan) => `<p class="meta"><strong>${esc(plan.name)}</strong>　${esc(plan.priceLabel)}</p>`).join('')
+            ? c.plans.map((plan) => `<p class="meta"><strong>${esc(plan.name)}</strong>　${esc(plan.priceLabel)}${plan.fit ? `<br>${esc(plan.fit)}` : ''}</p>`).join('')
             : (c.priceLabel
             ? `<p class="meta"><strong>${esc(c.priceLabel)}</strong>${c.earlyBirdLabel ? `　${esc(c.earlyBirdLabel)}` : ''}</p>`
             : '');

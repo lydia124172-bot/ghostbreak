@@ -834,7 +834,7 @@ function renderStudioCourses(courses) {
   if (!rows.length) return '<p class="lead">課程列表準備中。可先到做網站頁留下聯絡方式。</p>';
   return rows.map((course) => {
     const price = Array.isArray(course.plans) && course.plans.length
-      ? course.plans.map((plan) => `<p class="meta"><strong>${studioEsc(plan.name)}</strong>　${studioEsc(plan.priceLabel)}</p>`).join('')
+      ? course.plans.map((plan) => `<p class="meta"><strong>${studioEsc(plan.name)}</strong>　${studioEsc(plan.priceLabel)}${plan.fit ? `<br>${studioEsc(plan.fit)}` : ''}</p>`).join('')
       : (course.priceLabel
       ? `<p class="meta"><strong>${studioEsc(course.priceLabel)}</strong>${course.earlyBirdLabel ? `　${studioEsc(course.earlyBirdLabel)}` : ''}</p>`
       : '');
