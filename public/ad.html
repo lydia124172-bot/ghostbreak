@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<title>麋鹿網工作室</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: #efeae3;
+    color: #1c1916;
+    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+  }
+  body { padding: 28px 16px 48px; }
+  .sheet {
+    max-width: 820px;
+    margin: 0 auto;
+    background: #f7f4ef;
+    padding: 36px 36px 28px;
+  }
+  a { color: inherit; }
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    border-bottom: 3px solid #9a4e22;
+    padding-bottom: 14px;
+  }
+  .eyebrow { margin: 0; color: #9a4e22; font-size: 13px; letter-spacing: 0.12em; }
+  h1 { margin: 4px 0 0; font-size: 42px; line-height: 1.1; }
+  .lead { margin: 8px 0 0; font-size: 17px; }
+  .site { text-align: right; font-size: 14px; text-decoration: none; color: #9a4e22; font-weight: 700; }
+  .site small { display: block; margin-top: 4px; color: #1c1916; font-weight: 400; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .card {
+    display: block;
+    border: 1px solid #e4d5c6;
+    border-top: 3px solid #9a4e22;
+    background: #fff;
+    padding: 16px 16px 18px;
+    text-decoration: none;
+  }
+  .card h2 { margin: 0 0 8px; font-size: 20px; }
+  .card p, .lead, .work span {
+    word-break: keep-all;
+    line-break: strict;
+  }
+  .card p { margin: 0; font-size: 15px; line-height: 1.65; color: #3f3934; }
+  .go { display: block; margin-top: 8px; color: #9a4e22; font-size: 14px; font-weight: 700; }
+  h3 { margin: 22px 0 8px; font-size: 14px; color: #9a4e22; letter-spacing: 0.08em; }
+  .works { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .work {
+    display: block;
+    background: #fff;
+    border: 1px solid #e4d5c6;
+    padding: 12px 10px;
+    text-decoration: none;
+  }
+  .work strong { display: block; font-size: 15px; }
+  .work span { display: block; margin-top: 3px; font-size: 13px; color: #6d645c; line-height: 1.45; }
+  .foot {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid #e4d5c6;
+  }
+  .btn {
+    display: inline-block;
+    background: #9a4e22;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 18px;
+    padding: 14px 22px;
+    border-radius: 999px;
+  }
+  .links { margin: 10px 0 0; font-size: 15px; }
+  .links a { color: #9a4e22; margin-right: 14px; font-weight: 700; }
+  .qr { width: 108px; height: 108px; display: block; }
+  .qr-cap { margin: 4px 0 0; font-size: 12px; color: #6d645c; text-align: center; }
+  @media (max-width: 700px) {
+    .grid, .works { grid-template-columns: 1fr; }
+    .top, .foot { flex-direction: column; align-items: flex-start; }
+    .site { text-align: left; }
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <header class="top">
+      <div>
+        <p class="eyebrow">個人工作室</p>
+        <h1>麋鹿網</h1>
+        <p class="lead">做網站、LINE 官方帳號、自媒體，接案和教學都有。</p>
+      </div>
+      <a class="site" href="https://bafuholdings.com">bafuholdings.com<small>LINE @155tgdul</small></a>
+    </header>
+
+    <div class="grid">
+      <a class="card" href="https://bafuholdings.com/hire">
+        <h2>做網站</h2>
+        <p>品牌官網從頁面、文案、後台做到留單。需要收費時，帳號、點數、金流和部署可以一起做。</p>
+        <span class="go">看委託項目 →</span>
+      </a>
+      <a class="card" href="https://bafuholdings.com/courses">
+        <h2>LINE 官網接案</h2>
+        <p>把官方帳號做成第二個官網。圖文選單、歡迎訊息、關鍵字，一鍵導到官網、表單或預約。</p>
+        <span class="go">看 LINE 課程 →</span>
+      </a>
+      <a class="card" href="https://bafuholdings.com/hire">
+        <h2>自媒體</h2>
+        <p>口播與直播腳本、剪輯節奏、封面。直播視覺、社群貼文版型。臉書、IG、TikTok、YouTube、Threads 用同一套做法。</p>
+        <span class="go">看設計委託 →</span>
+      </a>
+      <a class="card" href="https://bafuholdings.com/courses">
+        <h2>課程</h2>
+        <p>架站到收費、LINE 官網設計、AI 自媒體、短影音電商、帶貨實戰。線上直播加回放。</p>
+        <span class="go">看課程價目 →</span>
+      </a>
+    </div>
+
+    <h3>作品</h3>
+    <div class="works">
+      <a class="work" href="https://steak.bafuholdings.com/"><strong>八斧牛排官網</strong><span>雙分店、線上訂位</span></a>
+      <a class="work" href="https://english.bafuholdings.com/"><strong>紫瑄英語教室</strong><span>商用英文、口說練習</span></a>
+      <a class="work" href="https://bafuholdings.com/chinese-check"><strong>Native Chinese Check</strong><span>母語中文修改</span></a>
+      <a class="work" href="https://bafuholdings.com/works"><strong>毛孩管家</strong><span>語音陪伴與生活提醒</span></a>
+      <a class="work" href="https://bafuholdings.com/works"><strong>AI 商業新聞腳本</strong><span>抓新聞，寫成口播</span></a>
+      <a class="work" href="https://bafuholdings.com/works"><strong>跨領域社會觀察</strong><span>現象寫成可念的稿</span></a>
+    </div>
+
+    <h3>內容工具</h3>
+    <a class="card" href="https://moose.bafuholdings.com/saas">
+      <h2>麋鹿工具包</h2>
+      <p>真人口播腳本、直播稿、個人 IP、熱問短片、爆文鉤子、商品短片。排版可先試，生成用點數。</p>
+      <span class="go">打開工具包 →</span>
+    </a>
+
+    <footer class="foot">
+      <div>
+        <a class="btn" href="https://bafuholdings.com">進網站看作品與課程</a>
+        <p class="links">
+          <a href="https://bafuholdings.com/works">作品</a>
+          <a href="https://bafuholdings.com/courses">課程</a>
+          <a href="https://bafuholdings.com/hire">做網站</a>
+          <a href="https://line.me/R/ti/p/@155tgdul">LINE 諮詢</a>
+        </p>
+      </div>
+      <div>
+        <a href="https://bafuholdings.com" aria-label="掃碼開啟 bafuholdings.com"><svg width="132" height="132" class="qr"><g transform="scale(4)"><path fill="#f7f4ef" d="M0 0h33v33h-33z"/><path class="qrline" stroke="#1c1916" d="M4 4.5h7m1 0h2m1 0h2m1 0h1m3 0h7m-25 1h1m5 0h1m1 0h1m1 0h1m1 0h1m3 0h1m1 0h1m5 0h1m-25 1h1m1 0h3m1 0h1m1 0h6m1 0h2m1 0h1m1 0h3m1 0h1m-25 1h1m1 0h3m1 0h1m2 0h1m1 0h3m1 0h2m1 0h1m1 0h3m1 0h1m-25 1h1m1 0h3m1 0h1m1 0h1m1 0h1m3 0h1m1 0h1m1 0h1m1 0h3m1 0h1m-25 1h1m5 0h1m2 0h2m1 0h3m1 0h1m1 0h1m5 0h1m-25 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-14 1h1m1 0h1m2 0h1m-17 1h1m2 0h6m1 0h2m2 0h4m2 0h1m1 0h3m-25 1h1m8 0h2m4 0h1m3 0h5m-24 1h1m5 0h1m2 0h1m2 0h4m1 0h2m2 0h1m2 0h1m-25 1h2m1 0h3m1 0h1m1 0h3m2 0h1m3 0h1m2 0h4m-25 1h1m1 0h1m3 0h4m2 0h1m1 0h1m1 0h1m1 0h2m4 0h1m-25 1h2m2 0h2m1 0h1m2 0h1m3 0h3m3 0h1m2 0h1m-24 1h4m1 0h2m1 0h1m1 0h3m1 0h2m1 0h2m1 0h5m-25 1h1m1 0h3m3 0h2m1 0h1m2 0h2m3 0h1m1 0h2m1 0h1m-25 1h1m1 0h1m2 0h3m1 0h2m1 0h2m2 0h5m1 0h2m-16 1h1m2 0h2m3 0h1m3 0h1m1 0h2m-24 1h7m1 0h1m2 0h2m1 0h1m1 0h1m1 0h1m1 0h1m3 0h1m-25 1h1m5 0h1m1 0h2m2 0h2m1 0h2m3 0h1m3 0h1m-25 1h1m1 0h3m1 0h1m1 0h1m3 0h1m1 0h7m-21 1h1m1 0h3m1 0h1m1 0h1m3 0h3m1 0h3m4 0h2m-25 1h1m1 0h3m1 0h1m4 0h1m1 0h1m1 0h2m3 0h5m-25 1h1m5 0h1m2 0h1m1 0h1m2 0h1m3 0h3m1 0h3m-25 1h7m1 0h1m3 0h1m3 0h1m1 0h1m2 0h1m2 0h1"/></g></svg></a>
+        <p class="qr-cap">掃碼進網站</p>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
