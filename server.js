@@ -833,9 +833,11 @@ function renderStudioCourses(courses) {
   const rows = courses || [];
   if (!rows.length) return '<p class="lead">課程列表準備中。可先到做網站頁留下聯絡方式。</p>';
   return rows.map((course) => {
-    const price = course.priceLabel
+    const price = Array.isArray(course.plans) && course.plans.length
+      ? course.plans.map((plan) => `<p class="meta"><strong>${studioEsc(plan.name)}</strong>　${studioEsc(plan.priceLabel)}</p>`).join('')
+      : (course.priceLabel
       ? `<p class="meta"><strong>${studioEsc(course.priceLabel)}</strong>${course.earlyBirdLabel ? `　${studioEsc(course.earlyBirdLabel)}` : ''}</p>`
-      : '';
+      : '');
     const meta = [course.sessionLabel || (course.sessions ? `${course.sessions} 堂` : ''), course.format].filter(Boolean).join('　');
     return `<article class="item"><div><p class="meta">${studioEsc(course.status || '開放諮詢')}${meta ? `　${studioEsc(meta)}` : ''}</p><h3>${studioEsc(course.title)}</h3><p>${course.audience ? `適合對象：${studioEsc(course.audience)}` : ''}</p><p>${studioEsc(course.summary)}</p>${price}</div><a class="btn" href="/course?id=${encodeURIComponent(course.id)}">查看課程內容</a></article>`;
   }).join('');
@@ -938,7 +940,10 @@ Object.entries(STUDIO_PAGES).forEach(([route, file]) => {
           const bullets = (items) => (items || []).map((line) => `<li>${studioEsc(line)}</li>`).join('');
           html = html.replace('<title>課程 — 麋鹿網工作室</title>', `<title>${studioEsc(course.title)} — 麋鹿網工作室</title>`);
           html = html.replace('<section id="head"></section>', `<section id="head"><p class="kicker">${studioEsc(course.status || '開放諮詢')}</p><h1>${studioEsc(course.title)}</h1><p class="lead">${studioEsc(course.audience ? `適合對象：${course.audience}` : '')}</p><p>${studioEsc(course.summary || '')}</p></section>`);
-          html = html.replace('<section class="panel" id="facts"></section>', `<section class="panel" id="facts"><p><strong>堂數</strong>　${studioEsc(course.sessionLabel || `${course.sessions || ''} 堂`)}</p><p><strong>單堂</strong>　${studioEsc(course.duration || '')}</p><p><strong>形式</strong>　${studioEsc(course.format || '')}</p><p><strong>費用</strong>　${studioEsc(course.priceLabel || '')}${course.earlyBirdLabel ? `　${studioEsc(course.earlyBirdLabel)}` : ''}</p></section>`);
+          const fee = Array.isArray(course.plans) && course.plans.length
+            ? course.plans.map((plan) => `<strong>${studioEsc(plan.name)}</strong>　${studioEsc(plan.priceLabel)}<br><span class="meta">${studioEsc(plan.fit || '')}</span>`).join('<br>')
+            : `${studioEsc(course.priceLabel || '')}${course.earlyBirdLabel ? `　${studioEsc(course.earlyBirdLabel)}` : ''}`;
+          html = html.replace('<section class="panel" id="facts"></section>', `<section class="panel" id="facts"><p><strong>堂數</strong>　${studioEsc(course.sessionLabel || `${course.sessions || ''} 堂`)}</p><p><strong>單堂</strong>　${studioEsc(course.duration || '')}</p><p><strong>形式</strong>　${studioEsc(course.format || '')}</p><p><strong>費用</strong><br>${fee}</p></section>`);
           html = html.replace('<p class="lead" id="detail"></p>', `<p class="lead" id="detail">${studioEsc(course.detail || course.summary || '')}</p>`);
           html = html.replace('<ul class="feature-list" id="outcomes"></ul>', `<ul class="feature-list" id="outcomes">${bullets(course.outcomes)}</ul>`);
           html = html.replace('<ul class="feature-list" id="features"></ul>', `<ul class="feature-list" id="features">${bullets(course.features)}</ul>`);

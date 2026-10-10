@@ -58,9 +58,11 @@
       const rows = data.courses || [];
       document.getElementById('courses').innerHTML = rows.length
         ? rows.map((c) => {
-          const price = c.priceLabel
+          const price = Array.isArray(c.plans) && c.plans.length
+            ? c.plans.map((plan) => `<p class="meta"><strong>${esc(plan.name)}</strong>　${esc(plan.priceLabel)}</p>`).join('')
+            : (c.priceLabel
             ? `<p class="meta"><strong>${esc(c.priceLabel)}</strong>${c.earlyBirdLabel ? `　${esc(c.earlyBirdLabel)}` : ''}</p>`
-            : '';
+            : '');
           const meta = [c.sessionLabel || (c.sessions ? `${c.sessions} 堂` : ''), c.format].filter(Boolean).join('　');
           return `
         <article class="item">

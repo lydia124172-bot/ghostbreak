@@ -29,7 +29,11 @@ fetch('/api/config')
         <p><strong>堂數</strong><br>${escapeHtml(course.sessionLabel || `${course.sessions || ''} 堂`)}</p>
         <p><strong>單堂</strong><br>${escapeHtml(course.duration || '')}</p>
         <p><strong>形式</strong><br>${escapeHtml(course.format || '')}</p>
-        <p><strong>費用</strong><br>${escapeHtml(course.priceLabel || '')}${course.earlyBirdLabel ? `<br><span class="meta">${escapeHtml(course.earlyBirdLabel)}</span>` : ''}</p>
+        <p><strong>費用</strong><br>${
+          Array.isArray(course.plans) && course.plans.length
+            ? course.plans.map((plan) => `<strong>${escapeHtml(plan.name)}</strong>　${escapeHtml(plan.priceLabel)}<br><span class="meta">${escapeHtml(plan.fit || '')}</span>`).join('<br>')
+            : `${escapeHtml(course.priceLabel || '')}${course.earlyBirdLabel ? `<br><span class="meta">${escapeHtml(course.earlyBirdLabel)}</span>` : ''}`
+        }</p>
       </div>
     `;
     document.getElementById('detail').textContent = course.detail || course.summary || '';

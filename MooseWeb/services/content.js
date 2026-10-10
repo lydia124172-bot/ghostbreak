@@ -4,6 +4,7 @@ const accounts = require('./accounts');
 
 /** 每次讀設定都重載 site.js，避免長跑進程卡在舊 require 快取（後台 content.json 仍會被程式碼預設覆蓋同名 id）。 */
 function loadSiteDefaults() {
+  delete require.cache[require.resolve('../data/courses-full')];
   delete require.cache[require.resolve('../data/site')];
   return require('../data/site');
 }
