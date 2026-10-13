@@ -29,6 +29,7 @@ const storyVideo = require('./services/story-video');
 const storyScript = require('./services/story-script');
 const dramaVideo = require('./services/drama-video');
 const dramaScript = require('./services/drama-script');
+const toonPlan = require('./services/toon-plan');
 const brollPlanner = require('./services/broll-planner');
 const brollJob = require('./services/broll-job');
 const stockVideo = require('./services/stock-video');
@@ -294,6 +295,19 @@ app.get('/hire', (req, res) => redirectStudio(req, res, '/hire'));
 app.get('/drama', (req, res) => {
   if (!isOwner(req)) return res.redirect(302, '/story');
   return sendPage(req, res, 'drama.html');
+});
+app.get('/toon', (req, res) => {
+  if (!isOwner(req)) return res.redirect(302, '/admin');
+  return sendPage(req, res, 'toon.html');
+});
+app.post('/api/toon/plan', express.json({ limit: '80kb' }), async (req, res) => {
+  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
+  try {
+    const result = await toonPlan.plan(req.body?.script);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message || '切鏡失敗' });
+  }
 });
 app.get('/quintet', (req, res) => res.redirect(302, '/admin'));
 app.get('/broll', (req, res) => {

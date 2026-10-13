@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>動畫短劇 — 麋鹿網後台</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=look5" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/admin">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>內容後台</small></span>
+      </a>
+      <div class="admin-actions">
+        <a class="nav-link" href="/admin">回後台</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <p class="kicker">後台　AI 短劇</p>
+      <h1>動畫短劇</h1>
+      <p class="lead">貼上劇本。這一頁切成橫式分鏡，標出四段交給即夢的 5 秒影片，其餘用定妝照慢推。不在這裡生影片，不扣點。</p>
+    </section>
+
+    <form id="toonForm" class="panel">
+      <h2>劇本</h2>
+      <label class="field" for="script">整段貼上</label>
+      <textarea id="script" class="form-input" rows="16" maxlength="8000" placeholder="把這一集的劇本貼在這裡。"></textarea>
+      <div class="admin-actions">
+        <button class="btn btn-copper" id="planBtn" type="submit">切鏡</button>
+      </div>
+      <p id="toonMsg" class="lead"></p>
+    </form>
+
+    <section id="planBox" class="panel hidden">
+      <h2 id="planTitle">分鏡</h2>
+      <div class="admin-actions">
+        <button class="btn btn-cream" id="copyBtn" type="button">複製四段提示詞</button>
+      </div>
+      <div id="shotList"></div>
+    </section>
+  </main>
+  <script src="/js/toon.js?v=toon1"></script>
+</body>
+</html>
