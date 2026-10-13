@@ -50,16 +50,28 @@ function showMake(text) {
 
 function renderJob(id, job) {
   const list = document.getElementById('videoList');
-  list.innerHTML = (job.shots || []).map((shot, index) => {
+  const videos = (job.shots || []).map((shot, index) => {
     const video = shot.state === 'done'
       ? `<video class="clip-video" controls playsinline src="/api/toon/job/${encodeURIComponent(id)}/shot/${index}"></video>`
       : '';
     const note = shot.error ? escapeHtml(shot.error) : (shot.state === 'done' ? '好了' : (shot.state === 'running' ? '進行中' : '等待'));
     return `<article style="margin-top:18px;">
-      <p class="field">第 ${escapeHtml(shot.n)} 鏡　${escapeHtml(shot.who || '')}　${note}</p>
+      <p class="field">第 ${escapeHtml(shot.n)} 鏡　${escapeHtml(shot.voice || shot.who || '')}　${note}</p>
       ${video}
     </article>`;
   }).join('');
+  const lines = (job.lines || []).map((shot, index) => {
+    const audio = shot.state === 'done'
+      ? `<audio controls src="/api/toon/job/${encodeURIComponent(id)}/line/${index}"></audio>`
+      : '';
+    const note = shot.error ? escapeHtml(shot.error) : (shot.state === 'done' ? '好了' : (shot.state === 'running' ? '配音中' : '等待'));
+    return `<article style="margin-top:14px;">
+      <p class="field">第 ${escapeHtml(shot.n)} 鏡　${escapeHtml(shot.voice || '')}　${note}</p>
+      <p>${escapeHtml(shot.say || '')}</p>
+      ${audio}
+    </article>`;
+  }).join('');
+  list.innerHTML = `${videos}<h2 style="margin-top:28px;">各鏡配音</h2>${lines}`;
 }
 
 async function pollJob(id) {

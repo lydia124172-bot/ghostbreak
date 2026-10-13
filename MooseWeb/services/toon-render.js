@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const clipVideo = require('./clip-video');
@@ -74,6 +75,92 @@ async function waitClip(job) {
   throw new Error('這一鏡逾時。請不要重按。');
 }
 
+const CAST = [
+  {
+    test: /狐/,
+    name: 'Charon',
+    label: '狐',
+    instructions: '用低沉、慢、帶輕蔑的台灣華語男聲說完下面這句，像主管在下命令。尾音收短。不要女聲，不要音效，不要笑。',
+  },
+  {
+    test: /獾/,
+    name: 'Fenrir',
+    label: '獾',
+    instructions: '用又急又兇、音量偏高的台灣華語男聲說完下面這句，像在罵人，句子往前衝。不要女聲，不要音效。',
+  },
+  {
+    test: /貓/,
+    name: 'Enceladus',
+    label: '貓',
+    instructions: '用很累、氣很弱、幾乎不想開口的台灣華語男聲說完下面這句。慢，沒有力氣。不要女聲，不要音效。',
+  },
+  {
+    test: /熊/,
+    name: 'Achird',
+    label: '熊',
+    instructions: '用輕鬆、慢、覺得很好笑的台灣華語男聲說完下面這句，像躺著看戲。不要女聲，不要音效。',
+  },
+];
+
+const NARRATOR = {
+  name: 'Schedar',
+  label: '旁白',
+  instructions: '用平穩、清楚的台灣華語男聲念旁白。不要演角色，不要女聲，不要音效。',
+};
+
+function castOf(who) {
+  const text = String(who || '');
+  return CAST.find((row) => row.test.test(text)) || NARRATOR;
+}
+
+function pcmToWav(pcm, sampleRate) {
+  const header = Buffer.alloc(44);
+  header.write('RIFF', 0);
+  header.writeUInt32LE(36 + pcm.length, 4);
+  header.write('WAVE', 8);
+  header.write('fmt ', 12);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(1, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(sampleRate * 2, 28);
+  header.writeUInt16LE(2, 32);
+  header.writeUInt16LE(16, 34);
+  header.write('data', 36);
+  header.writeUInt32LE(pcm.length, 40);
+  return Buffer.concat([header, pcm]);
+}
+
+async function speakCast(line, cast) {
+  const key = String(process.env.GEMINI_API_KEY || '').trim();
+  if (!key) throw new Error('配音尚未開通。');
+  const text = String(line || '').replace(/\s+/g, ' ').trim();
+  if (!text) throw new Error('這一鏡沒有台詞。');
+  const model = process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts';
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: `${cast.instructions}\n${text}` }] }],
+      generationConfig: {
+        responseModalities: ['AUDIO'],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: cast.name } } },
+      },
+    }),
+    signal: AbortSignal.timeout(60000),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error('配音沒有做成，請再試一次。');
+  const part = json.candidates?.[0]?.content?.parts?.find((row) => row.inlineData || row.inline_data) || {};
+  const blob = part.inlineData || part.inline_data || {};
+  if (!blob.data) throw new Error('配音沒有做成，請再試一次。');
+  const raw = Buffer.from(blob.data, 'base64');
+  const mime = blob.mimeType || blob.mime_type || '';
+  if (/wav/i.test(mime)) return raw;
+  const rate = Number(String(mime).match(/rate=(\d+)/i)?.[1]) || 24000;
+  return pcmToWav(raw, rate);
+}
+
 function movingShots(shots) {
   const list = (Array.isArray(shots) ? shots : []).filter((shot) => shot && shot.motion && String(shot.prompt || '').trim());
   if (list.length !== 4) throw new Error('要先切出正好四段要動的鏡頭。');
@@ -109,7 +196,7 @@ async function submitTurbo(stillDataUrl, prompt) {
   return { requestId, model, statusUrl: urls.statusUrl, responseUrl: urls.responseUrl };
 }
 
-async function oneClip(shot) {
+async function oneClip(shot, audioBuf) {
   const still = await geminiStill(shot.prompt);
   const submitted = await submitTurbo(still, [
     shot.prompt,
@@ -118,22 +205,58 @@ async function oneClip(shot) {
     'No speech bubbles, nameplates, subtitles, or readable text.',
   ].join(' '));
   const url = await waitClip(submitted);
-  const file = await clipVideo.finish(url, { duration: '5', engine: 'hailuo' });
+  const temp = path.join(os.tmpdir(), `toon-line-${Date.now()}.wav`);
+  if (audioBuf) fs.writeFileSync(temp, audioBuf);
+  const file = await clipVideo.finish(url, { duration: '5', engine: 'hailuo', audioPath: audioBuf ? temp : '' });
   return file.buffer;
 }
 
-async function run(id, shots) {
+function spokenShots(shots) {
+  return (Array.isArray(shots) ? shots : [])
+    .map((shot) => ({
+      n: Number(shot.n) || 0,
+      say: String(shot.say || '').trim().slice(0, 240),
+      who: String(shot.who || '').trim().slice(0, 20),
+    }))
+    .filter((shot) => shot.say);
+}
+
+async function run(id, shots, lines) {
   const folder = folderOf(id);
   const status = readStatus(id);
+  const audio = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const cast = castOf(lines[i].who);
+    status.step = `第 ${lines[i].n} 鏡配音：${cast.label}`;
+    status.lines[i].state = 'running';
+    status.lines[i].voice = cast.label;
+    writeStatus(folder, status);
+    try {
+      const wav = await speakCast(lines[i].say, cast);
+      fs.writeFileSync(path.join(folder, `line-${i}.wav`), wav);
+      audio[i] = wav;
+      status.lines[i].state = 'done';
+    } catch (err) {
+      status.lines[i].state = 'error';
+      status.lines[i].error = String(err && err.message || '配音失敗').slice(0, 180);
+      status.status = 'error';
+      status.step = status.lines[i].error;
+      writeStatus(folder, status);
+      return;
+    }
+    writeStatus(folder, status);
+  }
   for (let i = 0; i < shots.length; i += 1) {
     status.step = `第 ${shots[i].n} 鏡：先畫靜圖，再做成 5 秒`;
     status.shots[i].state = 'running';
     writeStatus(folder, status);
+    const heard = lines.findIndex((line) => line.n === shots[i].n);
     try {
-      const video = await oneClip(shots[i]);
+      const video = await oneClip(shots[i], heard >= 0 ? audio[heard] : null);
       fs.writeFileSync(path.join(folder, `shot-${i}.mp4`), video);
       status.shots[i].state = 'done';
       status.shots[i].file = i;
+      status.shots[i].voice = castOf(shots[i].who).label;
     } catch (err) {
       status.shots[i].state = 'error';
       status.shots[i].error = String(err && err.message || '這一鏡失敗').slice(0, 180);
@@ -145,7 +268,7 @@ async function run(id, shots) {
     writeStatus(folder, status);
   }
   status.status = 'done';
-  status.step = '四段都好了。下載後放進剪映，其餘鏡頭用定妝照。';
+  status.step = '四段影片和各鏡配音都好了。狐、獾、貓、熊是四個不同的男聲。';
   writeStatus(folder, status);
 }
 
@@ -153,14 +276,16 @@ function start(shots) {
   if (!String(process.env.GEMINI_API_KEY || '').trim()) throw new Error('靜圖尚未開通。');
   if (!clipVideo.configured()) throw new Error('生片尚未開通。');
   const moving = movingShots(shots);
+  const lines = spokenShots(shots);
   const id = crypto.randomBytes(8).toString('hex');
   const folder = path.join(dataRoot(), 'toon', id);
   writeStatus(folder, {
     status: 'running',
-    step: '已收到，開始畫第 1 張',
-    shots: moving.map((shot) => ({ n: shot.n, who: shot.who, say: shot.say, state: 'wait' })),
+    step: '已收到，先配音',
+    shots: moving.map((shot) => ({ n: shot.n, who: shot.who, say: shot.say, voice: castOf(shot.who).label, state: 'wait' })),
+    lines: lines.map((shot) => ({ n: shot.n, who: shot.who, say: shot.say, voice: castOf(shot.who).label, state: 'wait' })),
   });
-  run(id, moving).catch((err) => {
+  run(id, moving, lines).catch((err) => {
     const status = readStatus(id) || { shots: [] };
     status.status = 'error';
     status.step = String(err && err.message || '生片失敗').slice(0, 180);
@@ -177,4 +302,12 @@ function shotFile(id, index) {
   return fs.existsSync(file) ? file : '';
 }
 
-module.exports = { start, readStatus, shotFile };
+function lineFile(id, index) {
+  const folder = folderOf(id);
+  const n = Number(index);
+  if (!folder || !Number.isInteger(n) || n < 0 || n > 20) return '';
+  const file = path.join(folder, `line-${n}.wav`);
+  return fs.existsSync(file) ? file : '';
+}
+
+module.exports = { start, readStatus, shotFile, lineFile };

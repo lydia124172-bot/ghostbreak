@@ -333,6 +333,14 @@ app.get('/api/toon/job/:id/shot/:index', (req, res) => {
     if (err && !res.headersSent) res.status(404).end();
   });
 });
+app.get('/api/toon/job/:id/line/:index', (req, res) => {
+  if (!isOwner(req)) return res.status(404).end();
+  const file = toonRender.lineFile(req.params.id, req.params.index);
+  if (!file) return res.status(404).end();
+  res.sendFile(file, { dotfiles: 'allow' }, (err) => {
+    if (err && !res.headersSent) res.status(404).end();
+  });
+});
 app.get('/quintet', (req, res) => res.redirect(302, '/admin'));
 app.get('/broll', (req, res) => {
   if (!BROLL_OPEN || !isOwner(req)) return res.redirect(302, '/admin');

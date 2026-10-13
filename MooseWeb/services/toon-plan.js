@@ -19,6 +19,7 @@ function promptText(script) {
     '3. 正好 4 鏡 motion 為 true。只挑有明確動作的鏡頭：手、摔、喝、縮、敲。其餘 motion 為 false，prompt 為空字串。',
     '4. motion 為 true 的 prompt 用英文，一段，描述 5 秒、一個動作、16:9。不要可讀名牌，不要多出的人。',
     '5. picture 用繁體中文，給剪輯的人看。',
+    '7. who 只寫說話的人：角色自己說的話寫狐、獾、貓或熊。敘述句才寫旁白。不要把角色台詞也標成旁白。',
     '6. 若劇本出現這些角色，prompt 必須沿用對應外貌：',
     '資本狐：the same red fox with a cream muzzle, tall ears, narrow amber eyes, navy pinstripe suit, white shirt, and gold tie.',
     '背債獾：the same badger with a white stripe, black eye mask, thick round glasses, tired eyes, pinstripe vest, and brown tie.',
