@@ -17,6 +17,8 @@ function showMsg(text) {
 }
 
 let lastPrompts = '';
+let lastPlan = null;
+let makeTimer = 0;
 
 function renderPlan(plan) {
   const box = document.getElementById('planBox');
@@ -27,7 +29,7 @@ function renderPlan(plan) {
   list.innerHTML = (plan.shots || []).map((shot) => {
     const kind = shot.motion ? '要生片' : '定妝照';
     const prompt = shot.motion
-      ? `<label class="field">即夢提示詞</label><textarea class="form-input" rows="4" readonly>${escapeHtml(shot.prompt)}</textarea>`
+      ? `<label class="field">這一鏡</label><textarea class="form-input" rows="4" readonly>${escapeHtml(shot.prompt)}</textarea>`
       : '';
     return `<article style="margin-top:18px;">
       <p class="field">第 ${shot.n} 鏡　${escapeHtml(kind)}　${escapeHtml(shot.who)}</p>
@@ -36,8 +38,46 @@ function renderPlan(plan) {
       ${prompt}
     </article>`;
   }).join('');
+  lastPlan = plan;
   box.classList.remove('hidden');
   box.scrollIntoView({ block: 'start' });
+}
+
+function showMake(text) {
+  const el = document.getElementById('makeMsg');
+  if (el) el.textContent = text;
+}
+
+function renderJob(id, job) {
+  const list = document.getElementById('videoList');
+  list.innerHTML = (job.shots || []).map((shot, index) => {
+    const video = shot.state === 'done'
+      ? `<video class="clip-video" controls playsinline src="/api/toon/job/${encodeURIComponent(id)}/shot/${index}"></video>`
+      : '';
+    const note = shot.error ? escapeHtml(shot.error) : (shot.state === 'done' ? '好了' : (shot.state === 'running' ? '進行中' : '等待'));
+    return `<article style="margin-top:18px;">
+      <p class="field">第 ${escapeHtml(shot.n)} 鏡　${escapeHtml(shot.who || '')}　${note}</p>
+      ${video}
+    </article>`;
+  }).join('');
+}
+
+async function pollJob(id) {
+  const res = await fetch('/api/toon/job/' + encodeURIComponent(id), { headers: tokenHeaders(false) });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || '找不到這次生片');
+  renderJob(id, body);
+  showMake(body.step || '');
+  if (body.status === 'done' || body.status === 'error') {
+    document.getElementById('makeBtn').disabled = false;
+    return;
+  }
+  makeTimer = window.setTimeout(() => {
+    pollJob(id).catch((err) => {
+      showMake(err.message || '生片中斷');
+      document.getElementById('makeBtn').disabled = false;
+    });
+  }, 4000);
 }
 
 document.getElementById('toonForm').addEventListener('submit', async (event) => {
@@ -55,10 +95,34 @@ document.getElementById('toonForm').addEventListener('submit', async (event) => 
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '切鏡失敗');
     renderPlan(body);
-    showMsg('已切好。四段提示詞複製到即夢，每段生 5 秒。');
+    showMsg('已切好。按「在這裡生四段」，這一頁會畫靜圖並做成影片。');
   } catch (err) {
     showMsg(err.message || '切鏡失敗');
   } finally {
+    button.disabled = false;
+  }
+});
+
+document.getElementById('makeBtn').addEventListener('click', async () => {
+  if (!lastPlan || !Array.isArray(lastPlan.shots)) {
+    showMake('請先切鏡。');
+    return;
+  }
+  const button = document.getElementById('makeBtn');
+  window.clearTimeout(makeTimer);
+  button.disabled = true;
+  showMake('已開始。四段會一鏡一鏡做，請留在這一頁。');
+  try {
+    const res = await fetch('/api/toon/make', {
+      method: 'POST',
+      headers: tokenHeaders(true),
+      body: JSON.stringify({ shots: lastPlan.shots }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || '生片失敗');
+    await pollJob(body.id);
+  } catch (err) {
+    showMake(err.message || '生片失敗');
     button.disabled = false;
   }
 });

@@ -26,7 +26,7 @@
     <section class="hero research-hero">
       <p class="kicker">後台　AI 短劇</p>
       <h1>動畫短劇</h1>
-      <p class="lead">貼上劇本。這一頁切成橫式分鏡，標出四段交給即夢的 5 秒影片，其餘用定妝照慢推。不在這裡生影片，不扣點。</p>
+      <p class="lead">貼上劇本後按切鏡。接著在這一頁直接生四段：Gemini 畫靜圖，Kling 做成 5 秒、不配音。費用從你的 Google 和 fal 扣，不扣站上點數。其餘鏡頭用定妝照。</p>
     </section>
 
     <form id="toonForm" class="panel">
@@ -42,11 +42,14 @@
     <section id="planBox" class="panel hidden">
       <h2 id="planTitle">分鏡</h2>
       <div class="admin-actions">
+        <button class="btn btn-copper" id="makeBtn" type="button">在這裡生四段</button>
         <button class="btn btn-cream" id="copyBtn" type="button">複製四段提示詞</button>
       </div>
+      <p id="makeMsg" class="lead"></p>
+      <div id="videoList"></div>
       <div id="shotList"></div>
     </section>
   </main>
-  <script src="/js/toon.js?v=toon1"></script>
+  <script src="/js/toon.js?v=toon2"></script>
 </body>
 </html>
