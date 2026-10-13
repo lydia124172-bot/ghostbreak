@@ -103,9 +103,9 @@ const CAST = [
 ];
 
 const NARRATOR = {
-  name: 'Schedar',
-  label: '旁白',
-  instructions: '用平穩、清楚的台灣華語男聲念旁白。不要演角色，不要女聲，不要音效。',
+  name: 'Pulcherrima',
+  label: '女主播',
+  instructions: '用有個性的台灣女主播聲音說完下面這句。咬字清楚，語氣帶一點俏皮和態度，像在播一則荒謬新聞，不要平鋪直敘，不要念稿腔，不要男聲，不要音效。',
 };
 
 function castOf(who) {
@@ -268,7 +268,7 @@ async function run(id, shots, lines) {
     writeStatus(folder, status);
   }
   status.status = 'done';
-  status.step = '四段影片和各鏡配音都好了。狐、獾、貓、熊是四個不同的男聲。';
+  status.step = '四段影片和各鏡配音都好了。旁白是女主播，狐、獾、貓、熊是四個不同的男聲。';
   writeStatus(folder, status);
 }
 
