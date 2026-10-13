@@ -23,6 +23,7 @@ const state = {
   skipPhotoReset: false,
   visionReady: false,
   visionLeft: null,
+  musicLeft: null,
   enhanceReady: false,
   videoReady: false,
   exportReady: false,
@@ -638,22 +639,27 @@ async function refreshPlan() {
     state.videoCredits10 = Number(st.videoCredits10 || 7) || 7;
     state.videoCredits15 = Number(st.videoCredits15 || 10) || 10;
     state.visionLeft = st.visionUnlimited ? null : Number(st.visionLeft ?? 1);
+    state.musicLeft = st.musicUnlimited ? null : Number(st.musicLeft ?? 1);
     const make = document.getElementById('makeBtn');
     if (make && !make.disabled) make.textContent = makeBtnLabel();
     const me = await fetch('/api/account/me').then((r) => r.json());
     if (me.ok && me.email) {
       const extra = me.credits ? ` · 剩餘 ${me.credits} 點（換靜態圖扣 1 點）` : ' · 換靜態圖需方案點數';
       const pending = me.pendingPlan ? ' · 方案確認中' : '';
-      const visionBit = st.visionUnlimited ? '' : `　識圖寫文案還可試 ${state.visionLeft} 次`;
-      bar.innerHTML = `目前方案：${me.planName}${extra}${pending}${visionBit}　小廣告 5 秒扣 ${state.videoCredits5} 點、10 秒扣 ${state.videoCredits10} 點、15 秒扣 ${state.videoCredits15} 點　<a href="/account">管理方案</a>`;
+      const trialBit = [
+        st.visionUnlimited ? '' : `識圖寫文案還可試 ${state.visionLeft} 次`,
+        st.musicUnlimited ? '' : `配樂風格還可試 ${state.musicLeft} 次`,
+      ].filter(Boolean).join('，');
+      bar.innerHTML = `目前方案：${me.planName}${extra}${pending}${trialBit ? `　${trialBit}` : ''}　小廣告 5 秒扣 ${state.videoCredits5} 點、10 秒扣 ${state.videoCredits10} 點、15 秒扣 ${state.videoCredits15} 點　<a href="/account">管理方案</a>`;
     } else {
-      const visionNote = st.visionUnlimited
-        ? ''
-        : `識圖寫文案還可試 ${Number(st.visionLeft ?? 1)} 次。`;
-      bar.innerHTML = `排版不必登入。${visionNote}小廣告與進階生圖需方案點數。　<a href="/account">看方案</a>`;
+      const trialNote = [
+        st.visionUnlimited ? '' : `識圖寫文案還可試 ${Number(st.visionLeft ?? 1)} 次`,
+        st.musicUnlimited ? '' : `配樂風格還可試 ${Number(st.musicLeft ?? 1)} 次`,
+      ].filter(Boolean).join('，');
+      bar.innerHTML = `排版不必登入。${trialNote ? `${trialNote}。` : ''}小廣告與進階生圖需方案點數。　<a href="/account">看方案</a>`;
     }
   } catch {
-    bar.innerHTML = '排版不必登入。識圖寫文案沒買方案可試 1 次。　<a href="/account">看方案</a>';
+    bar.innerHTML = '排版不必登入。識圖寫文案與配樂風格沒買方案各可試 1 次。　<a href="/account">看方案</a>';
   }
 }
 
@@ -1347,12 +1353,16 @@ document.getElementById('musicStyleBtn').addEventListener('click', async () => {
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '配樂風格寫作失敗');
+    if (body.unlimited) state.musicLeft = null;
+    else if (body.left != null) state.musicLeft = body.left;
     const box = document.getElementById('musicPrompt');
     box.value = body.prompt || '';
     box.focus();
     box.select();
     try { await navigator.clipboard.writeText(box.value); } catch { /* 仍可手動複製 */ }
-    showClipMsg(`${body.style || '已寫好配樂風格'}。已複製，請到 Suno 貼上編輯。`);
+    const usedUp = state.musicLeft === 0 ? '免費配樂風格已用完，買方案後可不限次數。' : '';
+    showClipMsg(`${body.style || '已寫好配樂風格'}。已複製，請到 Suno 貼上編輯。${usedUp}`);
+    refreshPlan();
   } catch (err) {
     showClipMsg(err.message || '配樂風格寫作失敗');
   } finally {

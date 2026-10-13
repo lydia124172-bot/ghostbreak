@@ -297,7 +297,7 @@ function consumeGuestEnhance(sid) {
   return { ok: true, ...guestEnhanceState(sid) };
 }
 
-const AGENT_TRIAL_TOOLS = ['script', 'live', 'ip', 'hot', 'prompt', 'hook', 'story', 'drama', 'caption'];
+const AGENT_TRIAL_TOOLS = ['script', 'live', 'ip', 'hot', 'prompt', 'hook', 'story', 'drama', 'caption', 'music'];
 
 function agentTrialLimit() {
   const n = Number(process.env.GUEST_AGENT_TRIAL || 1);

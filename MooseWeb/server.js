@@ -1842,6 +1842,7 @@ app.get('/api/clip/status', (req, res) => {
   const sid = clipSid(req, res);
   const guest = clipStore.guestEnhanceState(sid);
   const visionAccess = agentAccess(req, res, 'caption');
+  const musicAccess = agentAccess(req, res, 'music');
   res.json({
     ...clipPub.status(sid),
     vision: clipCaption.configured(),
@@ -1861,6 +1862,9 @@ app.get('/api/clip/status', (req, res) => {
     visionLeft: visionAccess.unlimited ? null : visionAccess.left,
     visionLimit: visionAccess.unlimited ? null : visionAccess.limit,
     visionUnlimited: Boolean(visionAccess.unlimited),
+    musicLeft: musicAccess.unlimited ? null : musicAccess.left,
+    musicLimit: musicAccess.unlimited ? null : musicAccess.limit,
+    musicUnlimited: Boolean(musicAccess.unlimited),
     guestEnhanceLeft: guest.left,
     guestEnhanceLimit: guest.limit,
   });
@@ -1885,6 +1889,15 @@ app.get('/api/clip/oauth/:platform/callback', async (req, res) => {
 });
 
 app.post('/api/clip/music-prompt', express.json({ limit: '200kb' }), async (req, res) => {
+  const access = agentAccess(req, res, 'music');
+  if (!access.unlimited && access.left <= 0) {
+    return res.status(402).json({
+      error: '配樂風格的免費試用已用完（限 1 次）。購買方案後可不限次數，不扣點。',
+      left: 0,
+      limit: access.limit,
+      needPlan: true,
+    });
+  }
   try {
     const result = await clipCaption.writeMusicPrompt({
       product: String(req.body?.product || '').trim(),
@@ -1892,7 +1905,10 @@ app.post('/api/clip/music-prompt', express.json({ limit: '200kb' }), async (req,
       hook: String(req.body?.hook || '').trim(),
       narration: String(req.body?.narration || '').trim(),
     });
-    res.json(result);
+    const extra = access.unlimited
+      ? { paid: true, unlimited: true }
+      : { left: clipStore.consumeGuestAgentTrial(access.bucket, 'music').left, limit: access.limit };
+    res.json({ ...result, ...extra });
   } catch (err) {
     res.status(400).json({ error: err.message || '配樂風格寫作失敗' });
   }
