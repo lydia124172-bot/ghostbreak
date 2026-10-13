@@ -11,8 +11,6 @@ function applyPublicNav() {
   const kitPaths = ['/saas', '/clip', '/story', '/talk', '/dress', '/model', '/script', '/live', '/ip', '/hot', '/prompt', '/hook', '/edit', '/design', '/move'];
   const items = [
     { href: '/', label: '首頁', on: path === '/' },
-    { href: '/skills', label: '獲客地圖', on: path === '/skills' },
-    { href: '/hire', label: '做網站', on: path === '/hire' },
     { href: '/saas', label: '我做的付費工具', on: kitPaths.includes(path) },
   ];
   nav.innerHTML = items.map((item) =>
@@ -81,7 +79,9 @@ function applyFooterExtras() {
   if (!box || box.dataset.extra) return;
   box.dataset.extra = '1';
   [
-    { href: 'https://bafuholdings.com/', label: '前往工作室' },
+    { href: 'https://bafuholdings.com/skills', label: '獲客地圖' },
+    { href: 'https://bafuholdings.com/hire', label: '做網站' },
+    { href: 'https://bafuholdings.com/', label: '工作室首頁' },
   ].forEach((item) => {
     if (box.querySelector(`a[href="${item.href}"]`)) return;
     const a = document.createElement('a');

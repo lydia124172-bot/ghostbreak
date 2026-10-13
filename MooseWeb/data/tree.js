@@ -200,17 +200,6 @@ module.exports = {
       summary: '未購方案可試用 1 次。購買方案後不限次數，不扣點。',
       modules: [],
     },
-    {
-      id: 'lead-assistant',
-      name: '企業獲客助理',
-      order: 11,
-      status: '籌備中',
-      href: '/hire?service=assistant',
-      paid: true,
-      summary: '放在官網小窗或 LINE 官方帳號。來訪的人會依序被問：想辦什麼、大概預算或時段、姓名和聯絡方式。問完留下名單，並通知負責人跟進。',
-      modules: [],
-    },
-
   ],
   plans: [
     {

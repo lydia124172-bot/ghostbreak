@@ -776,7 +776,7 @@ function studioEsc(value) {
 function studioHref(href) {
   const value = String(href || '');
   if (!value || /^https?:\/\//i.test(value) || value.startsWith('#')) return value;
-  if (/^\/(works|courses|course|hire)(\?|$|\/)/.test(value)) return value;
+  if (/^\/(works|courses|course|hire|skills)(\?|$|\/)/.test(value)) return value;
   if (value.startsWith('/')) return `${MOOSE_ORIGIN}${value}`;
   return value;
 }
@@ -788,6 +788,16 @@ function workHidden(work) {
   return String(work.href || '').replace(/\/$/, '') === '/model';
 }
 
+function withStudioLead(works) {
+  const rows = Array.isArray(works) ? works.slice() : [];
+  const lead = (require('./MooseWeb/data/site').works || []).find((work) => work.id === 'lead-check');
+  if (!lead) return rows;
+  const index = rows.findIndex((work) => work.id === 'lead-check');
+  if (index >= 0) rows[index] = lead;
+  else rows.push(lead);
+  return rows;
+}
+
 async function loadStudioConfig() {
   if (studioConfigCache.data && Date.now() - studioConfigCache.at < 60000) return studioConfigCache.data;
   const upstream = await fetch(`${MOOSE_ORIGIN}/api/config`);
@@ -796,9 +806,10 @@ async function loadStudioConfig() {
   const slim = {
     email: data.email || '',
     lineUrl: data.lineUrl || '',
-    works: data.works || [],
+    works: withStudioLead(data.works || []),
     courses: data.courses || [],
     hire: data.hire || [],
+    leadSuite: data.leadSuite || null,
     faqs: data.faqs || [],
   };
   studioConfigCache = { at: Date.now(), data: slim };
@@ -843,8 +854,27 @@ function renderStudioCourses(courses) {
   }).join('');
 }
 
+function renderStudioLeadSuite(suite) {
+  if (!suite || !Array.isArray(suite.items) || !suite.items.length) return '';
+  const cards = suite.items.map((row) => {
+    const href = studioHref(row.href || '#');
+    const ext = /^https?:\/\//i.test(href);
+    return `<a class="lead-suite-card" href="${studioEsc(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>
+      <span class="lead-suite-tag">${studioEsc(row.tag || '')}</span>
+      <strong>${studioEsc(row.name || '')}</strong>
+      <span class="meta">${studioEsc(row.summary || '')}</span>
+    </a>`;
+  }).join('');
+  return `<p class="kicker">${studioEsc(suite.title || '獲客相關')}</p>
+    <h2>${studioEsc(suite.title || '獲客相關')}</h2>
+    <p class="lead">${studioEsc(suite.lead || '')}</p>
+    <div class="lead-suite-grid">${cards}</div>`;
+}
+
+const HIRE_IN_LEAD_SUITE = new Set(['assistant', 'lead-dev']);
+
 function renderStudioHire(items) {
-  return (items || []).map((item) => {
+  return (items || []).filter((item) => !HIRE_IN_LEAD_SUITE.has(item.id)).map((item) => {
     const features = (item.features || []).map((line) => `<li>${studioEsc(line)}</li>`).join('');
     const examples = (item.examples || []).map((ex) => {
       const card = `<div class="hire-example-card"><strong>${studioEsc(ex.title)}</strong><br><span class="meta">${studioEsc(ex.caption || '')}</span></div>`;
@@ -914,6 +944,7 @@ const STUDIO_PAGES = {
   '/works': 'works.html',
   '/courses': 'courses.html',
   '/course': 'course.html',
+  '/skills': 'skills.html',
   '/hire': 'hire.html',
 };
 Object.entries(STUDIO_PAGES).forEach(([route, file]) => {
@@ -928,6 +959,12 @@ Object.entries(STUDIO_PAGES).forEach(([route, file]) => {
       } else if (route === '/courses') {
         html = html.replace('<section class="list" id="courses"></section>', `<section class="list" id="courses">${renderStudioCourses(data.courses)}</section>`);
       } else if (route === '/hire') {
+        const leadHtml = renderStudioLeadSuite(data.leadSuite);
+        if (leadHtml) {
+          html = html.replace('id="leadSuite" hidden', 'id="leadSuite"');
+          html = html.replace('<section class="lead-suite" id="leadSuite" hidden></section>', `<section class="lead-suite" id="leadSuite">${leadHtml}</section>`);
+          html = html.replace('<section class="lead-suite" id="leadSuite"></section>', `<section class="lead-suite" id="leadSuite">${leadHtml}</section>`);
+        }
         html = html.replace('<section class="list" id="hire"></section>', `<section class="list" id="hire">${renderStudioHire(data.hire)}</section>`);
         html = html.replace('<section class="list" id="faqs"></section>', `<section class="list" id="faqs">${renderStudioFaqs(data.faqs)}</section>`);
         html = html.replace('<select id="inqService" required></select>', `<select id="inqService" required>${renderStudioOptions(data.hire)}</select>`);

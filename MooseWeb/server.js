@@ -80,7 +80,6 @@ const pages = {
   '/match': 'match.html',
   '/research': 'research.html',
   '/ai': 'research.html',
-  '/skills': 'skills.html',
   '/clip': 'clip.html',
   '/story': 'story.html',
   '/talk': 'talk.html',
@@ -290,7 +289,8 @@ function sendPage(req, res, file, status = 200) {
 app.get(['/works', '/agents'], (req, res) => redirectStudio(req, res, '/works'));
 app.get('/courses', (req, res) => redirectStudio(req, res, '/courses'));
 app.get('/course', (req, res) => redirectStudio(req, res, '/course'));
-app.get('/hire', (req, res) => sendPage(req, res, 'hire.html'));
+app.get('/skills', (req, res) => redirectStudio(req, res, '/skills'));
+app.get('/hire', (req, res) => redirectStudio(req, res, '/hire'));
 app.get('/drama', (req, res) => {
   if (!isOwner(req)) return res.redirect(302, '/story');
   return sendPage(req, res, 'drama.html');
