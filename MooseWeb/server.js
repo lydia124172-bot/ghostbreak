@@ -29,8 +29,6 @@ const storyVideo = require('./services/story-video');
 const storyScript = require('./services/story-script');
 const dramaVideo = require('./services/drama-video');
 const dramaScript = require('./services/drama-script');
-const toonPlan = require('./services/toon-plan');
-const toonRender = require('./services/toon-render');
 const brollPlanner = require('./services/broll-planner');
 const brollJob = require('./services/broll-job');
 const stockVideo = require('./services/stock-video');
@@ -296,50 +294,6 @@ app.get('/hire', (req, res) => redirectStudio(req, res, '/hire'));
 app.get('/drama', (req, res) => {
   if (!isOwner(req)) return res.redirect(302, '/story');
   return sendPage(req, res, 'drama.html');
-});
-app.get('/toon', (req, res) => {
-  if (!isOwner(req)) return res.redirect(302, '/admin');
-  return sendPage(req, res, 'toon.html');
-});
-app.post('/api/toon/plan', express.json({ limit: '80kb' }), async (req, res) => {
-  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
-  try {
-    const result = await toonPlan.plan(req.body?.script);
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message || '切鏡失敗' });
-  }
-});
-app.post('/api/toon/make', express.json({ limit: '16mb' }), (req, res) => {
-  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
-  try {
-    const job = toonRender.start(req.body?.shots, req.body?.stills);
-    res.json(job);
-  } catch (err) {
-    res.status(400).json({ error: err.message || '生片失敗' });
-  }
-});
-app.get('/api/toon/job/:id', (req, res) => {
-  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
-  const status = toonRender.readStatus(req.params.id);
-  if (!status) return res.status(404).json({ error: '找不到這次生片。' });
-  res.json({ id: req.params.id, ...status });
-});
-app.get('/api/toon/job/:id/shot/:index', (req, res) => {
-  if (!isOwner(req)) return res.status(404).end();
-  const file = toonRender.shotFile(req.params.id, req.params.index);
-  if (!file) return res.status(404).end();
-  res.sendFile(file, { dotfiles: 'allow' }, (err) => {
-    if (err && !res.headersSent) res.status(404).end();
-  });
-});
-app.get('/api/toon/job/:id/line/:index', (req, res) => {
-  if (!isOwner(req)) return res.status(404).end();
-  const file = toonRender.lineFile(req.params.id, req.params.index);
-  if (!file) return res.status(404).end();
-  res.sendFile(file, { dotfiles: 'allow' }, (err) => {
-    if (err && !res.headersSent) res.status(404).end();
-  });
 });
 app.get('/quintet', (req, res) => res.redirect(302, '/admin'));
 app.get('/broll', (req, res) => {
