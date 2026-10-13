@@ -381,6 +381,7 @@ async function makeMotion() {
         duration,
         resolution: choice.resolution,
         ratio: document.getElementById('motionRatio').value,
+        products: [state.cloth, state.cloth2].filter(Boolean),
         motion: document.getElementById('motionNote').value.trim(),
       }),
     });

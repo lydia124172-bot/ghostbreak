@@ -33,12 +33,13 @@ function emptyContent() {
     email: defaults.email,
     lineUrl: defaults.lineUrl || '',
     heroTitle: '寫稿、出圖、短片、\n換裝與對嘴。',
-    heroLead: '下面的寫稿，沒買方案時每個只能用 1 次；買了方案可以一直寫，不扣點。生圖、短片、換裝、對嘴才扣你帳號裡的點，從麋鹿工具包進去。',
+    heroLead: '下面的寫稿，沒買方案時每個只能用 1 次；買了方案可以一直寫，不扣點。生圖、短片、換裝、改圖、設計、對嘴才扣你帳號裡的點，從「我做的付費工具」進去。',
     workKinds: clone(defaults.workKinds || []),
     products: clone(defaults.products || []),
     works: clone(defaults.works || []),
     courses: clone(defaults.courses || []),
     hire: clone(defaults.hire || []),
+    leadSuite: clone(defaults.leadSuite || { title: '', lead: '', items: [] }),
     faqs: clone(defaults.faqs || []),
   };
 }
@@ -72,6 +73,9 @@ function mergeContent(saved) {
     works: mergeListsById(base.works, saved.works),
     courses: mergeListsById(base.courses, saved.courses),
     hire: mergeListsById(base.hire, saved.hire),
+    leadSuite: saved.leadSuite && typeof saved.leadSuite === 'object'
+      ? { ...base.leadSuite, ...saved.leadSuite }
+      : base.leadSuite,
     faqs: Array.isArray(saved.faqs) ? saved.faqs : base.faqs,
   };
 }
@@ -114,6 +118,11 @@ function canonicalWorks() {
 
 function canonicalHire() {
   return clone(loadSiteDefaults().hire || []);
+}
+
+function canonicalLeadSuite() {
+  const row = loadSiteDefaults().leadSuite;
+  return row && typeof row === 'object' ? clone(row) : { title: '', lead: '', items: [] };
 }
 
 function stripDeprecatedFromSavedRaw(raw) {
@@ -181,6 +190,7 @@ function publicConfig() {
       .filter((row) => row.listed !== false)
       .map(({ notes, wave, ...row }) => row),
     hire: canonicalHire(),
+    leadSuite: canonicalLeadSuite(),
     faqs: data.faqs,
     tree: accounts.publicTree(),
     pay: { ecpay: Boolean(process.env.ECPAY_MERCHANT_ID && process.env.ECPAY_HASH_KEY && process.env.ECPAY_HASH_IV) },

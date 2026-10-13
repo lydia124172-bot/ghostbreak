@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>設計對話 — 麋鹿網</title>
+  <meta name="description" content="用對話做廣告、橫幅與社群圖。可只改字、局部重繪，或套到衣服、手機、包裝。成功一張扣 1 點。" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=look5" />
+  <link rel="stylesheet" href="/css/design.css?v=3" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>MooseWeb</small></span>
+      </a>
+      <button class="menu-btn" id="menuBtn" type="button">選單</button>
+      <nav class="nav" id="nav">
+        <a href="/">首頁</a>
+        <a href="/works">看作品</a>
+        <a href="/courses">上課</a>
+        <a href="/hire">做網站</a>
+        <a href="/saas" class="active">我做的付費工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <img class="tool-banner" src="/images/kit/prompt.jpg?v=5" alt="">
+      <p class="kicker">智能體　成功一張扣 1 點</p>
+      <h1>用對話把圖做出來。</h1>
+      <p class="lead">選一種做法，再用繁體中文或廣東話講你要的畫面。可以從空白生廣告、橫幅、社群圖、海報或商品主圖；也可以上傳舊圖，只換上面的字、只改塗掉的那一塊，或套到衣服、手機、包裝上。下一句會接著改剛才那張。</p>
+      <p class="clip-plan" id="designPlan">需登入並有方案點數。</p>
+    </section>
+
+    <section class="panel clip-panel">
+      <div class="design-tools">
+        <div>
+          <p class="design-label">做法</p>
+          <div class="design-chips" id="workflows"></div>
+        </div>
+        <div id="styleBox">
+          <p class="design-label">風格</p>
+          <div class="design-chips" id="styles"></div>
+        </div>
+        <div id="mockupBox" class="hidden">
+          <p class="design-label">套到哪裡</p>
+          <div class="design-chips" id="mockups"></div>
+        </div>
+        <div id="textBox" class="hidden">
+          <p class="design-label">先上傳圖。圖會先顯示出來，並標出上面的字。點一句，再寫要換成什麼。輸出比例跟原圖，不會把人裁成半身。讀字不扣點。</p>
+          <p id="textWait" class="combo-fit">還沒有圖。請按下面的「上傳要改字的圖」。</p>
+          <div id="textPreview" class="design-text-preview hidden">
+            <div class="design-stage" id="textStage">
+              <img id="textImg" alt="要改字的圖" />
+              <canvas id="textBoxes"></canvas>
+            </div>
+          </div>
+          <div class="design-chips" id="textLines"></div>
+          <p id="textRead" class="combo-fit"></p>
+          <div class="admin-2">
+            <div>
+              <label class="field" for="fromText">圖上原本的字</label>
+              <input id="fromText" class="form-input" maxlength="200" placeholder="點上面讀出的字，或自己填" />
+            </div>
+            <div>
+              <label class="field" for="toText">要換成</label>
+              <input id="toText" class="form-input" maxlength="200" placeholder="例如：本週免運" />
+            </div>
+          </div>
+          <div class="design-actions">
+            <button class="btn btn-ghost" type="button" id="textUploadBtn">上傳要改字的圖</button>
+          </div>
+        </div>
+        <div class="design-row">
+          <div>
+            <label class="field" for="ratio">輸出比例</label>
+            <select id="ratio" class="form-input"></select>
+          </div>
+          <div>
+            <label class="field" for="size">尺寸</label>
+            <select id="size" class="form-input">
+              <option value="1K" selected>1K</option>
+              <option value="2K">2K</option>
+            </select>
+          </div>
+        </div>
+        <p class="combo-fit">圖上要出現的字，請把完整句子寫進去。2K 若這支模型做不到，會改出 1K。成功才扣 1 點。</p>
+      </div>
+
+      <div class="design-log" id="log">
+        <p class="design-empty" id="emptyNote">先選做法。沒有圖也能從空白開始。有圖就上傳，或接著改上一張。</p>
+      </div>
+
+      <div id="inpaintBox" class="hidden">
+        <p class="design-label">畫筆只塗在「要改的圖」上。要放上的 logo 另外傳，不會變成你塗的那張。傳錯就刪。</p>
+        <div class="design-actions">
+          <button class="btn btn-ghost" type="button" id="baseUploadBtn">上傳要塗的圖</button>
+          <button class="btn btn-ghost hidden" type="button" id="clearBase">刪掉要塗的圖</button>
+        </div>
+        <p id="inpaintWait" class="combo-fit">還沒有要塗的圖。先傳這張，再在上面塗你要改的位置。</p>
+        <div id="stageWrap" class="hidden">
+          <div class="design-stage" id="stage">
+            <img id="stageImg" alt="要塗的圖" />
+            <canvas id="mask"></canvas>
+          </div>
+          <div class="design-actions" style="margin-top:8px;">
+            <label class="field" for="brush" style="margin:0;">筆刷</label>
+            <input id="brush" type="range" min="12" max="72" value="36" />
+            <button class="btn btn-ghost" type="button" id="clearMask">清掉塗色</button>
+          </div>
+        </div>
+        <div class="design-logo">
+          <p class="design-label">要放上的圖（選填，例如 logo）</p>
+          <div class="design-actions">
+            <label class="btn btn-ghost design-file">上傳 logo<input id="logoFile" type="file" accept="image/jpeg,image/png,image/webp" /></label>
+            <button class="btn btn-ghost hidden" type="button" id="clearLogo">刪掉 logo</button>
+          </div>
+          <img id="logoPrev" class="design-logo-thumb hidden" alt="要放上的 logo" />
+        </div>
+      </div>
+
+      <form id="designForm" class="design-compose" novalidate>
+        <label class="field" for="note">這張要怎樣</label>
+        <textarea id="note" class="form-input" maxlength="800" placeholder="例如：夏季亞麻襯衫廣告，主標題寫「透氣不黏」，價格 NT$1,280，按鈕寫「立即選購」"></textarea>
+        <div class="design-actions">
+          <label class="btn btn-ghost design-file" id="uploadLabel">上傳圖片<input id="photo" type="file" accept="image/jpeg,image/png,image/webp" /></label>
+          <button class="btn btn-ghost hidden" type="button" id="clearUpload">刪掉上傳的圖</button>
+          <button class="btn btn-copper" type="submit" id="sendBtn">做出這張</button>
+          <span class="combo-fit" id="fileName"></span>
+        </div>
+        <p id="designMsg" class="combo-fit"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© 麋鹿網　版權由 Lydia Global Company 所有</span>
+      <nav class="footer-links">
+        <a href="/privacy">隱私權政策</a>
+        <a href="/terms">服務條款</a>
+        <a class="footer-line hidden" data-line href="#">加入 LINE 官方帳號</a>
+      </nav>
+    </div>
+  </footer>
+  <script src="/js/site.js?v=studio10"></script>
+  <script src="/js/design.js?v=4"></script>
+</body>
+</html>

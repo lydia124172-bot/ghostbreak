@@ -31,10 +31,8 @@
 
   <main class="wrap">
     <section class="page-head">
-      <p class="kicker">方案分開買</p>
-      <h1>買方案需先註冊帳號</h1>
-      <p class="lead">商品短片、劇本廣告可線上付款，成功即開通。金流未設定時改走 LINE。</p>
-      <p class="lead"><a href="/clip">商品短片</a></p>
+      <h1 id="pageTitle">買方案需先註冊帳號</h1>
+      <p class="lead" id="pageLead">先註冊或登入，再選要買的方案。</p>
     </section>
 
     <section id="guestBox" class="account-auth hidden">
@@ -80,35 +78,25 @@
 
     <section id="memberBox" class="hidden">
       <article class="panel account-now">
-        <form id="nameForm" class="skill-form">
-          <label class="field" for="meName">名稱</label>
-          <input id="meName" class="form-input" maxlength="20" required />
-          <button class="btn btn-cream" type="submit">儲存名稱</button>
-          <p id="nameMsg" class="combo-fit"></p>
-        </form>
         <p class="meta" id="meEmail"></p>
-        <h2 id="mePlan"></h2>
         <p class="lead" id="meDetail"></p>
         <div class="admin-actions">
           <a class="btn btn-cream" href="/clip">前往商品短片</a>
           <a class="btn btn-cream" href="/story">劇本廣告</a>
           <a class="btn btn-line hidden" data-line href="#">透過 LINE 聯繫</a>
         </div>
-        <p id="planMsg" class="combo-fit"></p>
       </article>
-      <p class="lead" id="billingNote"></p>
       <div id="subBox" class="lead hidden">
         <span id="subText"></span>
         <button class="btn btn-ghost" type="button" id="subCancel">取消自動續約</button>
       </div>
       <label id="autoRenewRow" class="lead hidden"><input type="checkbox" id="autoRenew" checked /> 每月自動續約（信用卡每月自動扣款，隨時可取消）</label>
-      <h3>商品短片</h3>
-      <p class="lead">同一張商品圖接著動，一個鏡頭到底。用點數。分鏡劇情在下面的劇本廣告。</p>
-      <section class="plan-grid" id="planGrid"></section>
-      <h3>劇本廣告</h3>
-      <p class="lead">照劇本走，兩人短對話。10 秒 NT$150，15 秒 NT$225。月用 60 秒 NT$750，兩種長度可以混著做。跟商品短片的點數分開。</p>
-      <section class="plan-grid plan-grid-2" id="storyPlanGrid"></section>
     </section>
+    <p id="planMsg" class="combo-fit"></p>
+    <h3>商品短片</h3>
+    <section class="plan-grid" id="planGrid"></section>
+    <h3>劇本廣告</h3>
+    <section class="plan-grid plan-grid-2" id="storyPlanGrid"></section>
   </main>
 
   <footer class="site-footer">
@@ -126,6 +114,7 @@
     const $ = (id) => document.getElementById(id);
     let tree = { plans: [], billingNote: '' };
     let payReady = false;
+    let loggedIn = false;
 
     function escapeHtml(value) {
       return String(value || '')
@@ -143,41 +132,17 @@
       return data;
     }
 
-    function showGuest() {
-      $('guestBox').classList.remove('hidden');
-      $('memberBox').classList.add('hidden');
-      const token = new URLSearchParams(location.search).get('reset');
-      $('loginForm').classList.toggle('hidden', Boolean(token));
-      $('registerForm').classList.toggle('hidden', Boolean(token));
-      $('forgotForm').classList.add('hidden');
-      $('resetForm').classList.toggle('hidden', !token);
-    }
-
-    function showMember(me) {
-      $('guestBox').classList.add('hidden');
-      $('memberBox').classList.remove('hidden');
-      $('meEmail').textContent = me.email;
-      $('meName').value = me.name || '';
-      const titles = [`商品短片：${me.planName}`];
-      if (me.storyPlanName) titles.push(`劇本廣告：${me.storyPlanName}`);
-      $('mePlan').textContent = titles.join('　·　');
-      const bits = [me.planLabel];
-      if (me.credits) bits.push(`商品短片剩餘 ${me.credits} 點`);
-      if (me.planExpires) bits.push(`商品短片至 ${String(me.planExpires).slice(0, 10)}`);
-      if (me.pendingPlan) bits.push('商品短片確認中');
-      if (me.storyPlanName) bits.push(me.storyPlanLabel || me.storyPlanName);
-      if (me.storyCredits) bits.push(`劇本廣告剩餘 ${me.storyCredits} 秒`);
-      if (me.storyExpires) bits.push(`劇本廣告至 ${String(me.storyExpires).slice(0, 10)}`);
-      if (me.pendingStoryPlan) bits.push('劇本廣告確認中');
-      $('meDetail').textContent = bits.filter(Boolean).join(' · ');
-      $('billingNote').textContent = tree.billingNote || '';
-      $('subBox').classList.toggle('hidden', !me.subscription);
-      $('autoRenewRow').classList.toggle('hidden', !payReady || Boolean(me.subscription));
-      if (me.subscription) $('subText').textContent = `自動續約中：${me.subscription.planName}，每月 NT$${Number(me.subscription.amount).toLocaleString('en-US')}。`;
+    function renderPlans(me) {
       function planButton(plan, currentId, pendingId) {
-        const current = plan.id === currentId;
-        const pending = plan.id === pendingId;
-        const label = current ? '使用中' : pending ? '確認中' : (plan.id === 'free' ? '改為免費' : (payReady ? '線上付款' : '選擇方案'));
+        const current = Boolean(me) && plan.id === currentId;
+        const pending = Boolean(me) && plan.id === pendingId;
+        let label = '前往註冊';
+        if (me) {
+          if (current) label = '使用中';
+          else if (pending) label = '確認中';
+          else if (plan.id === 'free') label = '改為免費';
+          else label = payReady ? '線上付款' : '選擇方案';
+        }
         return `
           <article class="plan-card${current ? ' current' : ''}">
             <p class="meta">${escapeHtml(plan.period)}</p>
@@ -185,14 +150,49 @@
             <p class="plan-price">${escapeHtml(plan.priceLabel)}</p>
             <p class="plan-quota">${escapeHtml(plan.quota || '')}</p>
             <p class="plan-scope">${escapeHtml(plan.scope || '')}</p>
-            <button class="btn ${current ? 'btn-ghost' : 'btn-copper'}" type="button" data-plan="${escapeHtml(plan.id)}" ${current ? 'disabled' : ''}>${label}</button>
+            <button class="btn ${current ? 'btn-ghost' : 'btn-copper'}" type="button" data-plan="${escapeHtml(plan.id)}" data-pending="${pending ? '1' : ''}" ${current ? 'disabled' : ''}>${label}</button>
           </article>
         `;
       }
       const clipPlans = (tree.plans || []).filter((plan) => (plan.product || 'mooseclip') === 'mooseclip');
-      $('planGrid').innerHTML = clipPlans.map((plan) => planButton(plan, me.plan, me.pendingPlan)).join('');
       const storyPlans = (tree.plans || []).filter((plan) => plan.product === 'storyclip');
-      $('storyPlanGrid').innerHTML = storyPlans.map((plan) => planButton(plan, me.storyPlan, me.pendingStoryPlan)).join('');
+      $('planGrid').innerHTML = clipPlans.map((plan) => planButton(plan, me && me.plan, me && me.pendingPlan)).join('');
+      $('storyPlanGrid').innerHTML = storyPlans.map((plan) => planButton(plan, me && me.storyPlan, me && me.pendingStoryPlan)).join('');
+    }
+
+    function showGuest() {
+      loggedIn = false;
+      $('pageTitle').textContent = '買方案需先註冊帳號';
+      $('pageLead').textContent = '先選方案。按鈕會把你帶到上面的註冊表單。';
+      $('pageLead').classList.remove('hidden');
+      $('guestBox').classList.remove('hidden');
+      $('memberBox').classList.add('hidden');
+      const token = new URLSearchParams(location.search).get('reset');
+      $('loginForm').classList.toggle('hidden', Boolean(token));
+      $('registerForm').classList.toggle('hidden', Boolean(token));
+      $('forgotForm').classList.add('hidden');
+      $('resetForm').classList.toggle('hidden', !token);
+      renderPlans(null);
+    }
+
+    function showMember(me) {
+      loggedIn = true;
+      $('pageTitle').textContent = '選擇方案';
+      $('pageLead').classList.add('hidden');
+      $('guestBox').classList.add('hidden');
+      $('memberBox').classList.remove('hidden');
+      $('meEmail').textContent = me.email;
+      const bits = [];
+      if (me.credits) bits.push(`商品短片剩餘 ${me.credits} 點`);
+      if (me.planExpires) bits.push(`商品短片至 ${String(me.planExpires).slice(0, 10)}`);
+      if (me.storyCredits) bits.push(`劇本廣告剩餘 ${me.storyCredits} 秒`);
+      if (me.storyExpires) bits.push(`劇本廣告至 ${String(me.storyExpires).slice(0, 10)}`);
+      $('meDetail').textContent = bits.join(' · ');
+      $('meDetail').classList.toggle('hidden', !bits.length);
+      $('subBox').classList.toggle('hidden', !me.subscription);
+      $('autoRenewRow').classList.toggle('hidden', !payReady || Boolean(me.subscription));
+      if (me.subscription) $('subText').textContent = `自動續約中：${me.subscription.planName}，每月 NT$${Number(me.subscription.amount).toLocaleString('en-US')}。`;
+      renderPlans(me);
     }
 
     async function refresh() {
@@ -206,8 +206,8 @@
       $('loginMsg').textContent = '';
       try {
         await api('/api/account/login', { email: $('loginEmail').value, password: $('loginPass').value });
-        if (window.mooseRefreshNav) await window.mooseRefreshNav();
         await refresh();
+        if (window.mooseRefreshNav) await window.mooseRefreshNav();
       } catch (err) {
         $('loginMsg').textContent = err.message;
       }
@@ -252,7 +252,6 @@
       try {
         await api('/api/account/reset', { token, password: $('resetPass').value });
         history.replaceState({}, '', '/account');
-        if (window.mooseRefreshNav) await window.mooseRefreshNav();
         await refresh();
       } catch (err) {
         $('resetMsg').textContent = err.message;
@@ -265,58 +264,77 @@
       try {
         await api('/api/account/register', { name: $('regName').value, email: $('regEmail').value, password: $('regPass').value });
         if (window.mooseRefreshNav) await window.mooseRefreshNav();
+        const wanted = sessionStorage.getItem('moose_wanted_plan');
+        sessionStorage.removeItem('moose_wanted_plan');
         await refresh();
+        if (wanted) await submitPlan(wanted);
       } catch (err) {
         $('regMsg').textContent = err.message;
-      }
-    });
-
-    $('nameForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      $('nameMsg').textContent = '';
-      try {
-        await api('/api/account/name', { name: $('meName').value });
-        $('nameMsg').textContent = '已儲存。選單會顯示這個名稱。';
-        await refresh();
-      } catch (err) {
-        $('nameMsg').textContent = err.message;
       }
     });
 
     if ($('logoutBtn')) $('logoutBtn').addEventListener('click', async () => {
       await fetch('/api/account/logout', { method: 'POST' });
       showGuest();
+      if (window.mooseRefreshNav) await window.mooseRefreshNav();
     });
+
+    function goRegister(planId) {
+      sessionStorage.setItem('moose_wanted_plan', planId);
+      $('loginForm').classList.remove('hidden');
+      $('registerForm').classList.remove('hidden');
+      $('forgotForm').classList.add('hidden');
+      $('resetForm').classList.add('hidden');
+      $('pageLead').textContent = '請先註冊。完成後會接著處理你剛選的方案。';
+      $('pageLead').classList.remove('hidden');
+      $('registerForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      $('regName').focus();
+    }
+
+    async function submitPlan(planId) {
+      if (payReady && planId !== 'free') {
+        const data = await api('/api/account/pay', { plan: planId, auto: !$('autoRenewRow').classList.contains('hidden') && $('autoRenew').checked });
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = data.action;
+        Object.entries(data.fields || {}).forEach(([name, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        $('planMsg').textContent = '正在前往付款…';
+        form.submit();
+        return;
+      }
+      const data = await api('/api/account/plan', { plan: planId });
+      $('planMsg').textContent = data.message || '已送出';
+      $('planMsg').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      await refresh();
+    }
 
     function bindPlanGrid(id) {
       $(id).addEventListener('click', async (e) => {
         const btn = e.target.closest('[data-plan]');
         if (!btn || btn.disabled) return;
+        const planId = btn.getAttribute('data-plan');
+        if (!loggedIn) {
+          goRegister(planId);
+          return;
+        }
+        if (btn.getAttribute('data-pending') === '1' && !payReady) {
+          $('planMsg').textContent = '這個方案已送出。你已經登入，所以不會進註冊頁。沒有帳號的客人按方案，會到註冊表單。你要看那個表單，請按右上角的登出。';
+          $('planMsg').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
         $('planMsg').textContent = '';
         try {
-          const planId = btn.getAttribute('data-plan');
-          if (payReady && planId !== 'free') {
-            const data = await api('/api/account/pay', { plan: planId, auto: !$('autoRenewRow').classList.contains('hidden') && $('autoRenew').checked });
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = data.action;
-            Object.entries(data.fields || {}).forEach(([name, value]) => {
-              const input = document.createElement('input');
-              input.type = 'hidden';
-              input.name = name;
-              input.value = value;
-              form.appendChild(input);
-            });
-            document.body.appendChild(form);
-            $('planMsg').textContent = '正在前往綠界付款…';
-            form.submit();
-            return;
-          }
-          const data = await api('/api/account/plan', { plan: planId });
-          $('planMsg').textContent = data.message || '已送出';
-          await refresh();
+          await submitPlan(planId);
         } catch (err) {
           $('planMsg').textContent = err.message;
+          $('planMsg').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       });
     }

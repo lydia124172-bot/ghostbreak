@@ -1,9 +1,16 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+if (!String(process.env.OPENAI_API_KEY || '').trim()) {
+  require('dotenv').config({ path: path.join(__dirname, '..', '..', 'yt-script-agent', 'backend', '.env') });
+}
 
 const fs = require('fs');
+const os = require('os');
 const crypto = require('crypto');
+const { spawn } = require('child_process');
+const { Transform } = require('stream');
 const express = require('express');
+const { ZipArchive } = require('archiver');
 const { adminConfigured, login: adminLogin, requireAdmin, isValidToken, readToken } = require('./services/admin-auth');
 const { publicConfig, loadContent, saveContent, upsertItem, removeItem } = require('./services/content');
 const { loadInquiries, addInquiry, removeInquiry } = require('./services/inquiries');
@@ -22,6 +29,9 @@ const storyVideo = require('./services/story-video');
 const storyScript = require('./services/story-script');
 const dramaVideo = require('./services/drama-video');
 const dramaScript = require('./services/drama-script');
+const brollPlanner = require('./services/broll-planner');
+const brollJob = require('./services/broll-job');
+const stockVideo = require('./services/stock-video');
 const scriptAgent = require('./services/script-agent');
 const liveScript = require('./services/live-script');
 const personaAgent = require('./services/persona-agent');
@@ -30,6 +40,8 @@ const promptAgent = require('./services/prompt-agent');
 const hookAgent = require('./services/hook-agent');
 const dressAgent = require('./services/dress-agent');
 const editAgent = require('./services/edit-agent');
+const designAgent = require('./services/design-agent');
+const patchVideo = require('./services/patch-video');
 const modelLock = require('./services/model-lock');
 const accounts = require('./services/accounts');
 const ecpay = require('./services/ecpay');
@@ -51,7 +63,7 @@ const jsonDefault = express.json({
 });
 const largeJsonPost = /^\/api\/(dress|edit|move|model|hook|prompt|script|clip\/(caption|enhance|video|music-prompt)|talk\/video|story\/(script|video)|drama\/(script|video|cast))(\/|$)/;
 app.use((req, res, next) => {
-  if (req.method === 'POST' && largeJsonPost.test(req.path)) return next();
+  if (req.method === 'POST' && (req.path === '/api/patch/upload' || req.path === '/api/quintet' || largeJsonPost.test(req.path))) return next();
   return jsonDefault(req, res, next);
 });
 
@@ -80,7 +92,9 @@ const pages = {
   '/hook': 'hook.html',
   '/dress': 'dress.html',
   '/edit': 'edit.html',
+  '/design': 'design.html',
   '/move': 'move.html',
+  '/patch': 'patch.html',
   '/model': 'model.html',
   '/account': 'account.html',
   '/privacy': 'privacy.html',
@@ -201,7 +215,7 @@ app.delete('/api/admin/inquiries/:id', requireAdmin, (req, res) => {
 });
 
 app.get('/api/admin/accounts', requireAdmin, (_req, res) => {
-  res.json({ accounts: accounts.listAccounts(), plans: accounts.publicTree().plans });
+  res.json({ accounts: accounts.listAccounts(), paid: accounts.paidMembers(), plans: accounts.publicTree().plans });
 });
 
 app.post('/api/admin/accounts/plan', requireAdmin, (req, res) => {
@@ -267,7 +281,8 @@ function sendPage(req, res, file, status = 200) {
     return;
   }
   const origin = requestOrigin(req);
-  const html = withAnalytics(withSocialMeta(fs.readFileSync(full, 'utf8'), origin, req.path || '/', '/og.jpg'), file);
+  const html = withAnalytics(withSocialMeta(fs.readFileSync(full, 'utf8'), origin, req.path || '/', '/og.jpg'), file)
+    .replace(/\/css\/site\.css\?v=[^"']+/g, '/css/site.css?v=look1');
   res.setHeader('Cache-Control', 'no-cache');
   res.status(status).type('html').send(html);
 }
@@ -275,10 +290,410 @@ function sendPage(req, res, file, status = 200) {
 app.get(['/works', '/agents'], (req, res) => redirectStudio(req, res, '/works'));
 app.get('/courses', (req, res) => redirectStudio(req, res, '/courses'));
 app.get('/course', (req, res) => redirectStudio(req, res, '/course'));
-app.get('/hire', (req, res) => redirectStudio(req, res, '/hire'));
+app.get('/hire', (req, res) => sendPage(req, res, 'hire.html'));
 app.get('/drama', (req, res) => {
   if (!isOwner(req)) return res.redirect(302, '/story');
   return sendPage(req, res, 'drama.html');
+});
+app.get('/quintet', (req, res) => res.redirect(302, '/admin'));
+app.get('/broll', (req, res) => {
+  if (!BROLL_OPEN || !isOwner(req)) return res.redirect(302, '/admin');
+  return sendPage(req, res, 'broll.html');
+});
+
+const BROLL_OPEN = process.env.BROLL_OPEN === '1';
+const BROLL_DIR = path.join(__dirname, 'data', 'broll');
+const brollRunning = new Set();
+
+function brollStatus(id) {
+  const file = path.join(BROLL_DIR, id, 'status.json');
+  if (!fs.existsSync(file)) return null;
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+function brollClipFile(id, name) {
+  const base = path.basename(String(name || ''));
+  if (base === 'broll-preview.mp4') {
+    const file = path.join(BROLL_DIR, id, base);
+    return fs.existsSync(file) ? file : null;
+  }
+  if (!/^scene-\d{2}\.mp4$/.test(base)) return null;
+  const file = path.join(BROLL_DIR, id, 'clips', base);
+  return fs.existsSync(file) ? file : null;
+}
+
+function brollApiOff(req, res) {
+  return res.status(404).json({ error: '找不到這個功能。' });
+}
+
+app.get('/api/broll/config', (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  res.json({
+    planner: brollPlanner.configured(),
+    stock_api: stockVideo.configured(),
+    pexels_api: stockVideo.providers().pexels,
+    pixabay_api: stockVideo.providers().pixabay,
+  });
+});
+
+app.post('/api/broll', express.json({ limit: '3mb' }), (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  if (!brollPlanner.configured()) {
+    return res.status(503).json({ error: '未設定 GEMINI_API_KEY，無法分析文案。' });
+  }
+  const script = String(req.body?.script || '').trim();
+  if (script.length < 40) return res.status(400).json({ error: '文案太短，請貼上完整旁白。' });
+  const id = crypto.randomBytes(8).toString('hex');
+  const folder = path.join(BROLL_DIR, id);
+  fs.mkdirSync(folder, { recursive: true });
+  fs.writeFileSync(path.join(folder, 'script.txt'), script, 'utf8');
+  brollJob.writeStatus(folder, { status: 'queued', progress: 2, message: '已收到文案', scenes: [] });
+  res.json({ id });
+  if (brollRunning.has(id)) return;
+  brollRunning.add(id);
+  brollJob
+    .runJob(folder, script)
+    .catch((err) => {
+      brollJob.writeStatus(folder, {
+        status: 'error',
+        progress: 100,
+        message: err.message || '處理失敗',
+      });
+    })
+    .finally(() => brollRunning.delete(id));
+});
+
+app.get('/api/broll/:id', (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const status = brollStatus(req.params.id);
+  if (!status) return res.status(404).json({ error: '找不到任務' });
+  res.json({ id: req.params.id, ...status });
+});
+
+app.get('/api/broll/:id/shotlist', (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const file = path.join(BROLL_DIR, req.params.id, '對照表.md');
+  if (!fs.existsSync(file)) return res.status(404).end();
+  res.download(file, '文案配素材對照表.md', { dotfiles: 'allow' });
+});
+
+app.get('/api/broll/:id/file/:name', (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const file = brollClipFile(req.params.id, req.params.name);
+  if (!file) return res.status(404).end();
+  res.sendFile(file, { dotfiles: 'allow' }, (err) => {
+    if (err && !res.headersSent) res.status(404).end();
+  });
+});
+
+app.post('/api/broll/:id/scene/:sceneIndex/ressearch', express.json({ limit: '32kb' }), async (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const folder = path.join(BROLL_DIR, req.params.id);
+  if (!fs.existsSync(path.join(folder, 'status.json'))) {
+    return res.status(404).json({ error: '找不到任務' });
+  }
+  const query = String(req.body?.query || '').trim();
+  if (!query) return res.status(400).json({ error: '請填搜尋關鍵字（英文較準）。' });
+  try {
+    const scene = await brollJob.ressearchScene(folder, req.params.sceneIndex, query);
+    const status = brollStatus(req.params.id);
+    res.json({ ok: true, scene, id: req.params.id, ...status });
+  } catch (err) {
+    res.status(400).json({ error: err.message || '重新搜尋失敗' });
+  }
+});
+
+app.post('/api/broll/:id/download-all', (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const id = req.params.id;
+  const folder = path.join(BROLL_DIR, id);
+  if (!fs.existsSync(path.join(folder, 'status.json'))) {
+    return res.status(404).json({ error: '找不到任務' });
+  }
+  if (!stockVideo.configured()) {
+    return res.status(503).json({
+      error: '請在 .env 加入 PIXABAY_API_KEY（https://pixabay.com/api/docs/ 登入即可看到）或既有 PEXELS_API_KEY，才能一鍵下載。',
+    });
+  }
+  if (brollRunning.has(id)) return res.status(409).json({ error: '此任務正在處理中，請稍候。' });
+  res.json({ ok: true, id });
+  brollRunning.add(id);
+  brollJob
+    .downloadAllScenes(folder)
+    .catch((err) => {
+      brollJob.writeStatus(folder, {
+        status: 'error',
+        progress: 100,
+        message: err.message || '批量下載失敗',
+      });
+    })
+    .finally(() => brollRunning.delete(id));
+});
+
+app.post('/api/broll/:id/render', (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const id = req.params.id;
+  const folder = path.join(BROLL_DIR, id);
+  if (!fs.existsSync(path.join(folder, 'status.json'))) {
+    return res.status(404).json({ error: '找不到任務' });
+  }
+  if (brollRunning.has(id)) return res.status(409).json({ error: '此任務正在處理中，請稍候。' });
+  res.json({ ok: true, id });
+  brollRunning.add(id);
+  brollJob
+    .renderPreviewJob(folder)
+    .catch((err) => {
+      brollJob.writeStatus(folder, {
+        status: 'done',
+        progress: 100,
+        preview_error: err.message || '合成失敗',
+        message: err.message || '合成預覽片失敗',
+      });
+    })
+    .finally(() => brollRunning.delete(id));
+});
+
+app.get('/api/broll/:id/clips.zip', (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const id = req.params.id;
+  const folder = path.join(BROLL_DIR, id);
+  const clipsDir = path.join(folder, 'clips');
+  if (!fs.existsSync(clipsDir)) return res.status(404).json({ error: '尚無影片檔' });
+  const files = fs.readdirSync(clipsDir).filter((f) => /^scene-\d{2}\.mp4$/.test(f));
+  if (!files.length) return res.status(404).json({ error: '尚無已下載的鏡頭，請先一鍵下載或重新搜尋。' });
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="broll-${id}-clips.zip"`);
+  const archive = new ZipArchive({ zlib: { level: 6 } });
+  archive.on('error', (err) => {
+    if (!res.headersSent) res.status(500).json({ error: err.message || '打包失敗' });
+  });
+  archive.pipe(res);
+  const md = path.join(folder, '對照表.md');
+  if (fs.existsSync(md)) archive.file(md, { name: '對照表.md' });
+  for (const f of files.sort()) {
+    archive.file(path.join(clipsDir, f), { name: `clips/${f}` });
+  }
+  archive.finalize();
+});
+
+const QUINTET_DIR = path.join(__dirname, 'data', 'quintet');
+const QUINTET_ANALYZER = 'C:\\Users\\User\\video-reels\\analyzer.py';
+const quintetJobs = new Map();
+
+function quintetStatus(id) {
+  const file = path.join(QUINTET_DIR, id, 'status.json');
+  if (!fs.existsSync(file)) return null;
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+function quintetDiskName(name) {
+  const base = path.basename(String(name || ''));
+  const legacy = base.match(/^爆款五重奏-(\d+)\.mp4$/);
+  if (legacy) return `reel-${legacy[1].padStart(2, '0')}.mp4`;
+  if (/^reel-0[1-5]\.mp4$/.test(base)) return base;
+  if (base === 'reel-full.mp4' || base === '爆款五重奏-全片混剪.mp4') return 'reel-full.mp4';
+  if (base === '爆款五重奏-精華1分鐘.mp4') return 'reel-01.mp4';
+  return null;
+}
+
+function quintetFile(id, name) {
+  const disk = quintetDiskName(name);
+  if (!disk) return null;
+  const file = path.join(QUINTET_DIR, id, disk);
+  return fs.existsSync(file) ? file : null;
+}
+
+function writeQuintet(folder, data) {
+  fs.writeFileSync(path.join(folder, 'status.json'), JSON.stringify(data), 'utf8');
+}
+
+function startQuintetCut(id, source, folder, seconds) {
+  writeQuintet(folder, {
+    status: 'running', progress: 2, message: '已收到影片，準備精華 1 分鐘', clips: [],
+  });
+  const child = spawn('py', ['-3', QUINTET_ANALYZER, 'cut', source, folder, String(seconds)], {
+    windowsHide: true,
+  });
+  quintetJobs.set(id, child);
+  child.on('exit', () => quintetJobs.delete(id));
+}
+
+function isYouTubeUrl(value) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./, '').toLowerCase();
+    return host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com' || host === 'youtu.be';
+  } catch {
+    return false;
+  }
+}
+
+function downloadYouTube(id, pageUrl, folder, seconds) {
+  writeQuintet(folder, {
+    status: 'running', progress: 1, message: '正在從 YouTube 取得影片，不用先存到桌面', clips: [],
+  });
+  const ffmpegDir = 'C:\\Users\\User\\video-reels\\vendor\\ffmpeg-9.0.2-essentials_build\\bin';
+  const child = spawn('py', [
+    '-3', '-m', 'yt_dlp',
+    '--no-playlist',
+    '--newline',
+    '--ffmpeg-location', ffmpegDir,
+    '--max-filesize', '1500M',
+    '-f', 'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080]/b',
+    '--merge-output-format', 'mp4',
+    '-o', path.join(folder, 'source.%(ext)s'),
+    pageUrl,
+  ], { windowsHide: true });
+  quintetJobs.set(id, child);
+  let tail = '';
+  let settled = false;
+  const take = (buf) => {
+    if (settled) return;
+    tail = (tail + buf.toString('utf8')).slice(-500);
+    const match = tail.match(/(\d+(?:\.\d+)?)%/);
+    if (match) {
+      writeQuintet(folder, {
+        status: 'running',
+        progress: Math.min(8, Math.round(Number(match[1]) / 12)),
+        message: '正在從 YouTube 取得影片',
+        clips: [],
+      });
+    }
+  };
+  child.stdout.on('data', take);
+  child.stderr.on('data', take);
+  child.on('exit', (code) => {
+    settled = true;
+    quintetJobs.delete(id);
+    if (code !== 0) {
+      writeQuintet(folder, {
+        status: 'error',
+        progress: 100,
+        message: '這支 YouTube 影片取不到。請確認連結可公開播放，或改上傳電腦裡的影片。',
+        clips: [],
+      });
+      return;
+    }
+    const source = fs.readdirSync(folder)
+      .filter((name) => name.startsWith('source.'))
+      .map((name) => path.join(folder, name))[0];
+    if (!source) {
+      writeQuintet(folder, {
+        status: 'error', progress: 100, message: 'YouTube 影片沒有存下來。', clips: [],
+      });
+      return;
+    }
+    startQuintetCut(id, source, folder, seconds);
+  });
+}
+
+app.post('/api/quintet/url', (req, res) => {
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const pageUrl = String(req.body?.url || '').trim();
+  if (!isYouTubeUrl(pageUrl)) return res.status(400).json({ error: '請貼上 YouTube 影片連結。' });
+  const seconds = Math.min(60, Math.max(8, Number(req.body?.seconds) || 30));
+  const id = crypto.randomBytes(8).toString('hex');
+  const folder = path.join(QUINTET_DIR, id);
+  fs.mkdirSync(folder, { recursive: true });
+  res.json({ id });
+  downloadYouTube(id, pageUrl, folder, seconds);
+});
+
+app.post('/api/quintet', (req, res) => {
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  req.setTimeout(0);
+  const maxBytes = 1536 * 1024 * 1024;
+  const claimed = Number(req.headers['content-length'] || 0);
+  if (!claimed) return res.status(400).json({ error: '沒有收到影片。' });
+  if (claimed > maxBytes) {
+    res.status(413).json({ error: '影片請小於 1.5GB。' });
+    req.resume();
+    return;
+  }
+  const ext = String(path.extname(req.headers['x-filename'] || '.mp4') || '.mp4').toLowerCase();
+  const allowed = new Set(['.mp4', '.mov', '.mkv', '.webm', '.avi', '.m4v']);
+  if (!allowed.has(ext)) return res.status(400).json({ error: '只支援 mp4、mov、mkv、webm、avi、m4v。' });
+  const seconds = Math.min(60, Math.max(8, Number(req.query.seconds) || 30));
+  const id = crypto.randomBytes(8).toString('hex');
+  const folder = path.join(QUINTET_DIR, id);
+  fs.mkdirSync(folder, { recursive: true });
+  const source = path.join(folder, `source${ext}`);
+  const out = fs.createWriteStream(source);
+  let size = 0;
+  let failed = false;
+  const counter = new Transform({
+    transform(chunk, _enc, done) {
+      size += chunk.length;
+      if (size > maxBytes) {
+        done(new Error('too big'));
+        return;
+      }
+      done(null, chunk);
+    },
+  });
+  function fail(status, error) {
+    if (failed || res.headersSent) return;
+    failed = true;
+    out.destroy();
+    fs.rmSync(folder, { recursive: true, force: true });
+    res.status(status).json({ error });
+    req.destroy();
+  }
+  counter.on('error', () => fail(413, '影片請小於 1.5GB。'));
+  out.on('error', () => fail(400, '上傳失敗，請再試一次。'));
+  out.on('finish', () => {
+    if (failed) return;
+    startQuintetCut(id, source, folder, seconds);
+    res.json({ id });
+  });
+  req.pipe(counter).pipe(out);
+});
+
+app.get('/api/quintet/:id', (req, res) => {
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const status = quintetStatus(req.params.id);
+  if (!status) return res.status(404).json({ error: '找不到這次的剪輯。' });
+  res.json({ id: req.params.id, ...status });
+});
+
+app.get('/api/quintet/:id/file/:name', (req, res) => {
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const file = quintetFile(req.params.id, req.params.name);
+  if (!file) return res.status(404).end();
+  res.sendFile(file, { dotfiles: 'allow' }, (err) => {
+    if (err && !res.headersSent) res.status(404).end();
+  });
+});
+
+app.get('/api/quintet/:id/download/:name', (req, res) => {
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const file = quintetFile(req.params.id, req.params.name);
+  if (!file) return res.status(404).end();
+  let label = path.basename(file);
+  if (label === 'reel-full.mp4') label = '爆款五重奏-全片混剪.mp4';
+  else if (label === 'reel-01.mp4') label = '爆款五重奏-精華1分鐘.mp4';
+  else label = label.replace(/^reel-/, '爆款五重奏-');
+  res.download(file, label, { dotfiles: 'allow' }, (err) => {
+    if (err && !res.headersSent) res.status(404).end();
+  });
+});
+
+app.get('/api/quintet/:id/download-all', (req, res) => {
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const file = path.join(QUINTET_DIR, req.params.id, 'quintet.zip');
+  if (!fs.existsSync(file)) return res.status(404).end();
+  res.download(file, '爆款五重奏-精華1分鐘.zip', { dotfiles: 'allow' }, (err) => {
+    if (err && !res.headersSent) res.status(404).end();
+  });
 });
 
 Object.entries(pages).forEach(([route, file]) => {
@@ -861,6 +1276,99 @@ app.post('/api/edit', express.json({ limit: '12mb' }), async (req, res) => {
   }
 });
 
+function ownedDesignImage(req, res, id) {
+  const row = clipStore.mediaOwned(String(id || '').trim(), clipSid(req, res));
+  if (!row) return '';
+  try {
+    const buf = fs.readFileSync(row.full);
+    if (!buf.length || buf.length > 6 * 1024 * 1024) return '';
+    const mime = /png/i.test(row.mime) ? 'image/png' : /webp/i.test(row.mime) ? 'image/webp' : 'image/jpeg';
+    return `data:${mime};base64,${buf.toString('base64')}`;
+  } catch {
+    return '';
+  }
+}
+
+app.get('/api/design/status', (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  res.json({
+    ...designAgent.publicCatalog(),
+    ready: designAgent.configured(),
+    cost: 1,
+    owner,
+    loggedIn: Boolean(paid && paid.ok),
+    credits: paid ? Number(paid.credits || 0) : 0,
+  });
+});
+
+app.post('/api/design/read', express.json({ limit: '12mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  if (!owner && (!paid || !paid.credits)) {
+    return res.status(402).json({
+      error: '讀出圖上的字需有方案點數，這一步不扣點。作者請先到後台登入。',
+    });
+  }
+  try {
+    const uploaded = String(req.body?.image || '');
+    const image = uploaded.startsWith('data:image/')
+      ? uploaded
+      : ownedDesignImage(req, res, req.body?.imageId);
+    if (!image) return res.status(400).json({ error: '請先上傳要改字的圖。' });
+    const result = await designAgent.readText(image);
+    res.json({ lines: result.lines });
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? '讀字逾時，圖已經顯示，請自己填原本的字。' : (err.message || '讀字失敗');
+    res.status(400).json({ error: msg });
+  }
+});
+
+app.post('/api/design', express.json({ limit: '16mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  if (!owner && (!paid || !paid.credits)) {
+    return res.status(402).json({
+      error: '設計需購買方案點數。作者請先到後台登入，即可直接使用。',
+    });
+  }
+  try {
+    const uploaded = String(req.body?.image || '');
+    const image = uploaded.startsWith('data:image/')
+      ? uploaded
+      : ownedDesignImage(req, res, req.body?.imageId);
+    const result = await designAgent.design({
+      image,
+      marked: String(req.body?.marked || ''),
+      reference: String(req.body?.reference || ''),
+      note: String(req.body?.note || '').trim(),
+      from: String(req.body?.from || '').trim(),
+      to: String(req.body?.to || '').trim(),
+      workflow: String(req.body?.workflow || '').trim(),
+      style: String(req.body?.style || '').trim(),
+      mockup: String(req.body?.mockup || '').trim(),
+      aspectRatio: String(req.body?.aspectRatio || '').trim(),
+      imageSize: String(req.body?.imageSize || '').trim(),
+    });
+    const mediaId = stashEditImage(req, res, result.image);
+    if (!mediaId) return res.status(400).json({ error: '設計暫存失敗，請再試一次。' });
+    const frame = {
+      imageSize: result.imageSize || '',
+      aspectRatio: result.aspectRatio || '',
+      reply: result.reply || '',
+    };
+    if (owner) return res.json({ owner: true, mediaId, ...frame });
+    const account = accounts.consumeCredit(row.id, 1);
+    res.json({ credits: account.credits, mediaId, ...frame });
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? '產出逾時，請不要重按。' : (err.message || '設計失敗');
+    res.status(400).json({ error: msg });
+  }
+});
+
 app.post('/api/dress/stash', express.json({ limit: '8mb' }), (req, res) => {
   const image = String(req.body?.image || '');
   if (!image.startsWith('data:image/')) {
@@ -1015,7 +1523,7 @@ app.post('/api/dress/bg', express.json({ limit: '8mb' }), async (req, res) => {
   }
 });
 
-app.post('/api/dress/video', express.json({ limit: '8mb' }), async (req, res) => {
+app.post('/api/dress/video', express.json({ limit: '16mb' }), async (req, res) => {
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
@@ -1036,13 +1544,25 @@ app.post('/api/dress/video', express.json({ limit: '8mb' }), async (req, res) =>
   if (/忽略(以上|先前|之前|所有)?(指令|規則)|ignore (previous|all) instructions|越獄|jailbreak/i.test(motion)) {
     return res.status(400).json({ error: '無法提供' });
   }
+  const products = (Array.isArray(req.body?.products) ? req.body.products : []).slice(0, 2);
+  let facts = '';
+  try {
+    facts = await clipVideo.garmentFacts(products);
+  } catch (err) {
+    console.log('[dress-video] garment facts skipped', err && err.message);
+  }
+  const stillBody = clipVideo.wantsStillBody(motion);
   try {
     const prompt = [
       `Animate this fashion try-on still into a ${duration}-second photoreal clip.`,
       'Keep the same person: face, hair, skin tone, and identity. Do not swap the face.',
       'Keep the outfit colors, cut, and details unchanged. Do not swap clothes, invent brands, or add a buckle, zipper, pocket, or button that is not already in the still. A tied fabric belt stays a tie, with no metal buckle.',
+      stillBody ? clipVideo.stillBodyRule() : clipVideo.garmentTurnRule(),
+      facts ? `Product reference, copy this construction exactly when any hidden side appears: ${facts}` : '',
       motion
-        ? `Action, performed continuously for the whole clip: ${motion}. This body motion is requested. Do not freeze the pose.`
+        ? (stillBody
+          ? `Expression only, while the body and head stay locked to the first frame: ${motion}. Do not turn or shift the body to perform it.`
+          : `Action, performed continuously for the whole clip: ${motion}. This body motion is requested. Do not freeze the pose.`)
         : 'No requested action. Gentle camera move and natural fabric, hair, or background motion only. Keep the pose.',
       'No captions, subtitles, watermarks, or on-screen text. No lip-sync talking. Single continuous shot.',
     ].join(' ');
@@ -1053,6 +1573,9 @@ app.post('/api/dress/video', express.json({ limit: '8mb' }), async (req, res) =>
       resolution,
       ratio,
       prompt,
+      referenceImages: products,
+      garmentFacts: facts,
+      stillBody,
     });
     pruneVideoJobs();
     const job = {
@@ -1098,7 +1621,7 @@ app.get('/api/move/status', (req, res) => {
   });
 });
 
-app.post('/api/move', express.json({ limit: '8mb' }), async (req, res) => {
+app.post('/api/move', express.json({ limit: '16mb' }), async (req, res) => {
   const owner = isOwner(req);
   const row = currentAccount(req);
   const paid = row ? accounts.publicAccount(row) : null;
@@ -1118,22 +1641,28 @@ app.post('/api/move', express.json({ limit: '8mb' }), async (req, res) => {
   if (/忽略(以上|先前|之前|所有)?(指令|規則)|ignore (previous|all) instructions|越獄|jailbreak/i.test(motion)) {
     return res.status(400).json({ error: '無法提供' });
   }
+  const product = String(req.body?.product || '');
+  const garmentNote = String(req.body?.garmentNote || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (/忽略(以上|先前|之前|所有)?(指令|規則)|ignore (previous|all) instructions|越獄|jailbreak/i.test(garmentNote)) {
+    return res.status(400).json({ error: '無法提供' });
+  }
+  let facts = '';
   try {
-    const prompt = [
-      `Animate this still into a ${duration}-second photoreal clip.`,
-      'Keep the same subject, face, product, colors, and details from the first frame.',
-      'Do not add text, logos, watermarks, or objects that are not already in the still.',
-      motion
-        ? `Action, performed continuously for the whole clip: ${motion}. This body motion is requested. Do not freeze the pose.`
-        : 'No requested action. Gentle camera move and natural motion in fabric, hair, or background only. Keep the pose.',
-      'No captions, subtitles, watermarks, or on-screen text. No lip-sync talking. Single continuous shot.',
-    ].join(' ');
+    facts = await clipVideo.garmentFacts(product ? [product] : []);
+  } catch (err) {
+    console.log('[move-video] garment facts skipped', err && err.message);
+  }
+  try {
+    const lined = clipVideo.moveLines({ duration, garmentNote, motion, facts });
     const submitted = await clipVideo.submit({
       images: [image],
       product: 'still photo',
       duration,
       ratio,
-      prompt,
+      prompt: lined.prompt,
+      referenceImages: product ? [product] : [],
+      garmentFacts: facts,
+      stillBody: lined.stillBody,
     });
     pruneVideoJobs();
     const job = {
@@ -1161,6 +1690,151 @@ app.post('/api/move', express.json({ limit: '8mb' }), async (req, res) => {
   } catch (err) {
     console.log('[move-video] submit failed', err && err.message);
     res.status(400).json({ error: err.message || '生片失敗' });
+  }
+});
+
+const patchUploads = new Map();
+const patchJobs = new Map();
+
+app.get('/api/patch/status', (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  res.json({
+    ready: patchVideo.configured(),
+    cost: 3,
+    owner,
+    loggedIn: Boolean(paid && paid.ok),
+    credits: paid ? Number(paid.credits || 0) : 0,
+  });
+});
+
+app.post('/api/patch/upload', (req, res) => {
+  const maxBytes = 40 * 1024 * 1024;
+  const claimed = Number(req.headers['content-length'] || 0);
+  console.log('[patch] upload start', claimed || '?');
+  if (claimed > maxBytes) {
+    res.status(413).json({ error: '影片請小於 40MB，且最長 20 秒。' });
+    req.resume();
+    return;
+  }
+  const id = crypto.randomUUID();
+  const file = path.join(os.tmpdir(), `moose-patch-${id}.mp4`);
+  const out = fs.createWriteStream(file);
+  let size = 0;
+  let failed = false;
+  const counter = new Transform({
+    transform(chunk, _enc, done) {
+      size += chunk.length;
+      if (size > maxBytes) {
+        done(new Error('too big'));
+        return;
+      }
+      done(null, chunk);
+    },
+  });
+  function fail(status, error) {
+    if (failed || res.headersSent) return;
+    failed = true;
+    out.destroy();
+    fs.unlink(file, () => {});
+    res.status(status).json({ error });
+    req.destroy();
+  }
+  counter.on('error', () => fail(413, '影片請小於 40MB，且最長 20 秒。'));
+  out.on('error', () => fail(400, '上傳失敗，請再試一次。'));
+  out.on('finish', () => {
+    if (failed) return;
+    if (size < 1000) {
+      fs.unlink(file, () => {});
+      return res.status(400).json({ error: '這支影片讀取失敗，請換 mp4 再試。' });
+    }
+    patchUploads.set(id, { file, sid: clipSid(req, res), created: Date.now() });
+    console.log('[patch] upload ok', size);
+    res.json({ uploadId: id });
+  });
+  req.on('error', () => fail(400, '上傳中斷，請再試一次。'));
+  req.pipe(counter).pipe(out);
+});
+
+app.post('/api/patch', express.json({ limit: '2mb' }), async (req, res) => {
+  const owner = isOwner(req);
+  const row = currentAccount(req);
+  const paid = row ? accounts.publicAccount(row) : null;
+  const cost = 3;
+  if (!owner && (!paid || Number(paid.credits || 0) < cost)) {
+    return res.status(402).json({ error: '修片需方案剩餘 3 點以上。作者請先到後台登入。' });
+  }
+  const upload = patchUploads.get(String(req.body?.uploadId || ''));
+  if (!upload || upload.sid !== clipSid(req, res) || !fs.existsSync(upload.file)) {
+    return res.status(400).json({ error: '請先放上要修的影片。' });
+  }
+  try {
+    const submitted = await patchVideo.submitTrack(upload.file, req.body?.marks);
+    const job = {
+      id: crypto.randomUUID(),
+      requestId: submitted.requestId,
+      model: submitted.model,
+      statusUrl: submitted.statusUrl,
+      responseUrl: submitted.responseUrl,
+      file: upload.file,
+      info: submitted.info,
+      prompt: String(req.body?.prompt || '').trim().slice(0, 400),
+      sid: upload.sid,
+      owner,
+      accountId: row && row.id,
+      cost,
+      created: Date.now(),
+      result: null,
+      error: '',
+    };
+    patchJobs.set(job.id, job);
+    console.log('[patch] queued');
+    res.json({ jobId: job.id, status: 'queued', cost });
+  } catch (err) {
+    console.log('[patch] submit failed', err && err.message);
+    res.status(400).json({ error: err.message || '修片失敗' });
+  }
+});
+
+app.get('/api/patch/job/:jobId', async (req, res) => {
+  const job = patchJobs.get(req.params.jobId);
+  if (!job || job.sid !== clipSid(req, res)) return res.status(404).json({ error: '找不到這次修片。' });
+  if (job.result) return res.json(job.result);
+  if (job.error) return res.status(400).json({ error: job.error });
+  try {
+    const peek = await clipVideo.check(job);
+    if (peek.status === 'failed') {
+      job.error = peek.error || '修片失敗';
+      return res.status(400).json({ error: job.error });
+    }
+    if (peek.status !== 'done' || !peek.videoUrl) {
+      return res.json({ jobId: job.id, status: peek.status || 'running' });
+    }
+    if (!job.saving) {
+      job.saving = true;
+      const maskUrl = peek.videoUrl;
+      setImmediate(() => {
+        patchVideo.compose(job.file, maskUrl, job.info, job.prompt).then((outFile) => {
+          const buf = fs.readFileSync(outFile);
+          try { fs.unlinkSync(outFile); } catch { /* 略過 */ }
+          const saved = clipStore.saveMedia(job.sid, 'video', buf, 'video/mp4');
+          const extra = { status: 'done', videoUrl: `/api/clip/media/${saved.id}` };
+          if (job.owner) extra.owner = true;
+          else if (job.accountId) extra.credits = accounts.consumeCredit(job.accountId, job.cost).credits;
+          job.result = extra;
+          job.saving = false;
+          console.log('[patch] done');
+        }).catch((err) => {
+          job.error = err.message || '修片失敗';
+          job.saving = false;
+          console.log('[patch] compose failed', job.error);
+        });
+      });
+    }
+    res.json({ jobId: job.id, status: 'running' });
+  } catch (err) {
+    res.status(400).json({ error: err.message || '修片失敗' });
   }
 });
 
@@ -1836,7 +2510,7 @@ function saveDramaJobs() {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const slim = {};
   for (const [id, job] of dramaJobs) {
-    slim[id] = { ...job, images: undefined };
+    slim[id] = { ...job, images: undefined, running: undefined };
   }
   fs.writeFileSync(DRAMA_JOB_FILE, JSON.stringify(slim, null, 2), 'utf8');
 }
@@ -1856,11 +2530,65 @@ function pruneDramaJobs() {
 function latestDramaJob(sid) {
   let latest = null;
   for (const job of dramaJobs.values()) {
-    if (!job || job.sid !== sid || !job.result || !job.result.videoId) continue;
-    if (!clipStore.getMedia(job.result.videoId)) continue;
+    if (!job || job.sid !== sid) continue;
+    if (job.result && job.result.videoId && !clipStore.getMedia(job.result.videoId)) continue;
     if (!latest || job.created > latest.created) latest = job;
   }
   return latest;
+}
+
+function startDramaJob(job) {
+  if (!job || job.result || job.error || job.running) return;
+  job.running = true;
+  setImmediate(() => {
+    dramaVideo.produce({
+      script: job.script,
+      images: job.images,
+      cast: job.cast,
+      castPrompt: job.castPrompt,
+      language: job.language,
+      style: job.style,
+      onPhase: (phase) => {
+        job.phase = phase;
+        saveDramaJobs();
+      },
+    }).then((fileOut) => {
+      const saved = clipStore.saveMedia(job.sid, 'video', fileOut.buffer, fileOut.mime || 'video/mp4');
+      const extra = { recovered: false, engine: 'drama', scenes: fileOut.scenes };
+      if (job.owner) extra.owner = true;
+      else if (job.accountId) extra.dramaCredits = accounts.consumeDramaCredit(job.accountId, job.cost).dramaCredits;
+      job.result = {
+        status: 'done',
+        jobId: job.id,
+        videoId: saved.id,
+        videoUrl: `/api/clip/media/${saved.id}`,
+        duration: fileOut.duration,
+        ...extra,
+      };
+      job.phase = '完成';
+      job.running = false;
+      job.images = [];
+      job.cast = [];
+      saveDramaJobs();
+      console.log('[drama] done', job.id);
+    }).catch((err) => {
+      job.error = err.message || '短劇失敗';
+      job.running = false;
+      job.images = [];
+      job.cast = [];
+      saveDramaJobs();
+      console.log('[drama] failed', job.error);
+    });
+  });
+}
+
+function resumeDramaJobs() {
+  for (const job of dramaJobs.values()) {
+    if (!job || job.result || job.error) continue;
+    if (Date.now() - job.created > 40 * 60 * 1000) continue;
+    console.log('[drama] resume', job.id, job.phase || '');
+    startDramaJob(job);
+  }
 }
 
 app.use([
@@ -1895,6 +2623,7 @@ app.post('/api/drama/cast', express.json({ limit: '8mb' }), async (req, res) => 
       prompt: String(req.body?.prompt || '').trim(),
       who: String(req.body?.who || '').trim(),
       appeal: String(req.body?.appeal || '').trim(),
+      style: req.body?.style === 'anime' ? 'anime' : 'live',
     });
     res.json({ images: result.images, prompt: result.prompt || '', roles: result.roles || [] });
   } catch (err) {
@@ -1931,6 +2660,15 @@ app.get('/api/drama/cast/kept', (req, res) => {
   res.json({ images });
 });
 
+app.post('/api/drama/cast/drop', express.json({ limit: '20kb' }), (req, res) => {
+  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
+  const id = String(req.body?.id || '').trim();
+  if (!/^[\w.-]+$/.test(id)) return res.status(400).json({ error: '沒有這張圖。' });
+  const rows = loadDramaCast().filter((row) => row && row.id !== id);
+  saveDramaCast(rows);
+  res.json({ ok: true });
+});
+
 app.post('/api/drama/cast/keep', express.json({ limit: '12mb' }), (req, res) => {
   if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
   try {
@@ -1953,6 +2691,8 @@ app.post('/api/drama/script', express.json({ limit: '8mb' }), async (req, res) =
       topic: String(req.body?.topic || '').trim(),
       notes: String(req.body?.notes || '').trim(),
       images: Array.isArray(req.body?.images) ? req.body.images : [],
+      language: req.body?.language === 'en' ? 'en' : 'zh',
+      style: req.body?.style === 'anime' ? 'anime' : 'live',
     });
     res.json({ script: result.script });
   } catch (err) {
@@ -1987,6 +2727,8 @@ app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) =>
         .filter((item) => /^data:image\//.test(item.image))
         .slice(0, 4),
       castPrompt: String(req.body?.castPrompt || '').trim().slice(0, 800),
+      language: req.body?.language === 'en' ? 'en' : 'zh',
+      style: req.body?.style === 'anime' ? 'anime' : 'live',
       phase: '已送出',
       created: Date.now(),
       result: null,
@@ -1994,37 +2736,7 @@ app.post('/api/drama/video', express.json({ limit: '8mb' }), async (req, res) =>
     };
     dramaJobs.set(job.id, job);
     saveDramaJobs();
-    setImmediate(() => {
-      dramaVideo.produce({
-        script: job.script,
-        images: job.images,
-        cast: job.cast,
-        castPrompt: job.castPrompt,
-        onPhase: (phase) => { job.phase = phase; },
-      }).then((fileOut) => {
-        const saved = clipStore.saveMedia(job.sid, 'video', fileOut.buffer, fileOut.mime || 'video/mp4');
-        const extra = { recovered: false, engine: 'drama', scenes: fileOut.scenes };
-        if (job.owner) extra.owner = true;
-        else if (job.accountId) extra.dramaCredits = accounts.consumeDramaCredit(job.accountId, job.cost).dramaCredits;
-        job.result = {
-          status: 'done',
-          jobId: job.id,
-          videoId: saved.id,
-          videoUrl: `/api/clip/media/${saved.id}`,
-          duration: fileOut.duration,
-          ...extra,
-        };
-        job.images = [];
-        job.cast = [];
-        saveDramaJobs();
-      }).catch((err) => {
-        job.error = err.message || '短劇失敗';
-        job.images = [];
-        job.cast = [];
-        saveDramaJobs();
-        console.log('[drama] failed', job.error);
-      });
-    });
+    startDramaJob(job);
     console.log('[drama] queued');
     res.json({ jobId: job.id, status: 'queued' });
   } catch (err) {
@@ -2047,6 +2759,18 @@ app.get('/api/drama/video/last', (req, res) => {
   if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
   const local = latestDramaJob(clipSid(req, res));
   if (local && local.result) return res.json({ ...local.result, recovered: true });
+  if (local && !local.error && !local.result && Date.now() - local.created > 40 * 60 * 1000) {
+    return res.status(404).json({ error: '沒有可取回的短劇。請不要重按產出。' });
+  }
+  if (local && !local.error && !local.result) {
+    return res.json({
+      jobId: local.id,
+      status: local.phase === '已送出' ? 'queued' : 'running',
+      phase: local.phase || '已送出',
+      recovered: true,
+    });
+  }
+  if (local && local.error) return res.status(400).json({ error: local.error });
   return res.status(404).json({ error: '沒有可取回的短劇。請不要重按產出。' });
 });
 
@@ -2228,6 +2952,7 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, async () => {
   await initMail();
+  resumeDramaJobs();
   setInterval(() => {
     clipPub.runDue().catch((err) => console.error('[Clip] 預約發送失敗', err.message));
   }, 60000);

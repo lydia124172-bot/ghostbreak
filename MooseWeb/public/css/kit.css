@@ -1066,7 +1066,16 @@ body.kit .page-head .lead {
   body.kit .kit-hero { padding: 16px 0 6px; }
   body.kit .kit-hero h1 { font-size: 32px; }
   body.kit .kit-hero-art { border-radius: 22px; }
-  body.kit .kit-hero .lead { font-size: 14px; padding: 12px 14px; }
+  body.kit .kit-hero .lead {
+    font-size: 14px;
+    padding: 12px 14px;
+    overflow-wrap: anywhere;
+  }
+  body.kit .tool-list .btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
   body.kit .path-grid,
   body.kit .more-grid { gap: 12px; }
   body.kit .page-head h2 { font-size: 26px; }

@@ -48,6 +48,12 @@ function findByTradeNo(merchantTradeNo) {
   return load().orders.find((row) => row.merchantTradeNo === merchantTradeNo) || null;
 }
 
+function listPaid() {
+  return load().orders
+    .filter((row) => row.status === 'paid')
+    .sort((a, b) => Number(b.paidAt || 0) - Number(a.paidAt || 0));
+}
+
 function markPaid(merchantTradeNo, tradeNo) {
   const store = load();
   const row = store.orders.find((item) => item.merchantTradeNo === merchantTradeNo);
@@ -86,4 +92,4 @@ function markCancelled(merchantTradeNo) {
   return row;
 }
 
-module.exports = { createOrder, findByTradeNo, markPaid, recordRenewal, activeSubscription, markCancelled };
+module.exports = { createOrder, findByTradeNo, listPaid, markPaid, recordRenewal, activeSubscription, markCancelled };

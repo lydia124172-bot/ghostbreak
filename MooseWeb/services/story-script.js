@@ -1,3 +1,9 @@
+const fs = require('fs');
+const path = require('path');
+
+const VOICE_PROMPT = fs.readFileSync(path.join(__dirname, 'story-prompt-voice.txt'), 'utf8');
+const TALK_PROMPT = fs.readFileSync(path.join(__dirname, 'story-prompt-talk.txt'), 'utf8');
+
 function configured() {
   return Boolean(process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY);
 }
@@ -10,24 +16,20 @@ function parseDataUrl(url) {
   return { mime: m[1], b64: m[2] };
 }
 
-function promptText({ product, notes, duration }) {
-  const seconds = duration === '15' ? '15' : '10';
-  const lines = seconds === '15' ? '6 至 10 行' : '4 至 8 行';
-  return [
-    `你是台灣電商質感短片編劇。請寫一支約 ${seconds} 秒、直式 9:16 的商品廣告劇本。`,
-    '語言：繁體中文（台灣，不可簡體）。不要寒暄、不要標題、不要 JSON、不要 markdown。',
-    `直接輸出 ${lines}。先一兩行畫面，接著兩人對談。`,
-    seconds === '15'
-      ? '對談 3 到 4 句，每人一句不要超過 12 個字。'
-      : '對談只寫 2 句，一人一句，每句不要超過 12 個字。',
-    '結構：開場看見商品 → 兩人對著商品說話 → 收尾一句賣點。',
-    '台詞寫成「角色：台詞」，角色只用兩個短名字，例如店員、客人。',
-    '要寫「不要字幕、不要浮水印」。不要寫成旁白。',
-    '有圖就必須對應圖中真實外觀、顏色與使用情境，不可換成別的商品。',
-    product ? `商品：${product}` : '商品名稱未填，請依圖判斷。',
-    notes ? `補充賣點：${notes}` : '',
-    '全文 80 至 420 字。不要說自己是 AI。',
-  ].filter(Boolean).join('\n');
+function scriptMode(requested) {
+  return requested === 'talk' ? 'talk' : 'voice';
+}
+
+function promptText(input) {
+  const base = scriptMode(input && input.mode) === 'talk' ? TALK_PROMPT : VOICE_PROMPT;
+  const seconds = input && input.duration === '15' ? '15' : '10';
+  const note = [`用戶指定時長：${seconds}秒。`];
+  if (input && input.product) note.push(`商品名稱：${input.product}`);
+  if (input && input.notes) note.push(`想強調的賣點：${input.notes}`);
+  if (scriptMode(input && input.mode) === 'talk') {
+    note.push('台詞要好聽、乾淨、有質感，像熟人輕聲聊天。用清楚的中文，不要太台的講法，不要俚語、不要鄉土梗、不要誇張口頭禪。可以有一點幽默，但不要粗話、不要罵人、不要羞辱外表、不要低俗笑話。');
+  }
+  return `${base}\n\n${note.join('\n')}`;
 }
 
 function cleanScript(text) {
@@ -36,7 +38,7 @@ function cleanScript(text) {
     .replace(/^["']|["']$/g, '')
     .trim();
   if (body.length < 12) throw new Error('沒有產出劇本');
-  return body.slice(0, 1200);
+  return body.slice(0, 4000);
 }
 
 async function withTimeout(ms, fn) {
@@ -49,8 +51,8 @@ async function withTimeout(ms, fn) {
   }
 }
 
-async function viaOpenAI({ product, notes, images, duration }) {
-  const content = [{ type: 'text', text: promptText({ product, notes, duration }) }];
+async function viaOpenAI({ product, notes, images, duration, mode }) {
+  const content = [{ type: 'text', text: promptText({ product, notes, duration, mode }) }];
   (images || []).slice(0, 2).forEach((url) => {
     parseDataUrl(url);
     content.push({ type: 'image_url', image_url: { url, detail: 'low' } });
@@ -76,49 +78,69 @@ async function viaOpenAI({ product, notes, images, duration }) {
   return cleanScript(body.choices?.[0]?.message?.content);
 }
 
-async function callGemini(model, parts) {
+function visibleAnswer(json) {
+  const parts = json?.candidates?.[0]?.content?.parts || [];
+  return parts.filter((part) => part && part.text && !part.thought).map((part) => part.text).join('\n');
+}
+
+async function callGemini(model, parts, thinkingLevel) {
   const key = process.env.GEMINI_API_KEY;
-  const body = await withTimeout(16000, async (signal) => {
+  const generationConfig = { maxOutputTokens: 8192 };
+  if (thinkingLevel) generationConfig.thinkingConfig = { thinkingLevel };
+  const body = await withTimeout(75000, async (signal) => {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
       method: 'POST',
       signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts }],
-        generationConfig: /flash-lite/i.test(model)
-          ? { temperature: 0.6, maxOutputTokens: 700 }
-          : { temperature: 0.6, maxOutputTokens: 700, thinkingConfig: { thinkingBudget: 0 } },
+        generationConfig,
       }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error?.message || `寫稿服務 ${res.status}`);
+    const reason = json.candidates?.[0]?.finishReason;
+    if (reason && reason !== 'STOP' && !visibleAnswer(json)) {
+      throw new Error(`寫稿未完成 ${reason}`);
+    }
     return json;
   });
-  const text = body.candidates?.[0]?.content?.parts?.map((p) => p.text).join('\n') || '';
+  const text = visibleAnswer(body);
+  if (text.trim().length < 12) throw new Error('寫稿未完成 EMPTY');
   return cleanScript(text);
 }
 
-async function viaGemini({ product, notes, images, duration }) {
-  const parts = [{ text: promptText({ product, notes, duration }) }];
+function busyGemini(err) {
+  return Boolean(err && (err.name === 'AbortError' || /high demand|overloaded|unavailable|UNAVAILABLE|429|503|AbortError|寫稿未完成/i.test(err.message)));
+}
+
+async function viaGemini({ product, notes, images, duration, mode }) {
+  const parts = [];
   (images || []).slice(0, 2).forEach((url) => {
     const file = parseDataUrl(url);
     parts.push({ inline_data: { mime_type: file.mime, data: file.b64 } });
   });
-  const models = [
-    'gemini-flash-lite-latest',
-    process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite',
-    'gemini-3.6-flash',
-  ];
+  parts.push({ text: promptText({ product, notes, duration, mode }) });
+  const model = 'gemini-3.6-flash';
   let lastErr;
-  for (const model of [...new Set(models)]) {
+  for (const level of ['high', 'medium']) {
     try {
-      return await callGemini(model, parts);
+      return await callGemini(model, parts, level);
     } catch (err) {
       lastErr = err;
-      if (/high demand|overloaded|unavailable|UNAVAILABLE|429|503|AbortError/i.test(err.message) || err.name === 'AbortError') {
-        continue;
-      }
-      throw err;
+      if (!busyGemini(err) && !/thinking|invalid/i.test(err.message)) throw err;
+    }
+  }
+  const fallbacks = [
+    process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite',
+    'gemini-flash-lite-latest',
+  ];
+  for (const name of [...new Set(fallbacks)]) {
+    try {
+      return await callGemini(name, parts, 'medium');
+    } catch (err) {
+      lastErr = err;
+      if (!busyGemini(err)) throw err;
     }
   }
   throw lastErr || new Error('寫稿暫時無法使用，請稍後再試。');
@@ -136,14 +158,15 @@ function publicError(err) {
   return '寫稿失敗，請稍後再試或自行填劇本。';
 }
 
-async function writeScript({ product, notes, images, duration }) {
+async function writeScript({ product, notes, images, duration, mode }) {
   const name = String(product || '').trim();
   const pics = Array.isArray(images) ? images.filter(Boolean) : [];
   const seconds = duration === '15' ? '15' : '10';
+  const picked = scriptMode(mode);
   if (!name && !pics.length) throw new Error('請先填商品名稱，或上傳商品圖。');
   try {
-    if (process.env.OPENAI_API_KEY) return { script: await viaOpenAI({ product: name, notes, images: pics, duration: seconds }) };
-    if (process.env.GEMINI_API_KEY) return { script: await viaGemini({ product: name, notes, images: pics, duration: seconds }) };
+    if (process.env.OPENAI_API_KEY) return { script: await viaOpenAI({ product: name, notes, images: pics, duration: seconds, mode: picked }) };
+    if (process.env.GEMINI_API_KEY) return { script: await viaGemini({ product: name, notes, images: pics, duration: seconds, mode: picked }) };
     throw new Error('寫稿暫時無法使用，請稍後再試。');
   } catch (err) {
     if (err.name === 'AbortError') throw new Error('寫稿逾時，請再試一次');

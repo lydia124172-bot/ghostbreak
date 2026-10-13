@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>爆款五重奏 — 麋鹿網後台</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=look5" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/admin">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>內容後台</small></span>
+      </a>
+      <div class="admin-actions">
+        <a class="nav-link" href="/">回前台</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <h1>爆款五重奏</h1>
+      <p class="lead">上傳長影片，產出<strong>約 1 分鐘 9:16 精華</strong>。自建流程：較強 ASR → 句界選段 → 橫版追蹤裁切 → <strong>動態字幕</strong>燒錄。</p>
+    </section>
+
+    <form id="form" class="panel">
+      <label class="field" for="youtube">YouTube 連結</label>
+      <input id="youtube" class="form-input" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+      <p class="lead">不用先下載到桌面。貼上 YouTube 連結就會取得影片。</p>
+      <label class="field" for="video">或選擇電腦裡的影片</label>
+      <input id="video" type="file" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,.mp4,.mov,.mkv,.webm,.avi,.m4v" />
+      <p class="lead">輸出固定約 1 分鐘。原片若不到 1 分鐘，會用整段或能用的最長精華。</p>
+      <div class="admin-actions" style="margin-top:16px;">
+        <button class="btn btn-copper" id="submit" type="submit">產生精華 1 分鐘</button>
+      </div>
+      <p id="msg" class="lead"></p>
+      <p id="lengthNote" class="lead hidden"></p>
+    </form>
+
+    <section id="results" class="hidden">
+      <div class="admin-actions" style="margin-bottom:16px;">
+        <a class="btn btn-copper" id="downloadAll" href="#">下載精華 1 分鐘</a>
+      </div>
+      <div id="grid" class="admin-grid"></div>
+    </section>
+  </main>
+  <script>
+    const form = document.getElementById('form');
+    const youtube = document.getElementById('youtube');
+    const video = document.getElementById('video');
+    const submit = document.getElementById('submit');
+    const msg = document.getElementById('msg');
+    const lengthNote = document.getElementById('lengthNote');
+    const results = document.getElementById('results');
+    const grid = document.getElementById('grid');
+    const downloadAll = document.getElementById('downloadAll');
+
+    function clock(value) {
+      const total = Math.max(0, Math.round(value));
+      return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
+    }
+
+    function showResults(job) {
+      results.classList.remove('hidden');
+      downloadAll.href = '/api/quintet/' + job.id + '/download-all';
+      lengthNote.classList.toggle('hidden', !job.length_adjusted);
+      if (job.length_adjusted) {
+        lengthNote.textContent = '原片不夠長，已改成約 ' + Math.round(job.clip_seconds) + ' 秒的精華。';
+      }
+      grid.innerHTML = '';
+      const clip = (job.clips || [])[0];
+      if (!clip) return;
+      const card = document.createElement('article');
+      card.className = 'panel';
+      const file = encodeURIComponent(clip.file);
+      const title = clip.title || '精華 1 分鐘';
+      card.innerHTML = `
+        <video controls playsinline preload="metadata" src="/api/quintet/${job.id}/file/${file}" style="width:100%;aspect-ratio:9/16;background:#111;border-radius:12px;"></video>
+        <h3>${title}</h3>
+        <p class="lead">${clock(clip.start)} – ${clock(clip.end)}${clip.strength ? '　指數 ' + clip.strength : ''}</p>
+        <p>${clip.reason || ''}</p>
+        <a class="btn btn-cream" href="/api/quintet/${job.id}/download/${file}">下載影片</a>
+      `;
+      grid.appendChild(card);
+    }
+
+    function watch(id) {
+      const timer = setInterval(async () => {
+        const response = await fetch('/api/quintet/' + id);
+        const job = await response.json();
+        msg.textContent = (job.message || '處理中') + '　' + (job.progress || 0) + '%';
+        if (job.status === 'done') {
+          clearInterval(timer);
+          submit.disabled = false;
+          showResults({ ...job, id });
+        }
+        if (job.status === 'error' || !response.ok) {
+          clearInterval(timer);
+          submit.disabled = false;
+          msg.textContent = job.error || job.message || '處理失敗';
+        }
+      }, 1000);
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const link = youtube.value.trim();
+      const file = video.files[0];
+      if (!link && !file) {
+        msg.textContent = '請貼上 YouTube 連結，或選擇電腦裡的影片。';
+        return;
+      }
+      submit.disabled = true;
+      results.classList.add('hidden');
+      msg.textContent = link ? '正在從 YouTube 取得影片' : '正在上傳影片';
+      const response = link
+        ? await fetch('/api/quintet/url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: link, seconds: 60 }),
+        })
+        : await fetch('/api/quintet?seconds=60', {
+          method: 'POST',
+          headers: { 'X-Filename': file.name },
+          body: file,
+        });
+      const job = await response.json();
+      if (!response.ok) {
+        submit.disabled = false;
+        msg.textContent = job.error || '上傳失敗';
+        return;
+      }
+      history.replaceState(null, '', '/quintet?job=' + job.id);
+      watch(job.id);
+    });
+
+    const existingJob = new URLSearchParams(location.search).get('job');
+    if (existingJob) watch(existingJob);
+  </script>
+</body>
+</html>

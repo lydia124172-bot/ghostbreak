@@ -8,9 +8,12 @@ function pathOf() {
 function applyPublicNav() {
   if (!nav) return;
   const path = pathOf();
+  const kitPaths = ['/saas', '/clip', '/story', '/talk', '/dress', '/model', '/script', '/live', '/ip', '/hot', '/prompt', '/hook', '/edit', '/design', '/move'];
   const items = [
     { href: '/', label: '首頁', on: path === '/' },
-    { href: '/saas', label: '麋鹿工具包', on: path === '/saas' || path === '/clip' || path === '/story' || path === '/talk' || path === '/dress' || path === '/model' || path === '/script' || path === '/live' || path === '/ip' || path === '/hot' || path === '/prompt' || path === '/hook' },
+    { href: '/skills', label: '獲客地圖', on: path === '/skills' },
+    { href: '/hire', label: '做網站', on: path === '/hire' },
+    { href: '/saas', label: '我做的付費工具', on: kitPaths.includes(path) },
   ];
   nav.innerHTML = items.map((item) =>
     `<a href="${item.href}"${item.on ? ' class="active"' : ''}>${item.label}</a>`

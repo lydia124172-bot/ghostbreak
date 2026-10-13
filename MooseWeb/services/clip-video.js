@@ -142,8 +142,58 @@ function motionPrompt({ product, price, hook, style, duration: wanted }) {
     `Hero product: ${name}. Packaging, logo, colors, and on-pack text stay pixel-stable.`,
     offer ? `Selling point: ${offer}.` : '',
     'If a person is visible: keep the same face, hair, and outfit from the first frame. They walk slowly and turn during the clip so the clothing can be seen. Do not freeze the pose. Do not add a buckle or bow that is not already in the first frame.',
+    garmentTurnRule(),
     'No new captions, subtitles, prices, watermarks, or logos. Single continuous shot. No lip-sync talking head.',
   ].filter(Boolean).join(' ');
+}
+
+function garmentTurnRule() {
+  return 'The person may turn. During the entire turn, in every frame, do not invent a back slit, center-back vent, kick pleat, parted hem, or open seam. The hem must not split halfway through the turn and must not split at the end. If the back is closed or not shown, keep the skirt and coat as one continuous closed panel the whole time.';
+}
+
+function wantsStillBody(text) {
+  return /不要動|別動|保持不動|維持不動|不要轉身|別轉身|不要轉頭|頭不要動|do not move|don't move|stay still|keep still/i.test(String(text || ''));
+}
+
+function stillBodyRule() {
+  return 'The body must stay still for the whole clip. Lock the torso, shoulders, head angle, and pose exactly to the first frame. Do not turn the head, look away, lean, stand, or walk. Only the facial expression may change.';
+}
+
+function moveLines({ duration, garmentNote, motion, facts }) {
+  const note = String(garmentNote || '').trim();
+  const action = String(motion || '').trim();
+  const still = wantsStillBody(`${note}\n${action}`);
+  const lines = [
+    `Animate this still into a ${duration}-second photoreal clip.`,
+    'Keep the same subject, face, product, colors, and details from the first frame.',
+    'Do not add text, logos, watermarks, or objects that are not already in the still.',
+    still ? stillBodyRule() : garmentTurnRule(),
+  ];
+  if (facts) lines.push(`Product reference, copy this construction exactly when any hidden side appears: ${facts}`);
+  if (note) {
+    lines.push(still
+      ? `User instruction, obey in every frame: ${note}`
+      : `Garment instruction for the whole clip, including every frame of a turn: ${note}`);
+  }
+  if (action) {
+    lines.push(still
+      ? `Expression only, while the body and head stay locked to the first frame: ${action}. Do not turn or shift the body to perform it.`
+      : `Action, performed continuously for the whole clip: ${action}. This body motion is requested. Do not freeze the pose.`);
+  } else {
+    lines.push(still
+      ? 'No requested action. Keep the body and head pose completely still.'
+      : 'No requested action. Gentle camera move and natural motion in fabric, hair, or background only. Keep the pose.');
+  }
+  lines.push(still
+    ? 'No captions, subtitles, watermarks, or on-screen text. Single continuous shot. The head keeps the same angle as the first frame.'
+    : 'No captions, subtitles, watermarks, or on-screen text. No lip-sync talking. Single continuous shot.');
+  return { prompt: lines.join(' '), stillBody: still };
+}
+
+function garmentShowsSlit(facts) {
+  const text = String(facts || '');
+  if (/no slit|no vent|closed back|continuous hem|without a slit|without a vent/i.test(text)) return false;
+  return /\bslit\b|\bvent\b|kick pleat|parted hem/i.test(text);
 }
 
 function negativeMotionPrompt() {
@@ -154,6 +204,67 @@ function negativeMotionPrompt() {
     'warped packaging, melted label, low quality, blurry product',
     'extra hands, extra fingers, deformed hands',
   ].join(', ');
+}
+
+function cleanGarmentFacts(text) {
+  const line = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 420);
+  if (line.length < 12) return '';
+  if (/ignore (previous|all)|system prompt|jailbreak|忽略(以上|先前)/i.test(line)) return '';
+  return line;
+}
+
+function garmentRef(url) {
+  const m = String(url || '').match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+=*)$/);
+  if (!m) return null;
+  const buf = Buffer.from(m[2], 'base64');
+  if (!buf.length || buf.length > 4 * 1024 * 1024) return null;
+  return { mime: m[1], b64: m[2] };
+}
+
+async function garmentFacts(images) {
+  const refs = (Array.isArray(images) ? images : [images]).map(garmentRef).filter(Boolean).slice(0, 2);
+  const key = String(process.env.GEMINI_API_KEY || '').trim();
+  if (!refs.length || !key) return '';
+  const ask = [
+    'Look at the clothing product photo(s). These are the real garment, not a model pose.',
+    'Reply with one English sentence under 70 words.',
+    'State only construction a video must copy when the clothes turn: back slit or no back slit, vents, whether the hem is closed, belt tie versus buckle, buttons, pockets, collar.',
+    'If the back is a closed panel, say "closed back, no slit, no vent, continuous hem".',
+    'Do not describe the person, background, or camera.',
+  ].join(' ');
+  const parts = [
+    { text: ask },
+    ...refs.map((row) => ({ inline_data: { mime_type: row.mime, data: row.b64 } })),
+  ];
+  const models = ['gemini-flash-lite-latest', 'gemini-3.6-flash'];
+  for (const model of models) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000);
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
+        {
+          method: 'POST',
+          signal: ctrl.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 220 },
+          }),
+        },
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error?.message || `商品比對 ${res.status}`);
+      const text = body.candidates?.[0]?.content?.parts?.map((part) => part.text).join(' ') || '';
+      const facts = cleanGarmentFacts(text);
+      if (facts) return facts;
+    } catch (err) {
+      console.log('[garment-facts] skipped', model, err && err.message);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return '';
 }
 
 function promptExpansionEnabled() {
@@ -304,7 +415,42 @@ function audioMimeOf(mime) {
   return '';
 }
 
-async function submit({ images, product, price, hook, style, audio, audioUrl, voice, narration, duration: wanted, prompt, resolution: wantedResolution, ratio, generateAudio }) {
+async function attachGarmentReference(payload, key, referenceImages, facts, kind, stillBody) {
+  if (kind !== 'kling' || stillBody) return payload;
+  const refs = (Array.isArray(referenceImages) ? referenceImages : []).filter(Boolean).slice(0, 3);
+  if (!refs.length) return payload;
+  const urls = [];
+  for (const ref of refs) {
+    try {
+      const parsed = parseDataUrl(ref);
+      const buf = prepareStill(Buffer.from(parsed.b64, 'base64'), { resolution: '720p' });
+      urls.push(await falUpload(key, buf, 'image/jpeg', 'garment.jpg'));
+    } catch (err) {
+      console.log('[clip-video] garment ref skipped', err && err.message);
+    }
+  }
+  if (!urls.length) return payload;
+  payload.elements = [{
+    frontal_image_url: urls[0],
+    reference_image_urls: urls,
+  }];
+  payload.cfg_scale = 0.8;
+  const closed = !garmentShowsSlit(facts);
+  payload.prompt = [
+    payload.prompt,
+    'The turn is required and must be performed. @Element1 is the real garment, not a final pose.',
+    closed
+      ? 'In every frame while turning, from the side through the back, keep the skirt and coat hem closed like @Element1. A slit, vent, or gap must not appear halfway through the turn and must not appear at the end.'
+      : 'In every frame while turning, copy only the openings already visible in @Element1. Do not add another slit on the way around.',
+  ].join(' ');
+  if (closed && payload.negative_prompt) {
+    payload.negative_prompt = `${payload.negative_prompt}, back slit, center-back vent, kick pleat, parted hem, split skirt, open vent, hem gap while turning`;
+  }
+  console.log('[clip-video] garment reference attached', closed ? 'closed hem' : 'keep existing opening');
+  return payload;
+}
+
+async function submit({ images, product, price, hook, style, audio, audioUrl, voice, narration, duration: wanted, prompt, resolution: wantedResolution, ratio, generateAudio, referenceImages, garmentFacts: facts, stillBody }) {
   if (!configured()) throw new Error('圖生視頻尚未開通。');
   const first = Array.isArray(images) ? images[0] : '';
   if (!first) throw new Error('請先選商品圖');
@@ -344,6 +490,10 @@ async function submit({ images, product, price, hook, style, audio, audioUrl, vo
         multi_shots: false,
         negative_prompt: negativeMotionPrompt(),
       };
+  await attachGarmentReference(payload, key, referenceImages, facts, kind, Boolean(stillBody));
+  if (stillBody && payload.negative_prompt) {
+    payload.negative_prompt += ', head turn, looking away, looking aside, body turn, rotating torso, rotating shoulders, leaning, standing up, walking, changing seat position';
+  }
   let music = audio && audio.buffer && audio.buffer.length ? audio : null;
   if (!music && audioUrl) music = await fetchPublicAudio(audioUrl);
   let speech = voice && voice.buffer && voice.buffer.length ? voice : null;
@@ -571,4 +721,4 @@ async function recoverRecent(model) {
   };
 }
 
-module.exports = { configured, engine, creditCost, videoDuration, videoResolution, frameRatio, videoModel, videoEngine, submit, check, finish, render, recoverRecent, falUpload, parseDataUrl, audioMimeOf, prepareStill, latestPaidVideo, videoUrlOf, queueUrls, falGet };
+module.exports = { configured, engine, creditCost, videoDuration, videoResolution, frameRatio, videoModel, videoEngine, submit, check, finish, render, recoverRecent, falUpload, parseDataUrl, audioMimeOf, prepareStill, latestPaidVideo, videoUrlOf, queueUrls, falGet, garmentTurnRule, garmentFacts, wantsStillBody, stillBodyRule, moveLines };

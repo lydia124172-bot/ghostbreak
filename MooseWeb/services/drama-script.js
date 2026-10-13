@@ -10,23 +10,49 @@ function parseDataUrl(url) {
   return { mime: m[1], b64: m[2] };
 }
 
-function promptText({ topic, notes }) {
+function promptText({ topic, notes, language, style }) {
+  const english = language === 'en';
+  const anime = style === 'anime';
+  const look = english
+    ? (anime
+      ? 'Every VISUAL is a Japanese anime film frame: clean line art, cel shading. Do not describe real people, photographs, or live action.'
+      : 'Every VISUAL is a photoreal cinematic frame that can be filmed.')
+    : (anime
+      ? '每一鏡 VISUAL 都是日本動畫電影畫面：乾淨線條、賽璐璐上色。不要寫成真人照片、寫實攝影或真人演員。'
+      : '每一鏡 VISUAL 都是寫實、可拍的電影畫面。');
+  const speech = english
+    ? 'Every LINE is one spoken English sentence of at most 12 words, short enough to say in 5 seconds. Shot 1, shot 2, and shot 3 are all English. Do not write Chinese dialogue in any shot. The last LINE must be a complete sentence, not a cut-off phrase.'
+    : '三句 LINE 全部是一句繁體中文台詞，每句最多 18 個字，5 秒要說得完。第 1 鏡、第 2 鏡、第 3 鏡都說中文。不要寫英文對白。最後一句必須是說完的句子，不要寫到一半。';
   return [
-    '你是台灣短劇編劇。請寫一支直式 9:16、三鏡、每鏡約 5 秒、全長約 15 秒的 AI 短劇。',
-    '語言：繁體中文（台灣，不可簡體）。不要寒暄、不要 JSON、不要 markdown。',
-    '先寫兩行，再寫三鏡，一行都不要少。',
-    '第一行以「角色：」開頭，寫出出場的人，最多兩人，含年齡感、髮型、衣服、聲線。三鏡是同一批人。',
-    '第二行以「背景：」開頭，只寫一個地點，含時間、光線、地面、主要物件。三鏡不換地方。',
+    english
+      ? 'You are a short-drama writer. Write a vertical 9:16 AI short drama: 3 shots, about 5 seconds each, about 15 seconds total.'
+      : '你是台灣短劇編劇。請寫一支直式 9:16、三鏡、每鏡約 5 秒、全長約 15 秒的 AI 短劇。',
+    english
+      ? 'Keep these labels exactly: 角色： 背景： SCENE VISUAL: LINE:. No greeting, no JSON, no markdown.'
+      : '不要寒暄、不要 JSON、不要 markdown。',
+    look,
+    speech,
+    english
+      ? 'Write two header lines, then three shots. Do not skip a line.'
+      : '先寫兩行，再寫三鏡，一行都不要少。',
+    english
+      ? 'First line starts with 角色： and names at most two people, with age, hair, clothes, and voice. The same people appear in all three shots. Write this description in English.'
+      : '第一行以「角色：」開頭，寫出出場的人，最多兩人，含年齡感、髮型、衣服、聲線。三鏡是同一批人。這一行用繁體中文。',
+    english
+      ? 'Second line starts with 背景： and names one place only: time, light, floor, and main objects. Do not change location. Write this description in English.'
+      : '第二行以「背景：」開頭，只寫一個地點，含時間、光線、地面、主要物件。三鏡不換地方。這一行用繁體中文。',
     'SCENE 1',
-    'VISUAL: （畫面，寫實、可拍）',
-    'LINE: （一句旁白或對白）',
+    english ? 'VISUAL: (the picture)' : 'VISUAL: （畫面）',
+    english ? 'LINE: (one English sentence)' : 'LINE: （一句中文台詞）',
     'SCENE 2',
     'VISUAL: …',
-    'LINE: …',
+    english ? 'LINE: (one English sentence)' : 'LINE: （一句中文台詞）',
     'SCENE 3',
     'VISUAL: …',
-    'LINE: …',
-    '主題要有起承轉合。不要商品硬廣、不要字幕說明、不要寫自己是 AI。',
+    english ? 'LINE: (one English sentence)' : 'LINE: （一句中文台詞）',
+    english
+      ? 'Give the story a beginning, turn, and ending. No product ad, no subtitles, do not say you are an AI.'
+      : '主題要有起承轉合。不要商品硬廣、不要字幕說明、不要寫自己是 AI。',
     `主題：${topic}`,
     notes ? `補充：${notes}` : '',
   ].filter(Boolean).join('\n');
@@ -73,8 +99,8 @@ async function callGemini(model, parts) {
   return cleanScript(text);
 }
 
-async function viaGemini({ topic, notes, images }) {
-  const parts = [{ text: promptText({ topic, notes }) }];
+async function viaGemini({ topic, notes, images, language, style }) {
+  const parts = [{ text: promptText({ topic, notes, language, style }) }];
   (images || []).filter(Boolean).slice(0, 3).forEach((url) => {
     const file = parseDataUrl(url);
     parts.push({ inline_data: { mime_type: file.mime, data: file.b64 } });
@@ -108,11 +134,13 @@ function publicError(err) {
   return '寫稿失敗，請稍後再試或自行填劇本。';
 }
 
-async function writeScript({ topic, notes, images }) {
+async function writeScript({ topic, notes, images, language, style }) {
   const title = String(topic || '').trim();
+  const speech = language === 'en' ? 'en' : 'zh';
+  const look = style === 'anime' ? 'anime' : 'live';
   if (title.length < 2) throw new Error('請先填短劇主題。');
   try {
-    if (process.env.GEMINI_API_KEY) return { script: await viaGemini({ topic: title, notes, images }) };
+    if (process.env.GEMINI_API_KEY) return { script: await viaGemini({ topic: title, notes, images, language: speech, style: look }) };
     throw new Error('寫稿暫時無法使用，請稍後再試。');
   } catch (err) {
     if (err.name === 'AbortError') throw new Error('寫稿逾時，請再試一次');

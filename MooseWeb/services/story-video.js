@@ -1,12 +1,21 @@
 const clipVideo = require('./clip-video');
 
 const DEMO_SCRIPT = [
-  '晨光從窗邊進來，木桌上放著一袋剛烘好的手沖咖啡豆。',
-  '手撥開袋口，深焙香氣散開。熱水緩緩注入濾杯，液面慢慢漲起。',
-  '最後端起杯子靠近窗邊，蒸汽在光裡轉了一下。',
-  '店員：這包今天烘的？',
-  '客人：今天下單，今晚寄出。',
-  '不要字幕、不要浮水印。',
+  '## 🎬 影片核心定位',
+  '- **推薦時長**：15秒',
+  '- **影片風格**：日系清新',
+  '- **核心受眾**：想在家手沖的人',
+  '',
+  '## 📝 劇本分鏡表（表格呈現）',
+  '| 秒數 | 畫面分鏡與運鏡描述 (Visual) | 旁白配音 (VO) | 背景音樂與音效 (BGM/SFX) |',
+  '| --- | --- | --- | --- |',
+  '| 00-03 | 鏡頭緩慢推近木桌上的手沖咖啡豆 | 「袋口一開，就是今天烘的。」 | 輕柔鋼琴漸入 |',
+  '| 03-07 | 手撥開袋口，熱水注入濾杯 | 「香氣先出來，再慢慢沖。」 | 水流聲，節奏推進 |',
+  '| 07-12 | 杯子端到窗邊，蒸汽升起 | 「不用等，今晚就寄出。」 | 音樂推向高點 |',
+  '| 12-15 | 停在咖啡豆與窗光 | 「今天下單，今晚烘好寄出。」 | 音樂淡出 |',
+  '',
+  '## 💡 創作者叮嚀',
+  '- **運鏡與剪輯建議**：運鏡放慢，不要在畫面上打字。',
 ].join('\n');
 
 function falKey() {
@@ -65,20 +74,24 @@ function engine() {
   return isKling(i2vModel()) ? 'kling' : 'seedance';
 }
 
+function filmScript(script) {
+  return String(script || '').split(/##\s*💡/)[0].trim();
+}
+
 function storyPrompt({ script, product, duration }) {
   const body = String(script || '').trim();
-  if (body.length < 12) throw new Error('請貼上至少一段劇本，寫兩人對談即可。');
-  if (body.length > 1200) throw new Error('劇本請在 1,200 字內。');
+  if (body.length < 12) throw new Error('請貼上至少一段劇本，或先上傳圖片寫劇本。');
+  if (body.length > 4000) throw new Error('劇本請在 4,000 字內。');
   const name = String(product || '').trim();
   const seconds = videoDuration(duration);
   return [
     `Vertical 9:16 cinematic product commercial, about ${seconds} seconds, photoreal, premium lighting.`,
-    'Follow this script beat by beat: show the product, then two people talk to each other about it.',
-    'Speak each quoted line in Chinese, on camera, matched to that speaker. Lip movement follows the words.',
-    'No on-screen captions, subtitles, prices, logos, or watermarks.',
+    'Follow only the filled table rows, in time order. Speak the quoted Chinese lines on camera.',
+    'Ignore headings, editing tips, and bracket instructions. Do not render them as captions.',
+    'Music notes are mood only. No on-screen captions, subtitles, prices, logos, title cards, or watermarks.',
     name ? `Keep this product recognizable: ${name}.` : '',
     'SCRIPT:',
-    body,
+    filmScript(body),
   ].filter(Boolean).join('\n');
 }
 

@@ -61,6 +61,13 @@ module.exports = {
       href: '/dress',
     },
     {
+      id: 'design-chat',
+      name: '設計對話',
+      status: '已上線',
+      summary: '用對話做廣告、橫幅與社群圖。可只改字、局部重繪，或套到衣服、手機、包裝。成功一張扣 1 點。',
+      href: '/design',
+    },
+    {
       id: 'storyclip',
       name: '劇本廣告',
       status: '已上線',
@@ -89,6 +96,13 @@ module.exports = {
       kind: '品牌官網',
       summary: '商用英文課程站，含程度分級、AI 口說練習、早鳥報名與家教問答。',
       href: 'https://english.bafuholdings.com/',
+    },
+    {
+      id: 'shine-piece',
+      name: '瑄品集選',
+      kind: '品牌官網',
+      summary: '月刊選物店。每個月開箱一個國家的生活好物，可線上下單、查訂單，後台自己上架。',
+      href: 'https://shine.bafuholdings.com/',
     },
     {
       id: 'mooseweb-site',
@@ -120,6 +134,18 @@ module.exports = {
       ],
     },
     {
+      id: 'design-chat',
+      name: '設計對話',
+      kind: '智能體',
+      summary: '用對話做廣告、橫幅、社群圖與海報。可上傳舊圖只改字，或塗一塊局部重繪，再套到衣服、手機或包裝上。',
+      href: '/design',
+      features: [
+        '電商廣告、橫幅、社群、海報、商品主圖',
+        '精準改字，盡量保住繁體中文',
+        '畫筆局部重繪與場景套用',
+      ],
+    },
+    {
       id: 'social-observer',
       name: '跨領域社會觀察',
       kind: 'SaaS',
@@ -129,6 +155,59 @@ module.exports = {
         '從心理學、哲學、經濟或 AI 挑一個概念來解釋',
         '口播有鉤子與反轉，可直接複製',
       ],
+    },
+    {
+      id: 'tender-search',
+      name: '標案查詢',
+      kind: 'SaaS',
+      summary: '查近兩個月的政府與出任務公告。用關鍵字篩接得了的標案，可輸出 PDF。',
+      features: [
+        '政府招標與出任務可分開看',
+        '只留有商行、稅籍即可，或資訊軟體、廣告、設計、顧問',
+        '查詢結果可輸出 PDF',
+      ],
+    },
+    {
+      id: 'python-academy',
+      name: 'Python 學院',
+      kind: 'SaaS',
+      summary: '從零開始的 Python 練習站。每單元走觀念、教學、練習、考試，目標是自己做出像 Manus 的網站。',
+      features: [
+        '瀏覽器裡直接寫、直接跑',
+        '沒過關不能往下',
+        '每天先重寫昨天的程式',
+      ],
+    },
+    {
+      id: 'ops-roadmap',
+      name: '維運學習路線',
+      kind: 'SaaS',
+      summary: '七段維運學習路線，雲端證照準備 Google Associate Cloud Engineer。網站對照考試範圍，正式考試到官方考試中心。',
+      features: [
+        '依階段往下學',
+        '證照頁對照考試範圍',
+        '學習進度可存在本機',
+      ],
+    },
+    {
+      id: 'lead-check',
+      name: '企業獲客開發',
+      kind: 'SaaS',
+      summary: '買斷制。裝在貴公司一台電腦上使用。可取得公司名單，並可下載。含自動寄信。',
+      features: [
+        '買斷價格：新台幣 130,000（一家、一台電腦，含自動寄信）',
+        '之後每年授權費：新台幣 15,000',
+        '可依條件取得公司名單',
+        '名單含公司名稱、統一編號、地址、資本額、電話、信箱、網站',
+        '可下載當次名單',
+        '沒有信箱的公司不寄',
+        '含安裝，以及三個月內的程式問題修正',
+        '年授權費含該年度的程式修正。換網域、改信的內容、功能加開、換電腦另計',
+        '不保證每一家都有電話或信箱',
+        '授權僅限該公司使用，不可轉售或再授權',
+      ],
+      href: '/hire?service=lead-dev#consult',
+      cta: '提出諮詢',
     },
     {
       id: 'native-chinese-check',
@@ -261,6 +340,40 @@ module.exports = {
     },
   ],
   courses: require('./courses-full'),
+  leadSuite: {
+    title: '獲客相關',
+    lead: '四種常搞混的項目放一起：先開獲客地圖對行業，再選留單、聊天助理或開發信軟體。每一項都有固定連結。',
+    items: [
+      {
+        id: 'map',
+        name: '獲客地圖',
+        summary: '免費說明：各行業在賣什麼、通常要用哪些方式找客人。',
+        href: '/skills',
+        tag: '獨立頁',
+      },
+      {
+        id: 'site-leads',
+        name: '官網內建留單',
+        summary: '做客網站時內建表單、Email 通知與後台名單（非聊天機器人）。',
+        href: '/hire?service=site-leads#consult',
+        tag: '含在官網',
+      },
+      {
+        id: 'assistant',
+        name: '企業獲客助理',
+        summary: '官網或 LINE 上的引導對話、留名單並通知業務。（委託開發）',
+        href: '/hire?service=assistant#consult',
+        tag: '委託',
+      },
+      {
+        id: 'lead-dev',
+        name: '企業獲客開發',
+        summary: '買斷軟體：依條件取得公司名單、下載，並對有信箱的公司自動寄信。',
+        href: '/hire?service=lead-dev#consult',
+        tag: '買斷',
+      },
+    ],
+  },
   hire: [
     {
       id: 'site',
@@ -288,6 +401,11 @@ module.exports = {
           title: '紫瑄英語教室',
           caption: '程度分級、口說練習、報名與後台',
           href: 'https://english.bafuholdings.com/',
+        },
+        {
+          title: '瑄品集選',
+          caption: '月刊選物、線上下單與後台上架',
+          href: 'https://shine.bafuholdings.com/',
         },
         {
           title: '麋鹿網',
@@ -318,6 +436,22 @@ module.exports = {
         '名單通知與分派',
         '後台紀錄',
         '可分期上線',
+      ],
+    },
+    {
+      id: 'lead-dev',
+      name: '企業獲客開發',
+      summary:
+        '買斷制。裝在貴公司一台電腦上使用。可依條件取得公司名單並下載，含自動寄信（沒有信箱的公司不寄）。',
+      detail:
+        '與「官網留單」「獲客助理」不同：這是業務主動找企業用的桌面軟體，不是網站表單或 LINE 聊天機器人。授權僅限該公司、一台電腦；換電腦、改信內容或加功能另計。',
+      features: [
+        '買斷價格：新台幣 130,000（一家、一台電腦，含自動寄信）',
+        '之後每年授權費：新台幣 15,000',
+        '名單含公司名稱、統一編號、地址、資本額、電話、信箱、網站',
+        '可下載當次名單',
+        '含安裝，以及三個月內的程式問題修正',
+        '不保證每一家都有電話或信箱',
       ],
     },
     {

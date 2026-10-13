@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const fs = require('fs');
+const payOrders = require('./pay-orders');
 const path = require('path');
 const TREE_PATH = require.resolve('../data/tree');
 
@@ -367,6 +368,56 @@ function listAccounts() {
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
+function hasPaidPlan(pub) {
+  return (pub.plan && pub.plan !== 'free') || Boolean(pub.storyPlan) || Boolean(pub.dramaPlan);
+}
+
+function paidMembers() {
+  const people = new Map();
+  const accounts = loadStore().accounts;
+  function ensure(row, fallback) {
+    const key = row ? row.id : (fallback.accountId || fallback.email);
+    if (!people.has(key)) {
+      people.set(key, row
+        ? { ...publicAccount(row), payments: [] }
+        : {
+          email: fallback.email || '',
+          name: '',
+          plan: '',
+          planName: '',
+          planLabel: '',
+          planExpires: null,
+          credits: 0,
+          storyPlanName: '',
+          storyExpires: null,
+          storyCredits: 0,
+          dramaPlanName: '',
+          dramaExpires: null,
+          payments: [],
+        });
+    }
+    return people.get(key);
+  }
+  accounts.forEach((row) => {
+    if (hasPaidPlan(publicAccount(row))) ensure(row);
+  });
+  payOrders.listPaid().forEach((order) => {
+    const row = accounts.find((item) => item.id === order.accountId) || accounts.find((item) => item.email === order.email);
+    const person = ensure(row, order);
+    person.payments.push({
+      planName: order.planName || '',
+      amount: Number(order.amount) || 0,
+      paidAt: Number(order.paidAt) || 0,
+    });
+  });
+  return [...people.values()].sort((a, b) => {
+    const ap = a.payments[0] ? a.payments[0].paidAt : 0;
+    const bp = b.payments[0] ? b.payments[0].paidAt : 0;
+    if (ap !== bp) return bp - ap;
+    return String(b.planExpires || '').localeCompare(String(a.planExpires || ''));
+  });
+}
+
 function publicTree() {
   const tree = treeData();
   return {
@@ -403,5 +454,6 @@ module.exports = {
   consumeStoryCredit,
   consumeDramaCredit,
   listAccounts,
+  paidMembers,
   publicAccount,
 };

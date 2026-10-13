@@ -880,6 +880,57 @@ a.item {
   display: block;
 }
 
+.lead-suite {
+  margin-bottom: 2.5rem;
+  padding: 1.25rem 1.35rem 1.4rem;
+}
+
+.lead-suite .h3 {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1.35rem;
+}
+
+.lead-suite-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 1rem;
+}
+
+.lead-suite-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.lead-suite-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.lead-suite-card strong {
+  font-size: 1rem;
+  color: var(--cream);
+}
+
+.lead-suite-tag {
+  align-self: flex-start;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--mist);
+}
+
 .hire-examples {
   margin-top: 1rem;
   padding-top: 0.75rem;

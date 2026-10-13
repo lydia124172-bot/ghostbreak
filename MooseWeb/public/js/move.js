@@ -1,4 +1,21 @@
-const state = { image: '', ready: false, cost5: 3, cost10: 6, cost15: 9 };
+const state = { image: '', product: '', ready: false, cost5: 3, cost10: 6, cost15: 9 };
+
+function shrinkImage(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const edge = Math.max(img.width, img.height) || 1;
+      const scale = Math.min(1, 1280 / edge);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
 
 function readFile(file) {
   return new Promise((resolve, reject) => {
@@ -55,17 +72,21 @@ async function refreshPlan() {
 
 async function waitJob(jobId, duration) {
   const note = document.getElementById('moveMsg');
-  for (let i = 0; i < 90; i += 1) {
+  sessionStorage.setItem('moose-move-job', JSON.stringify({ jobId, duration }));
+  for (let i = 0; i < 280; i += 1) {
     await new Promise((r) => setTimeout(r, 2500));
     const res = await fetch(`/api/clip/video/job/${encodeURIComponent(jobId)}`);
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '生片失敗');
-    if (body.status === 'done' && body.videoUrl) return body;
-    const phase = body.status === 'running' ? '正在生成短片' : '排隊中';
+    if (body.status === 'done' && body.videoUrl) {
+      sessionStorage.removeItem('moose-move-job');
+      return body;
+    }
+    const phase = body.status === 'running' || body.status === 'saving' ? '正在生成短片' : '排隊中';
     const sec = body.duration || duration || '';
-    note.textContent = `${phase}（${sec}秒）。請不要重按。`;
+    note.textContent = `${phase}（${sec}秒）。15 秒大約要 6 到 12 分鐘。請不要重按。`;
   }
-  throw new Error('生片逾時，請稍後再試。');
+  throw new Error('頁面先停止等待，片子可能還在做。請不要重按，重新整理這頁會繼續等。');
 }
 
 function paintVideo(done) {
@@ -124,6 +145,8 @@ async function makeMove() {
   btn.disabled = true;
   document.getElementById('resultBox').classList.add('hidden');
   try {
+    state.image = await shrinkImage(state.image);
+    if (state.product) state.product = await shrinkImage(state.product);
     const res = await fetch('/api/move', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -131,7 +154,9 @@ async function makeMove() {
         image: state.image,
         duration,
         ratio: document.getElementById('ratio').value,
+        product: state.product,
         motion: document.getElementById('motion').value.trim(),
+        garmentNote: document.getElementById('garmentNote').value.trim(),
       }),
     });
     const body = await res.json();
@@ -140,7 +165,10 @@ async function makeMove() {
     paintVideo(done);
     refreshPlan();
   } catch (err) {
-    note.textContent = err.message || '生片失敗';
+    const raw = String(err && err.message || '');
+    note.textContent = raw === 'Failed to fetch'
+      ? '連線中斷，請再按一次。這次還沒送出，不會扣點。'
+      : (raw || '生片失敗');
   } finally {
     btn.disabled = false;
   }
@@ -149,7 +177,7 @@ async function makeMove() {
 document.getElementById('photo').addEventListener('change', async (event) => {
   const note = document.getElementById('moveMsg');
   try {
-    state.image = await readFile(event.target.files && event.target.files[0]);
+    state.image = await shrinkImage(await readFile(event.target.files && event.target.files[0]));
     const img = document.getElementById('photoPrev');
     img.src = state.image;
     img.classList.remove('hidden');
@@ -161,7 +189,53 @@ document.getElementById('photo').addEventListener('change', async (event) => {
     note.textContent = err.message || '讀取圖片失敗。';
   }
 });
+document.getElementById('product').addEventListener('change', async (event) => {
+  const note = document.getElementById('moveMsg');
+  try {
+    const file = event.target.files && event.target.files[0];
+    if (!file) {
+      state.product = '';
+      document.getElementById('productPrev').classList.add('hidden');
+      return;
+    }
+    const raw = await readFile(file);
+    state.product = await shrinkImage(raw);
+    const img = document.getElementById('productPrev');
+    img.src = state.product;
+    img.classList.remove('hidden');
+    note.textContent = '已附商品圖。生片前會先對這張的衣服結構。';
+  } catch (err) {
+    state.product = '';
+    document.getElementById('productPrev').classList.add('hidden');
+    event.target.value = '';
+    note.textContent = err.message || '讀取商品圖失敗。';
+  }
+});
+const garmentNote = document.getElementById('garmentNote');
+const savedGarmentNote = localStorage.getItem('moose-move-garment-note');
+if (savedGarmentNote !== null) garmentNote.value = savedGarmentNote;
+garmentNote.addEventListener('input', () => {
+  localStorage.setItem('moose-move-garment-note', garmentNote.value);
+});
 document.getElementById('duration').addEventListener('change', paintCosts);
 document.getElementById('makeBtn').addEventListener('click', makeMove);
 document.getElementById('saveBtn').addEventListener('click', saveFile);
 refreshPlan();
+(async () => {
+  const raw = sessionStorage.getItem('moose-move-job');
+  if (!raw) return;
+  let saved;
+  try { saved = JSON.parse(raw); } catch { return; }
+  if (!saved || !saved.jobId) return;
+  const btn = document.getElementById('makeBtn');
+  btn.disabled = true;
+  try {
+    const done = await waitJob(saved.jobId, saved.duration);
+    paintVideo(done);
+    refreshPlan();
+  } catch (err) {
+    document.getElementById('moveMsg').textContent = err.message || '生片失敗';
+  } finally {
+    btn.disabled = false;
+  }
+})();

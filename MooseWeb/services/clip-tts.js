@@ -1,3 +1,5 @@
+const youtubeCut = require('./youtube-cut');
+
 function configured() {
   return Boolean(String(process.env.GEMINI_API_KEY || '').trim());
 }
@@ -25,18 +27,22 @@ function rateOf(mime) {
   return m ? Number(m[1]) : 24000;
 }
 
-async function speak(text) {
-  const line = String(text || '').replace(/\s+/g, ' ').trim();
-  if (!line) throw new Error('請先填旁白');
-  if (line.length > 280) throw new Error('旁白請在 280 字內，約 10 秒口播');
-  if (!configured()) throw new Error('旁白語音尚未開通。也可改傳口播音檔。');
+function openaiReady() {
+  const key = String(process.env.OPENAI_API_KEY || '').trim();
+  return Boolean(key) && !/your_key/i.test(key);
+}
+
+async function speakGemini(line, cut) {
   const model = process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts';
   const key = process.env.GEMINI_API_KEY;
+  const spoken = cut === 'youtube'
+    ? youtubeCut.geminiLine(line)
+    : `請用自然的台灣華語口播，語氣清楚、節奏偏快，不要加音效：${line}`;
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: `請用自然的台灣華語口播，語氣清楚、節奏偏快，不要加音效：${line}` }] }],
+      contents: [{ role: 'user', parts: [{ text: spoken }] }],
       generationConfig: {
         responseModalities: ['AUDIO'],
         speechConfig: {
@@ -56,6 +62,51 @@ async function speak(text) {
   if (/wav/i.test(mime)) return { buffer: raw, mime: 'audio/wav' };
   if (/mpeg|mp3/i.test(mime)) return { buffer: raw, mime: 'audio/mpeg' };
   return { buffer: pcmToWav(raw, rateOf(mime)), mime: 'audio/wav' };
+}
+
+async function speakOpenAI(line, cut) {
+  if (!openaiReady()) throw new Error('旁白語音額度不足');
+  const spec = cut === 'youtube'
+    ? youtubeCut.openaiSpec()
+    : { voice: 'ash', instructions: '台灣華語，清楚、自然、適合短片口播。語速中等偏快，不要輕聲，不要加音效。' };
+  const res = await fetch('https://api.openai.com/v1/audio/speech', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini-tts',
+      voice: spec.voice,
+      input: line,
+      instructions: spec.instructions,
+      response_format: 'mp3',
+    }),
+  });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    throw new Error(json.error?.message || '旁白語音失敗');
+  }
+  return { buffer: Buffer.from(await res.arrayBuffer()), mime: 'audio/mpeg' };
+}
+
+let geminiBlocked = false;
+
+async function speak(text, opts) {
+  const line = String(text || '').replace(/\s+/g, ' ').trim();
+  const cut = opts && opts.cut === 'youtube' ? 'youtube' : '';
+  if (!line) throw new Error('請先填旁白');
+  if (line.length > 280) throw new Error('旁白請在 280 字內，約 10 秒口播');
+  if (!configured() && !openaiReady()) throw new Error('旁白語音尚未開通。也可改傳口播音檔。');
+  if (cut === 'youtube' && openaiReady()) return speakOpenAI(line, cut);
+  if (geminiBlocked || !configured()) return speakOpenAI(line, cut);
+  try {
+    return await speakGemini(line, cut);
+  } catch (err) {
+    if (!/quota|rate limit|429|RESOURCE_EXHAUSTED/i.test(err.message || '')) throw err;
+    geminiBlocked = true;
+    return speakOpenAI(line, cut);
+  }
 }
 
 module.exports = { configured, speak };

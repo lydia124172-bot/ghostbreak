@@ -44,9 +44,10 @@ function parseScenes(script) {
     const picture = tidy((block.match(/畫面\s*[:：]\s*([\s\S]*?)(?=\n\s*(?:對話|LINE|視覺|SCENE)|$)/i) || [])[1]);
     const visualSame = tidy((block.match(/VISUAL[^:\n：]{0,8}[:：]\s*(.+)/i) || [])[1]);
     const visual = [shot, picture || visualSame].filter(Boolean).join(' ').slice(0, 400);
-    const quoted = (block.match(/[「"]([^」"]{2,120})[」"]/) || [])[1];
-    const lineSame = tidy((block.match(/LINE[^:\n：]{0,8}[:：]\s*(.+)/i) || [])[1]);
-    const line = tidy(quoted || lineSame).slice(0, 120);
+    const labeled = tidy((block.match(/(?:LINE|對白|對話|台詞)[^:\n：]{0,12}[:：]\s*(.+)/i) || [])[1]);
+    const fromLabel = labeled.replace(/^[「"『]+|[」"』]+$/g, '').trim();
+    const quoted = tidy((block.match(/[「"]([^」"]{2,80})[」"]/) || [])[1]);
+    const line = (fromLabel || quoted).slice(0, 80);
     if (visual.length < 4) throw new Error(`第 ${i + 1} 鏡缺少畫面。請保留畫面或 VISUAL。`);
     return { visual, line };
   });
@@ -123,14 +124,20 @@ function castList(cast) {
   }).filter((item) => item.image).slice(0, 4);
 }
 
-async function stillFromText(visual, look, castImages, castPrompt) {
+function isAnime(style) {
+  return style === 'anime';
+}
+
+async function stillFromText(visual, look, castImages, castPrompt, style) {
   const heroes = castList(castImages);
   const labels = heroes.map((item, index) => {
     const name = item.role === 'female' ? '女主' : item.role === 'male' ? '男主' : '其他人';
     return `第${index + 1}張是${name}`;
   }).join('，');
   const prompt = [
-    '直式 9:16 寫實短劇劇照，電影光，像一格分鏡。',
+    isAnime(style)
+      ? '直式 9:16 日本動畫電影分鏡。乾淨線條、賽璐璐上色。不要畫成真人照片，不要寫實皮膚。'
+      : '直式 9:16 寫實短劇劇照，電影光，像一格分鏡。',
     heroes.length ? `附圖${labels}。臉型、五官、髮型、衣服跟對應的附圖一樣，不要換成別人。` : '',
     heroes.some((item) => item.role === 'other') ? '這一鏡的畫面若寫到其他人，用對應的附圖。這一鏡沒寫到的人不要硬加進來。' : '',
     castPrompt ? `這是誰：${castPrompt}。只鎖定這個人的年齡、臉、髮型、衣服。不要把這段裡的一種表情用在每一鏡。` : '',
@@ -208,11 +215,16 @@ function forceGender(text, gender) {
   return line;
 }
 
-function appealLock(appeal, gender) {
+function appealLock(appeal, gender, style) {
   if (appeal === 'rough') {
-    return '臉要不好看、不討喜。可以疲憊、粗糙、黑眼圈、膚色不均。不要畫成俊男美女。五官仍要清楚。';
+    return isAnime(style)
+      ? '臉要不好看、不討喜。可以疲憊、粗糙。不要畫成俊男美女。這是二次元角色，不要畫成真人照片。'
+      : '臉要不好看、不討喜。可以疲憊、粗糙、黑眼圈、膚色不均。不要畫成俊男美女。五官仍要清楚。';
   }
   const lead = gender === 'female' ? '女主角' : gender === 'open' ? '這一位' : '男主角';
+  if (isAnime(style)) {
+    return `臉要好看，像動畫電影的${lead}。五官清楚、眼神有神。這是二次元角色，不要畫成真人照片，不要寫實皮膚。`;
+  }
   return `臉要好看，像電影${lead}。五官端正、膚色乾淨均匀、眼神有神。禁止疲憊、黑眼圈、傷痕、蠟黃、油膩、邋遢。光線要討好這張臉。仍是寫實照片，不要塑膠網紅臉。`;
 }
 
@@ -224,22 +236,26 @@ function genderLock(gender) {
   return '這一位是成年男性。必須畫成男人，男性的臉、喉結和身形。畫面裡只能有這個男人。禁止畫成女人，禁止長髮女生，禁止女性化。adult man, male face, not a woman.';
 }
 
-async function optimizeCastText(source, place, gender, appeal) {
+async function optimizeCastText(source, place, gender, appeal, style) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   const raw = String(source || '').trim();
   if (!key || raw.length < 2) return raw;
   const ask = [
-    '你在幫寫實人像生圖寫提示詞。把這一位的短句擴成可直接生圖的一段繁體中文。',
+    isAnime(style)
+      ? '你在幫動畫角色生圖寫提示詞。把這一位的短句擴成可直接生圖的一段繁體中文。畫風是日本動畫電影，不要寫成真人照片。'
+      : '你在幫寫實人像生圖寫提示詞。把這一位的短句擴成可直接生圖的一段繁體中文。',
     '第一句只寫「女性。」或「男性。」，依這個人的名字和描述判斷，不要判反，也不要換成另一個人。',
     '年齡、髮長、髮型、衣服顏色和款式必須跟原文一樣。短寸頭就寫短寸頭，及肩微捲就寫及肩微捲，絲質睡衣不要改成襯衫。',
     genderLock(gender),
-    appealLock(appeal, gender),
+    appealLock(appeal, gender, style),
     appeal === 'rough'
       ? '客人寫到的疲憊、粗糙可以留下。'
       : '這次要好看。即使原文寫疲憊、憔悴、傷痕，也不要寫進提示詞。',
     '只寫這一位。禁止再寫另一個人。',
     '客人寫到的年齡、髮型、衣服必須原樣保留，不要換成大衣、西裝、別的髮型。',
-    '沒寫的才補五官。要像定妝照：臉清楚、電影光。',
+    isAnime(style)
+      ? '沒寫的才補五官。要像動畫定妝：臉清楚、線條乾淨。不要寫實皮膚。'
+      : '沒寫的才補五官。要像定妝照：臉清楚、電影光。',
     place ? `場景必須沿用這句，不要改成攝影棚或其他地方：${place}` : '不要自作主張換成攝影棚。',
     '只輸出一段。不要寒暄，不要標題。',
     `這一位：${raw}`,
@@ -254,6 +270,7 @@ async function optimizeCastText(source, place, gender, appeal) {
           contents: [{ role: 'user', parts: [{ text: ask }] }],
           generationConfig: { maxOutputTokens: 800 },
         }),
+        signal: AbortSignal.timeout(45000),
       },
     );
     const json = await res.json().catch(() => ({}));
@@ -269,7 +286,7 @@ async function optimizeCastText(source, place, gender, appeal) {
   }
 }
 
-async function makeCast({ topic, notes, script, prompt: wanted, who, appeal }) {
+async function makeCast({ topic, notes, script, prompt: wanted, who, appeal, style }) {
   const pickedWho = who === 'female' || who === 'both' || who === 'other' ? who : 'male';
   const pickedAppeal = appeal === 'rough' ? 'rough' : 'pretty';
   const typed = String(wanted || '').trim();
@@ -288,7 +305,8 @@ async function makeCast({ topic, notes, script, prompt: wanted, who, appeal }) {
   const roles = [];
   for (let index = 0; index < chosen.length; index += 1) {
     let gender = genderFor(chosen[index], pickedWho);
-    let line = await optimizeCastText(chosen[index], place, gender, pickedAppeal);
+    const lookStyle = isAnime(style) ? 'anime' : 'live';
+    let line = await optimizeCastText(chosen[index], place, gender, pickedAppeal, lookStyle);
     const seen = guessGender(line) || guessGender(chosen[index]);
     if ((pickedWho === 'both' || pickedWho === 'other') && seen) gender = seen;
     line = forceGender(line, gender);
@@ -297,9 +315,13 @@ async function makeCast({ topic, notes, script, prompt: wanted, who, appeal }) {
     images.push(await geminiImage([{
       text: [
         genderLock(gender),
-        appealLock(pickedAppeal, gender),
-        '直式 9:16 寫實電影定妝照，2K。只畫這一位，半身，臉清楚。',
-        '85mm 鏡頭。不要其他路人，不要文字、字幕、浮水印。',
+        appealLock(pickedAppeal, gender, lookStyle),
+        lookStyle === 'anime'
+          ? '直式 9:16 日本動畫電影角色定妝，2K。只畫這一位，半身，臉清楚。二次元，不要真人照片，不要寫實皮膚。'
+          : '直式 9:16 寫實電影定妝照，2K。只畫這一位，半身，臉清楚。',
+        lookStyle === 'anime'
+          ? '乾淨線條。不要其他路人，不要文字、字幕、浮水印。'
+          : '85mm 鏡頭。不要其他路人，不要文字、字幕、浮水印。',
         '髮長、髮型和衣服必須完全照原文。短寸頭就畫短寸頭，及肩微捲就畫及肩微捲，長直髮才披在肩上。不要改成另一種髮型，也不要換成別的衣服。',
         pickedAppeal === 'rough' ? '臉的氣質可以照原文的疲憊或粗糙。' : '臉要好看。原文若寫疲憊、傷痕、難看，這次不要畫。',
         `原文：${chosen[index]}`,
@@ -312,16 +334,29 @@ async function makeCast({ topic, notes, script, prompt: wanted, who, appeal }) {
   return { images, prompt: optimized.join('\n\n'), roles };
 }
 
-function scenePrompt(scene, look, castPrompt) {
+function scenePrompt(scene, look, castPrompt, language, style) {
+  const english = language === 'en';
+  const anime = isAnime(style);
+  const line = String(scene.line || '').trim();
+  const say = !line
+    ? (english ? 'No dialogue in this shot. Stay silent. Do not invent a line.' : '這一鏡不要說話。不要自己加台詞。')
+    : (english
+      ? `The only spoken words are exactly: "${line}". Say that once, word for word, in English, then stop. Do not add a second sentence. Do not change the last words. Do not read the scene description aloud.`
+      : `唯一要說的對白就是這句，用國語一個字都不要改，說完就停：「${line}」。不要再加一句，不要把最後幾個字換成別的話，也不要把畫面描述念出來。`);
   return [
-    'Vertical 9:16 cinematic short-drama shot, 5 seconds, photoreal.',
-    'Animate this still. Keep the same face, hair, and clothes.',
-    'Let the expression, emotion, and body state follow this scene. Do not hold one frozen look.',
-    'Speak the Chinese line on camera in Mandarin. No captions, subtitles, prices, logos, or watermarks.',
-    castPrompt ? `Same person: ${castPrompt}` : '',
-    look ? `Same cast and place: ${look}` : '',
-    `Scene: ${scene.visual}`,
-    scene.line ? `Spoken line: 「${scene.line}」` : '',
+    say,
+    anime
+      ? 'Vertical 9:16 anime film, 5 seconds. Every frame, including the last frame, stays the same 2D Japanese anime as this still: clean line art, cel shading. Do not morph into a photograph, a real person, or a live-action actor.'
+      : 'Vertical 9:16 cinematic short-drama shot, 5 seconds, photoreal. Stay photoreal for the whole shot. Do not switch into anime.',
+    'Animate this still. Keep the same face, hair, clothes, and drawing style from the first frame to the last frame.',
+    'Let the expression, emotion, and body state follow this scene. Do not hold one frozen look. These notes are not spoken.',
+    english
+      ? 'No captions, subtitles, signs, prices, logos, or watermarks.'
+      : '不要字幕、招牌文字、價格、標誌或浮水印。',
+    castPrompt ? `Same person, not spoken: ${castPrompt}` : '',
+    look ? `Same cast and place, not spoken: ${look}` : '',
+    `Scene, not spoken: ${scene.visual}`,
+    say,
   ].filter(Boolean).join('\n');
 }
 
@@ -336,24 +371,25 @@ async function waitScene(job) {
   throw new Error('這一鏡逾時。請不要重按。');
 }
 
-async function produce({ script, images, cast, castPrompt, onPhase }) {
+async function produce({ script, images, cast, castPrompt, language, style, onPhase }) {
   if (!configured()) throw new Error('AI 短劇尚未開通。');
   const scenes = parseScenes(script);
   const look = lookOf(script);
   const heroes = castList(cast);
   const leadPrompt = String(castPrompt || '').trim().slice(0, 800);
   const refs = Array.isArray(images) ? images : [];
+  const lookStyle = style === 'anime' ? 'anime' : 'live';
   const clips = [];
   for (let i = 0; i < scenes.length; i += 1) {
     if (onPhase) onPhase(`第 ${i + 1} 鏡`);
-    const still = refs[i] || await stillFromText(scenes[i].visual, look, heroes, leadPrompt);
+    const still = refs[i] || await stillFromText(scenes[i].visual, look, heroes, leadPrompt, lookStyle);
     const submitted = await clipVideo.submit({
       images: [still],
       product: scenes[i].visual,
       hook: scenes[i].line,
       style: 'ugc',
       duration: sceneDuration(),
-      prompt: scenePrompt(scenes[i], look, leadPrompt),
+      prompt: scenePrompt(scenes[i], look, leadPrompt, language === 'en' ? 'en' : 'zh', lookStyle),
       generateAudio: true,
     });
     const url = await waitScene(submitted);

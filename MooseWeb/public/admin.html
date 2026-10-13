@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=fields2" />
+  <link rel="stylesheet" href="/css/site.css?v=look5" />
 </head>
 <body>
   <header class="site-header">
@@ -37,9 +37,13 @@
 
     <section id="appBox" class="hidden" style="display:grid;gap:22px;">
       <section class="panel">
-        <h2>接案用</h2>
+        <h2>AI 短劇</h2>
         <p class="lead">短劇只在後台。三鏡約 15 秒，有配音。客人不賣、也看不到。靜圖 Gemini 3 Pro 2K，一支約 NT$73，不扣站上點數。嘴型不保證。</p>
         <a class="btn btn-copper" href="/drama">做一支短劇</a>
+        <h2 style="margin-top:28px;">長片文案配素材</h2>
+        <p class="lead">貼上<strong>改寫旁白稿</strong>後，每鏡會標「畫面上要出現什麼」+ <strong>具體英文搜尋詞</strong>（避免剪映那種空泛「科技成功」）。Pexels／Pixabay 是真人拍的庫存片，<strong>小眾品牌／軟體介面</strong>常只能找「同類物品」代替，請以表上 <strong>畫面說明</strong> 為準挑片。錄音可自由改口。</p>
+        <p class="lead">已設定 Pixabay（或 Pexels API）：分析時會自動下載；可「一鍵下載全部鏡頭」再「打包下載 clips.zip」。</p>
+        <a class="btn btn-copper" href="/broll">文案配 B-roll</a>
       </section>
       <section class="panel admin-remind">
         <h2>給自己看的提醒（前台看不到）</h2>
@@ -240,8 +244,14 @@
       </section>
 
       <section class="panel">
+        <h2>付費會員名單</h2>
+        <p class="lead">付過款，或已開通付費方案的客人。沒付錢的帳號不會出現在這裡。</p>
+        <div id="paidList" class="list" style="padding-bottom:0;"></div>
+      </section>
+
+      <section class="panel">
         <h2>會員方案</h2>
-        <p class="lead">客人申請後，確認匯款或 LINE 再在此開通。尚未串接線上金流。</p>
+        <p class="lead">線上付款會自動開通。匯款或 LINE 確認後，在這裡手動開通。</p>
         <form id="grantForm" class="admin-grid">
           <div class="admin-2">
             <div>
@@ -442,8 +452,47 @@
       await loadInquiries();
     });
 
+    function money(amount) {
+      return 'NT$' + Number(amount || 0).toLocaleString('en-US');
+    }
+
+    function paidWhen(ms) {
+      if (!ms) return '';
+      const date = new Date(ms);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toISOString().slice(0, 16).replace('T', ' ');
+    }
+
+    function renderPaid(rows) {
+      const box = $('paidList');
+      if (!rows.length) {
+        box.innerHTML = '<p class="lead">還沒有付費會員。</p>';
+        return;
+      }
+      box.innerHTML = rows.map((row) => {
+        const plans = [
+          row.plan && row.plan !== 'free' ? `商品短片：${row.planName}${row.planExpires ? '，至 ' + String(row.planExpires).slice(0, 10) : ''}${row.credits ? '，剩 ' + row.credits + ' 點' : ''}` : '',
+          row.storyPlanName ? `劇本廣告：${row.storyPlanName}${row.storyExpires ? '，至 ' + String(row.storyExpires).slice(0, 10) : ''}${row.storyCredits ? '，剩 ' + row.storyCredits + ' 秒' : ''}` : '',
+          row.dramaPlanName ? `AI短劇：${row.dramaPlanName}` : '',
+        ].filter(Boolean).join('　');
+        const pay = (row.payments || [])[0];
+        const payLine = pay
+          ? `最近付款 ${paidWhen(pay.paidAt)}　${money(pay.amount)}　${pay.planName}`
+          : '後台開通，沒有線上付款紀錄';
+        return `
+        <article class="item">
+          <div>
+            <p class="meta">${escapeHtml(payLine)}</p>
+            <h3>${escapeHtml(row.name || '未填名稱')} · ${escapeHtml(row.email)}</h3>
+            <p>${escapeHtml(plans || '方案已到期')}</p>
+          </div>
+        </article>`;
+      }).join('');
+    }
+
     async function loadMembers() {
       const data = await api('/api/admin/accounts', { headers: authHeaders() });
+      renderPaid(data.paid || []);
       const rows = data.accounts || [];
       const box = $('memberList');
       if (!rows.length) {

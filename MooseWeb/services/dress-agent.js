@@ -65,7 +65,7 @@ function directPrompt(note) {
     'Put the exact clothes from images 2 and 3 onto the person in image 1.',
     'Keep the same face, hair, skin, and pose. Change only the clothes.',
     'Copy the garment as photographed: color, cut, buttons, pockets, collar, sleeves, and the belt, including how it is tied.',
-    'Do not add a buckle, bow, pocket, zipper, or other piece that is not in the clothing photos.',
+    'Do not add a buckle, bow, pocket, zipper, slit, vent, or other piece that is not in the clothing photos. If the garment back is closed, keep it closed with no opening.',
     extra ? `Guest note, use it only when it matches the clothing photos: ${extra}` : '',
     'One photoreal commercial photo.',
   ].filter(Boolean).join(' ');
@@ -94,7 +94,7 @@ function parsePromptJson(text) {
 function fallbackPrompts(note) {
   return {
     positive: directPrompt(note),
-    negative: 'different person, changed face, clothing details that are not in the clothing photos',
+    negative: 'different person, changed face, clothing details that are not in the clothing photos, back slit, center-back vent, kick pleat, parted hem',
   };
 }
 
@@ -107,8 +107,8 @@ async function compilePrompts(note, garments, required) {
   const system = [
     'Look at the two clothing photos. Write the image prompt you would use yourself.',
     'Return only JSON: {"positive":"","negative":""}. English. No explanation.',
-    'positive is one short paragraph: same person, wear both garments, and describe the belt, buttons, pockets, and collar exactly as they appear in the photos.',
-    'negative is one short line of changes that would make the clothes wrong.',
+    'positive is one short paragraph: same person, wear both garments, and describe the belt, buttons, pockets, collar, and whether the hem or back is closed or slit, exactly as they appear in the photos.',
+    'negative is one short line of changes that would make the clothes wrong, including a back slit or vent that is not in the photos.',
     'If the guest note conflicts with the photos, follow the photos.',
     `Guest note: ${extra}`,
   ].join('\n');
@@ -160,7 +160,7 @@ function imagePrompt(prompts) {
 function bgPrompt(scene, note) {
   const extra = String(note || '').replace(/\s+/g, ' ').trim().slice(0, 120);
   return [
-    'Keep the person and clothing from the photo exactly the same: face, hair, body, pose, outfit colors, buttons, pockets, and belt. Do not add a buckle, zipper, pocket, or logo that is not already in the photo.',
+    'Keep the person and clothing from the photo exactly the same: face, hair, body, pose, outfit colors, buttons, pockets, belt, and hem. Do not add a buckle, zipper, pocket, logo, slit, or vent that is not already in the photo.',
     'Only replace the background. Clean cutout edges, natural contact shadows, commercial Adobe Express quality.',
     `New background: ${scene.prompt}.`,
     'Soft natural light, photoreal, lifestyle fashion look. No fantasy, no clutter, no extra people.',
@@ -170,7 +170,7 @@ function bgPrompt(scene, note) {
   ].filter(Boolean).join('\n');
 }
 
-const RATIOS = ['3:4', '4:5', '9:16', '1:1', '16:9'];
+const RATIOS = ['3:4', '4:5', '9:16', '1:1', '16:9', '4:3', '3:2'];
 const SIZES = ['1K', '2K'];
 
 function imageOptions(input) {

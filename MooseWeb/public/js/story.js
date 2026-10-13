@@ -1,10 +1,38 @@
-const DEMO_SCRIPT = [
-  '晨光從窗邊進來，木桌上放著一袋剛烘好的手沖咖啡豆。',
-  '手撥開袋口，深焙香氣散開。熱水緩緩注入濾杯，液面慢慢漲起。',
-  '最後端起杯子靠近窗邊，蒸汽在光裡轉了一下。',
-  '店員：這包今天烘的？',
-  '客人：今天下單，今晚寄出。',
-  '不要字幕、不要浮水印。',
+const DEMO_VOICE = [
+  '## 🎬 影片核心定位',
+  '- **推薦時長**：15秒',
+  '- **影片風格**：日系清新',
+  '- **核心受眾**：想在家手沖的人',
+  '',
+  '## 📝 劇本分鏡表（表格呈現）',
+  '| 秒數 | 畫面分鏡與運鏡描述 (Visual) | 旁白配音 (VO) | 背景音樂與音效 (BGM/SFX) |',
+  '| --- | --- | --- | --- |',
+  '| 00-03 | 鏡頭緩慢推近木桌上的手沖咖啡豆 | 「袋口一開，就是今天烘的。」 | 輕柔鋼琴漸入 |',
+  '| 03-07 | 手撥開袋口，熱水注入濾杯 | 「香氣先出來，再慢慢沖。」 | 水流聲 |',
+  '| 07-12 | 杯子端到窗邊，蒸汽升起 | 「不用等，今晚就寄出。」 | 音樂推向高點 |',
+  '| 12-15 | 停在咖啡豆與窗光 | 「今天下單，今晚烘好寄出。」 | 音樂淡出 |',
+  '',
+  '## 💡 創作者叮嚀',
+  '- **運鏡與剪輯建議**：運鏡放慢，不要在畫面上打字。',
+].join('\n');
+
+const DEMO_TALK = [
+  '## 🎭 角色與情境設定',
+  '- **推薦時長**：15秒',
+  '- **角色陣容**：角色A 客人（嘴饞）、角色B 店員（淡定）',
+  '- **故事大綱**：客人盯著剛烘好的咖啡豆，想今天就帶走。',
+  '',
+  '## 📝 對話分鏡表（表格呈現）',
+  '| 秒數 | 角色 | 台詞對話 (Dialogue) | 畫面分鏡與表情動作描述 (Visual) | 背景音樂與音效 (BGM/SFX) |',
+  '| --- | --- | --- | --- | --- |',
+  '| 00-03 | **角色A** | 「這包是今天烘的？」 | 特寫客人睜大眼，背景是木桌上的咖啡豆。鏡頭快切 | 輕鬆日常 BGM 響起 |',
+  '| 03-06 | **角色B** | 「你現在問，晚上就寄出。」 | 鏡頭切到店員，一臉淡定，把袋子往前一推 | 紙袋聲 |',
+  '| 06-11 | **角色A** | 「那我現在就下單。」 | 雙人中景，客人已經掏出手機，店員無動於衷 | BGM 節奏變快 |',
+  '| 11-15 | **角色B** | 「行，今晚烘好就出門。」 | 特寫店員對著鏡頭挑眉，定格，袋子留在畫面中 | 歡樂結尾音淡出 |',
+  '',
+  '## 💡 演員與節奏叮嚀',
+  '- **表演情緒指導**：客人語速快一點，店員維持冷面。',
+  '- **剪輯節奏建議**：對話不留白，可用跳接。',
 ].join('\n');
 
 function tokenHeaders(json) {
@@ -114,7 +142,24 @@ function renderPlans(plans) {
   `).join('');
 }
 
-document.getElementById('demoScript').textContent = DEMO_SCRIPT;
+function selectedMode() {
+  const active = document.querySelector('#scriptModes .clip-type.active');
+  return active && active.dataset.mode === 'talk' ? 'talk' : 'voice';
+}
+
+function showDemo() {
+  const box = document.getElementById('demoScript');
+  if (box) box.textContent = selectedMode() === 'talk' ? DEMO_TALK : DEMO_VOICE;
+}
+
+document.querySelectorAll('#scriptModes .clip-type').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#scriptModes .clip-type').forEach((el) => el.classList.toggle('active', el === btn));
+    showDemo();
+  });
+});
+
+showDemo();
 
 const demo = document.getElementById('demoVideo');
 demo.addEventListener('error', () => {
@@ -146,7 +191,7 @@ async function writeStoryScript() {
   const res = await fetch('/api/story/script', {
     method: 'POST',
     headers: tokenHeaders(true),
-    body: JSON.stringify({ product, notes, images, duration: selectedDuration() }),
+    body: JSON.stringify({ product, notes, images, duration: selectedDuration(), mode: selectedMode() }),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || '寫稿失敗');
@@ -159,7 +204,7 @@ async function writeStoryScript() {
 async function produceStory(script) {
   const line = String(script || document.getElementById('script').value || '').trim();
   const { product, photo, images } = await collectStoryInput();
-  if (line.length < 12) throw new Error('請先有一段劇本，或按「AI 寫劇本」。');
+  if (line.length < 12) throw new Error('請先上傳圖片按「AI 寫劇本」，或自己貼一段分鏡。');
   const seconds = selectedDuration();
   const ok = window.confirm(`這會新做一支 ${seconds} 秒，並扣 ${seconds} 秒。示範片可直接看，不必為了看效果再做。確定要新做嗎？`);
   if (!ok) {
@@ -175,7 +220,7 @@ async function produceStory(script) {
   const clock = setInterval(() => {
     tick += 1;
     if (btn) btn.textContent = `${phase} ${tick} 秒`;
-    showMsg(`質感片${phase}，已過 ${tick} 秒。通常約 1 到 2 分鐘，請不要重按。`);
+    showMsg(`質感片${phase}，已過 ${tick} 秒。15 秒常要 3 到 6 分鐘，請不要重按。`);
   }, 1000);
   try {
     const payload = { script: line, product, duration: seconds };

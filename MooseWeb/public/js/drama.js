@@ -16,6 +16,12 @@ function showMsg(text) {
   if (el) el.textContent = text;
 }
 
+function showCast(text) {
+  const el = document.getElementById('castMsg');
+  if (el) el.textContent = text;
+  if (el) el.scrollIntoView({ block: 'nearest' });
+}
+
 function fileToJpegDataUrl(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -39,17 +45,31 @@ function fileToJpegDataUrl(file) {
 
 async function waitJob(jobId, onPhase) {
   const started = Date.now();
-    while (Date.now() - started < 18 * 60 * 1000) {
+  let misses = 0;
+  try { sessionStorage.setItem('moose-drama-job', jobId); } catch { /* 略過 */ }
+  while (Date.now() - started < 18 * 60 * 1000) {
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    const res = await fetch(`/api/drama/video/job/${encodeURIComponent(jobId)}`, { headers: tokenHeaders() });
+    let res;
+    try {
+      res = await fetch(`/api/drama/video/job/${encodeURIComponent(jobId)}`, { headers: tokenHeaders() });
+    } catch {
+      misses += 1;
+      if (onPhase) onPhase('連線中斷，片子還在做');
+      if (misses < 40) continue;
+      throw new Error('網頁和伺服器斷開了。片子可能還在做。請重新整理，或按「取回剛才的短劇」。不要再按產出。');
+    }
+    misses = 0;
     const body = await res.json().catch(() => ({}));
-    if (res.status === 401 || res.status === 404) throw new Error(body.error || '請先登入後台。');
-    if (res.status === 404) throw new Error(body.error || '找不到這次短劇。');
+    if (res.status === 401) throw new Error(body.error || '請先登入後台。');
+    if (res.status === 404) throw new Error(body.error || '找不到這次短劇。請按取回，不要再按產出。');
     if (!res.ok) throw new Error(body.error || '短劇失敗');
-    if (body.videoUrl) return body;
+    if (body.videoUrl) {
+      try { sessionStorage.removeItem('moose-drama-job'); } catch { /* 略過 */ }
+      return body;
+    }
     if (onPhase) onPhase(body.phase || (body.status === 'running' ? '製作中' : '排隊中'));
   }
-  throw new Error('短劇逾時。若已做好，請按取回，不要連續重按。');
+  throw new Error('頁面先停止等待，片子可能還在做。請重新整理，或按取回，不要再按產出。');
 }
 
 function showPreview(videoUrl) {
@@ -90,6 +110,7 @@ function refreshPhotoSlots() {
     const file = input && input.files && input.files[0];
     const img = document.getElementById(`photoPreview${n}`);
     const name = document.getElementById(`photoName${n}`);
+    const clear = document.getElementById(`photoClear${n}`);
     if (file) {
       picked += 1;
       if (img) {
@@ -98,15 +119,25 @@ function refreshPhotoSlots() {
         img.dataset.url = url;
         img.src = url;
         img.hidden = false;
+        img.style.cssText = 'max-width:320px;border-radius:8px;display:block;margin-top:8px;';
       }
       if (name) name.textContent = `已選：${file.name}`;
+      if (clear) {
+        clear.hidden = false;
+        clear.style.display = 'block';
+      }
     } else {
       if (img) {
         if (img.dataset.url) URL.revokeObjectURL(img.dataset.url);
         img.removeAttribute('src');
         img.hidden = true;
+        img.style.display = 'none';
       }
       if (name) name.textContent = '未選';
+      if (clear) {
+        clear.hidden = true;
+        clear.style.display = 'none';
+      }
     }
   });
   const bar = document.getElementById('photoCount');
@@ -121,16 +152,27 @@ async function collectInput() {
     const file = input && input.files && input.files[0];
     images.push(file ? await fileToJpegDataUrl(file) : '');
   }
-  return { topic, notes, images };
+  return {
+    topic,
+    notes,
+    images,
+    language: document.getElementById('dramaLang').value === 'en' ? 'en' : 'zh',
+  };
 }
 
 async function writeDramaScript() {
-  const { topic, notes, images } = await collectInput();
+  const { topic, notes, images, language } = await collectInput();
   if (topic.length < 2) throw new Error('請先填短劇主題。');
   const res = await fetch('/api/drama/script', {
     method: 'POST',
     headers: tokenHeaders(true),
-    body: JSON.stringify({ topic, notes, images }),
+    body: JSON.stringify({
+      topic,
+      notes,
+      images,
+      language,
+      style: document.getElementById('dramaStyle').value === 'anime' ? 'anime' : 'live',
+    }),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || '寫稿失敗');
@@ -176,23 +218,54 @@ function pickCast(id) {
 }
 
 async function keepCast(role, src) {
-  if (!/^data:image\//.test(String(src || ''))) return;
-  await fetch('/api/drama/cast/keep', {
+  if (!/^data:image\//.test(String(src || ''))) return null;
+  const res = await fetch('/api/drama/cast/keep', {
     method: 'POST',
     headers: tokenHeaders(true),
     body: JSON.stringify({ role, image: src }),
   });
+  if (!res.ok) return null;
+  return res.json().catch(() => null);
 }
 
-async function addCast(role, src, saved) {
+async function addCast(role, src, saved, mediaId) {
   if (!src) return;
   castSeq += 1;
   const id = castSeq;
-  castGallery.push({ id, role, src, picked: false });
+  const item = { id, role, src, picked: false, mediaId: mediaId || '' };
+  castGallery.push(item);
   pickCast(id);
   if (!saved) {
-    try { await keepCast(role, src); } catch { /* 這一頁還看得到 */ }
+    try {
+      const kept = await keepCast(role, src);
+      if (kept && kept.id) item.mediaId = kept.id;
+    } catch { /* 這一頁還看得到 */ }
   }
+}
+
+async function removeCast(id) {
+  const index = castGallery.findIndex((entry) => entry.id === id);
+  if (index < 0) return;
+  const item = castGallery[index];
+  if (item.mediaId) {
+    const res = await fetch('/api/drama/cast/drop', {
+      method: 'POST',
+      headers: tokenHeaders(true),
+      body: JSON.stringify({ id: item.mediaId }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || '這張沒有刪掉');
+    }
+  }
+  castGallery.splice(index, 1);
+  if (item.picked && item.role !== 'other') {
+    const next = [...castGallery].reverse().find((entry) => entry.role === item.role);
+    if (next) pickCast(next.id);
+    else castSlots[item.role] = '';
+  }
+  renderCast();
+  showMsg('這張已刪掉。重新整理不會再出現。');
 }
 
 function blobToDataUrl(blob) {
@@ -213,7 +286,7 @@ async function restoreCast() {
     const file = await fetch(item.url);
     if (!file.ok) continue;
     const src = await blobToDataUrl(await file.blob());
-    await addCast(item.role, src, true);
+    await addCast(item.role, src, true, item.id);
   }
   if (!images.length) return;
   renderCast();
@@ -237,8 +310,25 @@ function renderCast() {
     const cap = document.createElement('figcaption');
     cap.className = 'lead';
     cap.textContent = label;
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'btn btn-ghost';
+    del.textContent = '刪除';
+    del.style.cssText = 'display:block;margin-top:6px;padding:4px 12px;font-size:13px;';
+    del.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      del.disabled = true;
+      try {
+        await removeCast(item.id);
+      } catch (err) {
+        del.disabled = false;
+        showMsg(err.message || '這張沒有刪掉');
+      }
+    });
     wrap.appendChild(img);
     wrap.appendChild(cap);
+    wrap.appendChild(del);
     wrap.addEventListener('click', () => {
       if (item.role === 'other' && item.picked) item.picked = false;
       else pickCast(item.id);
@@ -261,7 +351,8 @@ async function uploadCast(role, input) {
 }
 
 async function makeCast() {
-  const { topic, notes } = await collectInput();
+  const topic = document.getElementById('topic').value.trim();
+  const notes = document.getElementById('notes').value.trim();
   const script = document.getElementById('script').value.trim();
   const prompt = document.getElementById('castPrompt').value.trim();
   const whoBtn = document.querySelector('#castWho .clip-type.active');
@@ -271,16 +362,26 @@ async function makeCast() {
   if (!prompt && topic.length < 2 && script.length < 2) throw new Error('請先寫主角提示詞，或先填主題。');
   const btn = document.getElementById('castBtn');
   btn.disabled = true;
-  btn.textContent = '優化並生成中…';
+  btn.textContent = '生成中…';
+  showCast('正在畫主角，大約半分鐘到一分鐘。請不要重按。');
   try {
     const res = await fetch('/api/drama/cast', {
       method: 'POST',
       headers: tokenHeaders(true),
-      body: JSON.stringify({ topic, notes, script, prompt, who, appeal }),
+      body: JSON.stringify({
+      topic,
+      notes,
+      script,
+      prompt,
+      who,
+      appeal,
+      style: document.getElementById('dramaStyle').value === 'anime' ? 'anime' : 'live',
+    }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '主角沒有生出來');
     const fresh = (Array.isArray(body.images) ? body.images : []).filter(Boolean).slice(0, 2);
+    if (!fresh.length) throw new Error('沒有產出主角圖，請再按一次。');
     const roles = Array.isArray(body.roles) ? body.roles : [];
     if (who === 'both') {
       for (let index = 0; index < fresh.length; index += 1) {
@@ -297,7 +398,7 @@ async function makeCast() {
     castPayload();
     renderCast();
     const face = appeal === 'rough' ? '這次照難看。' : '這次先好看。';
-    showMsg(who === 'other'
+    showCast(who === 'other'
       ? `其他人已留下，舊圖也還在。劇情有寫到他，那一鏡才會放進去。${face}約 NT$5。`
       : who === 'both'
         ? `兩位已照各自的描述分開，提示詞已優化並寫回欄位。舊圖還在。${face}約 NT$10。`
@@ -336,11 +437,16 @@ async function produceDrama(script) {
         images,
         cast: castPayload(),
         castPrompt: document.getElementById('castPrompt').value.trim(),
+        language: document.getElementById('dramaLang').value === 'en' ? 'en' : 'zh',
+        style: document.getElementById('dramaStyle').value === 'anime' ? 'anime' : 'live',
       }),
     });
     const body = await res.json().catch(() => ({}));
     if (res.status === 401 || res.status === 404) throw new Error(body.error || '請先登入後台。');
     if (!res.ok) throw new Error(body.error || '短劇失敗');
+    if (body.jobId) {
+      try { sessionStorage.setItem('moose-drama-job', body.jobId); } catch { /* 略過 */ }
+    }
     const done = body.videoUrl ? body : await waitJob(body.jobId, (next) => { phase = next; });
     showPreview(done.videoUrl);
     showMsg(done.recovered ? '已把做好的短劇抓回來。請下載後發文。' : '短劇已產出，請下載後發文。不要再按。');
@@ -358,7 +464,10 @@ document.getElementById('dramaForm').addEventListener('submit', async (event) =>
   try {
     await produceDrama();
   } catch (err) {
-    showMsg(err.message || '短劇失敗');
+    const raw = String(err && err.message || '');
+    showMsg(raw === 'Failed to fetch'
+      ? '連線中斷。片子可能還在做，錢不會因為這行字再扣一次。請重新整理，或按「取回剛才的短劇」。不要再按產出。'
+      : (raw || '短劇失敗'));
   }
 });
 
@@ -370,10 +479,16 @@ document.querySelectorAll('#castWho .clip-type, #castAppeal .clip-type').forEach
 });
 
 document.getElementById('castBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('castBtn');
+  btn.disabled = true;
+  btn.textContent = '生成中…';
+  showCast('正在畫主角，大約半分鐘到一分鐘。請不要重按。');
   try {
     await makeCast();
   } catch (err) {
-    showMsg(err.message || '主角沒有生出來');
+    showCast(err.message || '主角沒有生出來');
+    btn.disabled = false;
+    btn.textContent = '生成主角';
   }
 });
 
@@ -425,27 +540,65 @@ document.getElementById('writeMakeBtn').addEventListener('click', async () => {
   }
 });
 
+async function recoverDrama() {
+  const res = await fetch('/api/drama/video/last', { headers: tokenHeaders() });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || '沒有可取回的短劇');
+  if (body.videoUrl) {
+    showPreview(body.videoUrl);
+    showMsg('已取回剛才的短劇，請下載後發文。不要再按產出。');
+    return;
+  }
+  if (!body.jobId) throw new Error('沒有可取回的短劇');
+  const buttons = ['makeBtn', 'writeMakeBtn', 'writeBtn', 'recoverBtn'].map((id) => document.getElementById(id));
+  buttons.forEach((el) => { if (el) el.disabled = true; });
+  let phase = body.phase || '已送出';
+  showMsg(`剛才那支還在做（${phase}）。不會再新做一支，請不要重按。`);
+  try {
+    const done = await waitJob(body.jobId, (next) => {
+      phase = next;
+      showMsg(`剛才那支還在做（${phase}）。不會再新做一支，請不要重按。`);
+    });
+    showPreview(done.videoUrl);
+    showMsg('短劇已產出，請下載後發文。不要再按。');
+  } finally {
+    buttons.forEach((el) => { if (el) el.disabled = false; });
+  }
+}
+
 document.getElementById('recoverBtn').addEventListener('click', async () => {
   const btn = document.getElementById('recoverBtn');
   btn.disabled = true;
   try {
     showMsg('正在取回剛才的短劇，不會再新做一支。');
-    const res = await fetch('/api/drama/video/last', { headers: tokenHeaders() });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || '沒有可取回的短劇');
-    showPreview(body.videoUrl);
-    showMsg('已取回剛才的短劇，請下載後發文。不要再按產出。');
+    await recoverDrama();
   } catch (err) {
-    showMsg(err.message || '取回失敗');
+    const raw = String(err && err.message || '');
+    showMsg(raw === 'Failed to fetch'
+      ? '連線中斷。請稍後再按「取回剛才的短劇」，不要再按產出。'
+      : (raw || '取回失敗'));
   } finally {
     btn.disabled = false;
   }
 });
 
+function clearPhoto(n) {
+  const input = document.getElementById(`photo${n}`);
+  if (input) input.value = '';
+  refreshPhotoSlots();
+  showMsg(`第 ${n} 鏡參考圖已拿掉。這一鏡改由 AI 照主角和劇情生畫面。`);
+}
+
 photoInputs().forEach((input) => {
   if (input) input.addEventListener('change', refreshPhotoSlots);
+});
+[1, 2, 3].forEach((n) => {
+  const clear = document.getElementById(`photoClear${n}`);
+  if (!clear) return;
+  clear.addEventListener('click', () => clearPhoto(n));
 });
 refreshPhotoSlots();
 
 refreshPlan();
 restoreCast().catch(() => {});
+recoverDrama().catch(() => {});

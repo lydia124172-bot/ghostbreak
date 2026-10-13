@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>文案配 B-roll — 麋鹿網後台</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=look5" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/admin">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>內容後台</small></span>
+      </a>
+      <div class="admin-actions">
+        <a class="nav-link" href="/admin">回後台</a>
+        <a class="nav-link" href="/">回前台</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <h1>長片文案配素材</h1>
+      <p class="lead">貼上<strong>改寫旁白稿</strong>後，每鏡會標「畫面上要出現什麼」+ <strong>純英文搜尋詞</strong>（不可中英混寫）。庫存站<strong>沒有卡通 IP</strong>（派大星、漫威等），請用「真人沮喪／開心」等通用畫面代替，以表上 <strong>畫面說明</strong> 為準挑片。錄音可自由改口。</p>
+      <p class="lead">合成固定走冷感御姐口播：語速偏快、術語不屑、諷刺句收慢。配樂分四段（低音懸疑、約 96 BPM 電子拍、空靈反思、結尾拉高）。每隔十多秒會插入故障字、黑白閃切或錯誤窗。幾乎不動的照片會推近並橫移。不用抒情輕音樂。</p>
+      <p class="lead" id="apiHint"></p>
+    </section>
+
+    <form id="form" class="panel">
+      <label class="field" for="script">旁白稿（可改寫版）</label>
+      <textarea id="script" class="form-input" rows="16" placeholder="貼你打算用的旁白：可以是改寫後的完整稿，或分段大綱。系統只負責「這段話配什麼畫面」。"></textarea>
+      <div class="admin-actions" style="margin-top:16px;">
+        <button class="btn btn-copper" id="submit" type="submit">分析、下載並合成預覽片</button>
+      </div>
+      <p id="msg" class="lead"></p>
+    </form>
+
+    <section id="results" class="panel hidden">
+      <div id="previewBox" class="hidden" style="margin-bottom:20px;">
+        <h2 style="font-size:1.15rem;margin:0 0 10px;">合成預覽片（每一鏡的畫面跟這句旁白一樣長）</h2>
+        <video id="previewVideo" controls playsinline preload="metadata" style="width:100%;max-width:960px;border-radius:12px;background:#111;"></video>
+        <div class="admin-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;">
+          <a class="btn btn-copper" id="previewDl" href="#" download="broll-preview.mp4">下載 broll-preview.mp4</a>
+          <button type="button" class="btn btn-cream" id="renderBtn">重新合成預覽片</button>
+        </div>
+      </div>
+      <div class="admin-actions" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <a class="btn btn-cream" id="mdLink" href="#" target="_blank" rel="noopener">下載對照表 .md</a>
+        <button type="button" class="btn btn-copper" id="fetchAllBtn">一鍵下載全部鏡頭</button>
+        <a class="btn btn-cream hidden" id="zipLink" href="#">打包下載 clips.zip</a>
+      </div>
+      <div id="sceneTable"></div>
+    </section>
+  </main>
+  <script>
+    const form = document.getElementById('form');
+    const script = document.getElementById('script');
+    const submit = document.getElementById('submit');
+    const msg = document.getElementById('msg');
+    const results = document.getElementById('results');
+    const sceneTable = document.getElementById('sceneTable');
+    const mdLink = document.getElementById('mdLink');
+    const apiHint = document.getElementById('apiHint');
+    const fetchAllBtn = document.getElementById('fetchAllBtn');
+    const zipLink = document.getElementById('zipLink');
+    const previewBox = document.getElementById('previewBox');
+    const previewVideo = document.getElementById('previewVideo');
+    const previewDl = document.getElementById('previewDl');
+    const renderBtn = document.getElementById('renderBtn');
+    let jobId = null;
+    let cfgStock = false;
+    let cfgPixabay = false;
+    let cfgPexelsKey = false;
+
+    fetch('/api/broll/config')
+      .then((r) => r.json())
+      .then((cfg) => {
+        cfgStock = Boolean(cfg.stock_api);
+        cfgPixabay = Boolean(cfg.pixabay_api);
+        cfgPexelsKey = Boolean(cfg.pexels_api);
+        if (cfg.stock_api) {
+          const who = cfg.pixabay_api ? 'Pixabay' : (cfg.pexels_api ? 'Pexels' : '素材 API');
+          apiHint.textContent = '已設定 ' + who + '：按一次會分鏡、下載素材，並用冷感御姐口播接成一支 broll-preview.mp4。';
+        } else {
+          apiHint.innerHTML = 'Pexels <strong>暫停核發新 API 金鑰</strong>。請改用 <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener">Pixabay</a>：註冊登入後在文件頁複製 Key，寫入 MooseWeb <code>.env</code> 的 <code>PIXABAY_API_KEY=</code> 並重啟。';
+        }
+        fetchAllBtn.disabled = !cfgStock;
+        if (!cfgStock) fetchAllBtn.title = '請在 .env 設定 PIXABAY_API_KEY 或 PEXELS_API_KEY';
+      })
+      .catch(() => {});
+
+    function updatePreview(id, job) {
+      if (job.preview_ready && id) {
+        previewBox.classList.remove('hidden');
+        const url = '/api/broll/' + id + '/file/broll-preview.mp4?v=' + Date.now();
+        previewVideo.muted = false;
+        previewVideo.volume = 1;
+        previewVideo.src = url;
+        previewDl.href = url;
+      } else if (job.status !== 'rendering') {
+        previewBox.classList.add('hidden');
+      }
+    }
+
+    function updateZipLink(id, job) {
+      const n = (job.scenes || []).filter((s) => s.local_file).length;
+      if (n > 0 && id) {
+        zipLink.href = '/api/broll/' + id + '/clips.zip';
+        zipLink.classList.remove('hidden');
+        zipLink.textContent = '打包下載 clips.zip（' + n + ' 支）';
+      } else {
+        zipLink.classList.add('hidden');
+      }
+    }
+
+    function renderScenes(job) {
+      const scenes = job.scenes || [];
+      if (!scenes.length) return;
+      results.classList.remove('hidden');
+      mdLink.href = '/api/broll/' + job.id + '/shotlist';
+      updateZipLink(job.id, job);
+      updatePreview(job.id, job);
+      let html = '<table class="admin-grid" style="width:100%;font-size:14px;"><thead><tr>'
+        + '<th>#</th><th>秒</th><th>口播重點</th><th>畫面／主體</th><th>搜尋關鍵字</th><th>素材</th></tr></thead><tbody>';
+      for (const s of scenes) {
+        const q = (s.search_query || '').replace(/"/g, '&quot;');
+        const visual = (s.visual || '') + (s.subject_en ? ' · ' + s.subject_en : '');
+        let asset = '—';
+        if (s.local_file && job.id) {
+          asset = '<a href="/api/broll/' + job.id + '/file/' + encodeURIComponent(s.local_file) + '">'
+            + s.local_file + '</a>';
+          if (s.matched_query) asset += '<br><span class="lead">命中：' + s.matched_query + '</span>';
+        } else if (s.fetch_note) {
+          asset = '<span class="lead">' + s.fetch_note + '</span>';
+        }
+        if (s.query_warning) asset += '<br><span class="lead">' + s.query_warning + '</span>';
+        html += '<tr data-scene-index="' + s.index + '"><td>' + s.index + '</td><td>' + s.duration_sec + '</td><td>'
+          + (s.narration || '').replace(/</g, '&lt;') + '</td><td>'
+          + visual.replace(/</g, '&lt;') + '</td><td>'
+          + '<input class="form-input scene-query" type="text" value="' + q + '" style="min-width:12rem;font-size:13px;" />'
+          + '<div class="admin-actions" style="margin-top:6px;flex-wrap:wrap;gap:6px;">'
+          + '<button type="button" class="btn btn-cream btn-sm scene-preview">Pexels 預覽</button>'
+          + '<button type="button" class="btn btn-copper btn-sm scene-ressearch">重新搜尋</button>'
+          + '</div>'
+          + (s.search_query_alt ? '<p class="lead" style="margin:6px 0 0;">原備搜：' + s.search_query_alt + '</p>' : '')
+          + '</td><td class="scene-asset">' + asset + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      sceneTable.innerHTML = html;
+    }
+
+    function stockPreviewUrl(query) {
+      const q = encodeURIComponent(query.trim());
+      if (cfgPixabay && !cfgPexelsKey) return 'https://pixabay.com/videos/search/' + q + '/';
+      return 'https://www.pexels.com/search/videos/' + q + '/';
+    }
+
+    sceneTable.addEventListener('click', async (e) => {
+      if (!jobId) return;
+      const row = e.target.closest('tr[data-scene-index]');
+      if (!row) return;
+      const sceneIndex = row.getAttribute('data-scene-index');
+      const input = row.querySelector('.scene-query');
+      const query = (input && input.value || '').trim();
+      if (e.target.closest('.scene-preview')) {
+        if (!query) return;
+        window.open(stockPreviewUrl(query), '_blank', 'noopener');
+        return;
+      }
+      if (!e.target.closest('.scene-ressearch')) return;
+      if (!query) {
+        msg.textContent = '請先填英文搜尋關鍵字。';
+        return;
+      }
+      const btn = e.target.closest('.scene-ressearch');
+      btn.disabled = true;
+      msg.textContent = '第 ' + sceneIndex + ' 鏡：重新搜尋…';
+      const response = await fetch('/api/broll/' + jobId + '/scene/' + sceneIndex + '/ressearch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      const data = await response.json();
+      btn.disabled = false;
+      if (!response.ok) {
+        msg.textContent = data.error || '失敗';
+        return;
+      }
+      msg.textContent = data.message || '已更新';
+      renderScenes({ ...data, id: jobId });
+    });
+
+    function watch(id) {
+      jobId = id;
+      submit.disabled = true;
+      fetchAllBtn.disabled = true;
+      renderBtn.disabled = true;
+      const timer = setInterval(async () => {
+        const response = await fetch('/api/broll/' + id);
+        const job = await response.json();
+        msg.textContent = (job.message || '處理中') + '　' + (job.progress || 0) + '%';
+        if (job.status === 'rendering' || (job.scenes && job.scenes.length)) {
+          results.classList.remove('hidden');
+          if (job.scenes && job.scenes.length) renderScenes({ ...job, id });
+          updatePreview(id, job);
+        }
+        if (job.status === 'done') {
+          clearInterval(timer);
+          submit.disabled = false;
+          fetchAllBtn.disabled = !cfgStock;
+          renderBtn.disabled = false;
+          renderScenes({ ...job, id });
+        }
+        if (job.status === 'error' || !response.ok) {
+          clearInterval(timer);
+          submit.disabled = false;
+          fetchAllBtn.disabled = !cfgStock;
+          renderBtn.disabled = false;
+          msg.textContent = job.error || job.message || '失敗';
+        }
+      }, 1200);
+    }
+
+    renderBtn.addEventListener('click', async () => {
+      if (!jobId) return;
+      renderBtn.disabled = true;
+      msg.textContent = '開始合成預覽片…';
+      const response = await fetch('/api/broll/' + jobId + '/render', { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) {
+        renderBtn.disabled = false;
+        msg.textContent = data.error || '無法開始合成';
+        return;
+      }
+      watch(jobId);
+    });
+
+    fetchAllBtn.addEventListener('click', async () => {
+      if (!jobId) {
+        msg.textContent = '請先分析文案產生分鏡。';
+        return;
+      }
+      if (!cfgStock) {
+        msg.textContent = '請先在 .env 設定 PIXABAY_API_KEY（或既有 PEXELS_API_KEY）並重啟 MooseWeb。';
+        return;
+      }
+      fetchAllBtn.disabled = true;
+      msg.textContent = '開始批量下載…';
+      const response = await fetch('/api/broll/' + jobId + '/download-all', { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) {
+        fetchAllBtn.disabled = false;
+        msg.textContent = data.error || '無法開始下載';
+        return;
+      }
+      watch(jobId);
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = script.value.trim();
+      if (text.length < 40) {
+        msg.textContent = '文案請至少幾十字，方便分鏡。';
+        return;
+      }
+      submit.disabled = true;
+      results.classList.add('hidden');
+      msg.textContent = '送出中…';
+      const response = await fetch('/api/broll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ script: text }),
+      });
+      const job = await response.json();
+      if (!response.ok) {
+        submit.disabled = false;
+        msg.textContent = job.error || '失敗';
+        return;
+      }
+      history.replaceState(null, '', '/broll?job=' + job.id);
+      watch(job.id);
+    });
+
+    const existing = new URLSearchParams(location.search).get('job');
+    if (existing) {
+      jobId = existing;
+      fetch('/api/broll/' + existing)
+        .then((r) => r.json())
+        .then((job) => {
+          if (job.status === 'done') renderScenes({ ...job, id: existing });
+          else watch(existing);
+        })
+        .catch(() => watch(existing));
+    }
+  </script>
+</body>
+</html>

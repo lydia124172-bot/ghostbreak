@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=dress2" />
+  <link rel="stylesheet" href="/css/site.css?v=look5" />
 </head>
 <body>
   <header class="site-header">
@@ -30,9 +30,10 @@
 
   <main class="wrap">
     <section class="hero research-hero">
+      <img class="tool-banner" src="/images/kit/edit.jpg?v=4" alt="">
       <p class="kicker">智能體　成功一張扣 1 點</p>
-      <h1>先寫要改哪裡，再傳正確的圖。</h1>
-      <p class="lead">第一張是原圖。寫出只准動的地方，例如洋裝、腰帶或背景，再上傳那一塊要換成的正確照片。沒寫到的臉、姿勢和其他地方會盡量留著。這不是修圖保證，小細節仍可能略變。</p>
+      <h1>先寫要改哪裡。正確的圖可以附。</h1>
+      <p class="lead">第一張是要改的原圖。下面那句可隨時改，只寫准動的地方。正確的商品圖可以附，用來對那一塊；沒附就照你寫的句子，用原圖旁邊的布和光來補。臉、姿勢、背景會留著。比例預設跟原圖。小細節仍可能略變。</p>
       <p class="clip-plan" id="editPlan">需登入並有方案點數。</p>
     </section>
 
@@ -41,23 +42,24 @@
         <div>
           <label class="field" for="photo">原圖</label>
           <input id="photo" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" />
-          <p class="combo-fit">要被改的那張。JPG、PNG、WebP，小於 2MB。</p>
+          <p class="combo-fit">要被改的那張。JPG、PNG、WebP，小於 6MB。</p>
           <img id="photoPrev" class="clip-still hidden" alt="原圖預覽" />
         </div>
         <div>
           <label class="field" for="note">要改的是哪裡</label>
-          <textarea id="note" class="form-input" rows="3" maxlength="400" placeholder="例如：只改洋裝，換成下一張的衣服。臉、姿勢、背景不要動"></textarea>
+          <textarea id="note" class="form-input" rows="3" maxlength="400" placeholder="例如：背面裙襬補成連續的布，不要開叉。臉和姿勢不要動"></textarea>
         </div>
         <div>
-          <label class="field" for="reference">正確的圖</label>
+          <label class="field" for="reference">正確的圖（選填）</label>
           <input id="reference" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" />
-          <p class="combo-fit">這一張是要換成的正確樣子，例如衣服實拍。只會拿來替換上面寫的那一塊。</p>
+          <p class="combo-fit">有商品實拍就放上來，只拿來對上面寫的那一塊。沒有也可以直接改。</p>
           <img id="refPrev" class="clip-still hidden" alt="正確圖預覽" />
         </div>
         <div class="admin-actions">
           <label class="field" for="ratio" style="margin:0;">輸出比例</label>
           <select id="ratio" class="form-input" style="width:auto;min-width:9rem;">
-            <option value="1:1" selected>1:1　方圖</option>
+            <option value="" selected>跟原圖</option>
+            <option value="1:1">1:1　方圖</option>
             <option value="3:4">3:4　直式</option>
             <option value="4:5">4:5　直式</option>
             <option value="9:16">9:16　全螢幕直式</option>
@@ -96,7 +98,7 @@
       </nav>
     </div>
   </footer>
-  <script src="/js/site.js?v=studio6"></script>
-  <script src="/js/edit.js?v=2"></script>
+  <script src="/js/site.js?v=studio10"></script>
+  <script src="/js/edit.js?v=3"></script>
 </body>
 </html>

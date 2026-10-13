@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=dress2" />
+  <link rel="stylesheet" href="/css/site.css?v=look5" />
 </head>
 <body>
   <header class="site-header">
@@ -30,9 +30,10 @@
 
   <main class="wrap">
     <section class="hero research-hero">
+      <img class="tool-banner" src="/images/kit/move.jpg?v=4" alt="">
       <p class="kicker">智能體　依秒數扣點</p>
       <h1>上傳一張圖，讓它動起來。</h1>
-      <p class="lead">寫要做的動作，例如慢慢往前走、轉個身。沒寫就只做輕微鏡頭移動。成品沒有配樂、字幕，也不能對嘴。正面站著要轉一整圈，仍可能轉不完整。臉與衣服細節可能略變。</p>
+      <p class="lead">寫要做的動作，例如慢慢往前走、轉個身。沒寫就只做輕微鏡頭移動。客人要轉身時，請再附商品背面圖。這張會跟著整個轉身過程對衣服，轉到一半也不能另外開叉，不是只改最後停住的畫面。若要改的是一張靜止畫面，到<a href="/edit">改圖</a>，寫要改的地方，可再附正確的商品圖。成品沒有配樂、字幕，也不能對嘴。正面站著要轉一整圈，仍可能轉不完整。臉與衣服細節可能略變。</p>
       <p class="clip-plan" id="movePlan">需登入並有方案點數。</p>
     </section>
 
@@ -43,6 +44,14 @@
           <input id="photo" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" />
           <p class="combo-fit">一張即可。JPG、PNG、WebP，小於 6MB。</p>
           <img id="photoPrev" class="clip-still hidden" alt="原圖預覽" />
+        </div>
+        <div>
+          <label class="field" for="product">商品圖（選填，用來對衣服）</label>
+          <input id="product" class="form-input" type="file" accept="image/jpeg,image/png,image/webp" />
+          <label class="field" for="garmentNote">這張要對什麼（可隨時改）</label>
+          <textarea id="garmentNote" class="form-input" rows="2" maxlength="200">背面不要開叉。轉身全程都照這張。</textarea>
+          <p class="combo-fit">換別的問題就改這句。有附商品圖時，整段影片都照這句。</p>
+          <img id="productPrev" class="clip-still hidden" alt="商品圖預覽" />
         </div>
         <div>
           <label class="field" for="motion">動作（選填）</label>
@@ -91,7 +100,7 @@
       </nav>
     </div>
   </footer>
-  <script src="/js/site.js?v=studio6"></script>
-  <script src="/js/move.js?v=1"></script>
+  <script src="/js/site.js?v=studio10"></script>
+  <script src="/js/move.js?v=5"></script>
 </body>
 </html>

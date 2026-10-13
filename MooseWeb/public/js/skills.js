@@ -56,14 +56,14 @@ const TRADES = [
         need: '姓名、需求與聯絡方式進名單，而不是私訊才算數。',
         saas: '企業獲客助理',
         status: '籌備中',
-        href: '/saas',
+        href: '#studio-lead',
       },
       {
         name: 'LINE 跟進',
         need: '表單或官方帳號進來的詢問，要通知負責人並可回覆已收到。',
         saas: '企業獲客助理',
         status: '籌備中',
-        href: '/saas',
+        href: '#studio-lead',
       },
     ],
   },
@@ -100,10 +100,17 @@ const TRADES = [
       },
       {
         name: '改圖',
-        need: '上傳一張圖，寫要改的地方，例如換背景或改顏色。',
+        need: '上傳原圖，寫只准改的地方。有正確商品圖就附上，沒有也能照句子改。',
         saas: '改圖智能體（付費工具頁）',
         status: '已上線',
         href: '/edit',
+      },
+      {
+        name: '設計對話',
+        need: '用對話做廣告、橫幅與社群圖。可只改字、塗一塊局部重繪，或套到衣服、手機、包裝。',
+        saas: '設計對話智能體（付費工具頁）',
+        status: '已上線',
+        href: '/design',
       },
       {
         name: '讓圖動起來',
@@ -149,7 +156,7 @@ const TRADES = [
       },
       {
         name: '劇本質感廣告',
-        need: '照劇本走：開場看見商品，兩人短對話，收尾一句賣點。10 或 15 秒。',
+        need: '上傳圖片，選旁白式或對話式。旁白式一個人說完，對話式兩人對談。',
         saas: 'StoryClip 劇本廣告',
         status: '已上線',
         href: '/story',
@@ -250,6 +257,21 @@ function renderMap(trade) {
       </article>
     `;
   }).join('');
+  const commission = trade.id === 'studio' ? `
+    <section class="page-head" id="studio-lead">
+      <p class="kicker">還沒做成自助工具</p>
+      <h2>可先委託開發</h2>
+      <p class="lead">下面這項還沒做成自己開通的工具。店家留單包含在品牌官網裡。</p>
+    </section>
+    <ol class="tool-list">
+      <li>
+        <p class="meta">1　籌備中</p>
+        <h3>企業獲客助理</h3>
+        <p>放在官網小窗或 LINE 官方帳號。來訪的人會依序被問：想辦什麼、大概預算或時段、姓名和聯絡方式。問完留下名單，並通知負責人跟進。</p>
+        <a class="btn btn-cream" href="/hire?service=assistant">先諮詢委託</a>
+      </li>
+    </ol>
+  ` : '';
   document.getElementById('map').innerHTML = `
     <article class="combo-card map-card">
       <p class="meta">行業</p>
@@ -260,20 +282,27 @@ function renderMap(trade) {
       <h3>要會的獲客系統</h3>
       <div class="map-systems">${systems}</div>
     </article>
+    ${commission}
   `;
 }
 
 function currentTrade() {
   const id = (location.hash || '').replace(/^#/, '');
+  if (id === 'studio-lead') return tradeById('studio');
   return tradeById(id);
 }
 
 function show(trade) {
-  if (location.hash.replace(/^#/, '') !== trade.id) {
+  const hash = location.hash.replace(/^#/, '');
+  if (hash !== trade.id && hash !== 'studio-lead') {
     history.replaceState(null, '', `#${trade.id}`);
   }
   renderTrades(trade.id);
   renderMap(trade);
+  if (hash === 'studio-lead') {
+    const lead = document.getElementById('studio-lead');
+    if (lead) lead.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 document.getElementById('trades').addEventListener('click', (event) => {

@@ -1,9 +1,49 @@
 const state = { image: '', reference: '', imageId: '', credits: 0, owner: false, loggedIn: false };
 
+function shrinkImage(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const edge = Math.max(img.width, img.height) || 1;
+      const scale = Math.min(1, 1280 / edge);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+function nearestRatio(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = img.width / Math.max(1, img.height);
+      const options = ['1:1', '3:4', '4:5', '9:16', '16:9'];
+      let best = '3:4';
+      let gap = Infinity;
+      options.forEach((name) => {
+        const [w, h] = name.split(':').map(Number);
+        const diff = Math.abs(ratio - w / h);
+        if (diff < gap) {
+          gap = diff;
+          best = name;
+        }
+      });
+      resolve(best);
+    };
+    img.onerror = () => resolve('3:4');
+    img.src = dataUrl;
+  });
+}
+
 function readFile(file) {
   return new Promise((resolve, reject) => {
     if (!file) return reject(new Error('請先選圖。'));
-    if (file.size > 2 * 1024 * 1024) return reject(new Error('單張圖請小於 2MB。'));
+    if (file.size > 6 * 1024 * 1024) return reject(new Error('單張圖請小於 6MB。'));
     if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) return reject(new Error('請用 JPG、PNG 或 WEBP。'));
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result || ''));
@@ -95,11 +135,9 @@ async function makeEdit() {
     msg.textContent = '請寫要改的是哪裡。';
     return;
   }
-  if (!state.reference) {
-    msg.textContent = '請上傳要換成的正確圖。';
-    return;
-  }
-  msg.textContent = '正在依正確圖改指定的地方，約半分鐘，請不要重按。';
+  const picked = document.getElementById('ratio').value;
+  const aspectRatio = picked || await nearestRatio(state.image);
+  msg.textContent = '正在只改你寫的那一塊，約半分鐘，請不要重按。';
   btn.disabled = true;
   try {
     const res = await fetch('/api/edit', {
@@ -109,7 +147,7 @@ async function makeEdit() {
         image: state.image,
         reference: state.reference,
         note,
-        aspectRatio: document.getElementById('ratio').value,
+        aspectRatio,
         imageSize: document.getElementById('size').value,
       }),
     });
@@ -131,7 +169,7 @@ async function makeEdit() {
 document.getElementById('photo').addEventListener('change', async (event) => {
   const msg = document.getElementById('editMsg');
   try {
-    state.image = await readFile(event.target.files && event.target.files[0]);
+    state.image = await shrinkImage(await readFile(event.target.files && event.target.files[0]));
     showPrev('photoPrev', state.image);
     if (msg) msg.textContent = '';
   } catch (err) {
@@ -144,7 +182,13 @@ document.getElementById('photo').addEventListener('change', async (event) => {
 document.getElementById('reference').addEventListener('change', async (event) => {
   const msg = document.getElementById('editMsg');
   try {
-    state.reference = await readFile(event.target.files && event.target.files[0]);
+    const file = event.target.files && event.target.files[0];
+    if (!file) {
+      state.reference = '';
+      showPrev('refPrev', '');
+      return;
+    }
+    state.reference = await shrinkImage(await readFile(file));
     showPrev('refPrev', state.reference);
     if (msg) msg.textContent = '';
   } catch (err) {
@@ -153,6 +197,12 @@ document.getElementById('reference').addEventListener('change', async (event) =>
     event.target.value = '';
     if (msg) msg.textContent = err.message || '讀取圖片失敗。';
   }
+});
+const noteBox = document.getElementById('note');
+const savedNote = localStorage.getItem('moose-edit-note');
+if (savedNote !== null) noteBox.value = savedNote;
+noteBox.addEventListener('input', () => {
+  localStorage.setItem('moose-edit-note', noteBox.value);
 });
 document.getElementById('makeBtn').addEventListener('click', makeEdit);
 document.getElementById('saveBtn').addEventListener('click', saveFile);

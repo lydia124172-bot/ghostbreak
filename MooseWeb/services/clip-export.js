@@ -206,4 +206,6 @@ function sendDownload(res, filePath, mime, filename) {
   res.download(abs, filename, { dotfiles: 'allow' });
 }
 
-module.exports = { ffmpegBin, ensureMp4, remuxPlayable, concatVideos, mixAudio, sendDownload };
+module.exports = {
+  ffmpegBin, ensureMp4, remuxPlayable, concatVideos, mixAudio, sendDownload, runFfmpeg,
+};
