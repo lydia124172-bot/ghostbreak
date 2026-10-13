@@ -196,8 +196,8 @@ async function submitTurbo(stillDataUrl, prompt) {
   return { requestId, model, statusUrl: urls.statusUrl, responseUrl: urls.responseUrl };
 }
 
-async function oneClip(shot, audioBuf) {
-  const still = await geminiStill(shot.prompt);
+async function oneClip(shot, audioBuf, stillDataUrl) {
+  const still = stillDataUrl || await geminiStill(shot.prompt);
   const submitted = await submitTurbo(still, [
     shot.prompt,
     'Horizontal 16:9, 5 seconds, one physical action.',
@@ -221,7 +221,7 @@ function spokenShots(shots) {
     .filter((shot) => shot.say);
 }
 
-async function run(id, shots, lines) {
+async function run(id, shots, lines, frames) {
   const folder = folderOf(id);
   const status = readStatus(id);
   const audio = [];
@@ -247,12 +247,14 @@ async function run(id, shots, lines) {
     writeStatus(folder, status);
   }
   for (let i = 0; i < shots.length; i += 1) {
-    status.step = `第 ${shots[i].n} 鏡：先畫靜圖，再做成 5 秒`;
+    status.step = frames
+      ? `第 ${shots[i].n} 鏡：用你上傳的圖做成 5 秒`
+      : `第 ${shots[i].n} 鏡：先畫靜圖，再做成 5 秒`;
     status.shots[i].state = 'running';
     writeStatus(folder, status);
     const heard = lines.findIndex((line) => line.n === shots[i].n);
     try {
-      const video = await oneClip(shots[i], heard >= 0 ? audio[heard] : null);
+      const video = await oneClip(shots[i], heard >= 0 ? audio[heard] : null, frames ? frames[i] : '');
       fs.writeFileSync(path.join(folder, `shot-${i}.mp4`), video);
       status.shots[i].state = 'done';
       status.shots[i].file = i;
@@ -272,11 +274,20 @@ async function run(id, shots, lines) {
   writeStatus(folder, status);
 }
 
-function start(shots) {
-  if (!String(process.env.GEMINI_API_KEY || '').trim()) throw new Error('靜圖尚未開通。');
+function uploadedFrames(stills) {
+  const frames = Array.isArray(stills) ? stills.map((item) => String(item || '').trim()) : [];
+  if (!frames.some(Boolean)) return null;
+  if (frames.length !== 4 || frames.some((item) => !item)) throw new Error('請上傳正好四張鏡圖。');
+  frames.forEach((item) => clipVideo.parseDataUrl(item));
+  return frames;
+}
+
+function start(shots, stills) {
+  if (!String(process.env.GEMINI_API_KEY || '').trim()) throw new Error('配音尚未開通。');
   if (!clipVideo.configured()) throw new Error('生片尚未開通。');
   const moving = movingShots(shots);
   const lines = spokenShots(shots);
+  const frames = uploadedFrames(stills);
   const id = crypto.randomBytes(8).toString('hex');
   const folder = path.join(dataRoot(), 'toon', id);
   writeStatus(folder, {
@@ -285,7 +296,7 @@ function start(shots) {
     shots: moving.map((shot) => ({ n: shot.n, who: shot.who, say: shot.say, voice: castOf(shot.who).label, state: 'wait' })),
     lines: lines.map((shot) => ({ n: shot.n, who: shot.who, say: shot.say, voice: castOf(shot.who).label, state: 'wait' })),
   });
-  run(id, moving, lines).catch((err) => {
+  run(id, moving, lines, frames).catch((err) => {
     const status = readStatus(id) || { shots: [] };
     status.status = 'error';
     status.step = String(err && err.message || '生片失敗').slice(0, 180);

@@ -310,10 +310,10 @@ app.post('/api/toon/plan', express.json({ limit: '80kb' }), async (req, res) => 
     res.status(400).json({ error: err.message || '切鏡失敗' });
   }
 });
-app.post('/api/toon/make', express.json({ limit: '80kb' }), (req, res) => {
+app.post('/api/toon/make', express.json({ limit: '16mb' }), (req, res) => {
   if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
   try {
-    const job = toonRender.start(req.body?.shots);
+    const job = toonRender.start(req.body?.shots, req.body?.stills);
     res.json(job);
   } catch (err) {
     res.status(400).json({ error: err.message || '生片失敗' });

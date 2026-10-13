@@ -38,9 +38,47 @@ function renderPlan(plan) {
       ${prompt}
     </article>`;
   }).join('');
+  const uploads = document.getElementById('uploadBox');
+  uploads.innerHTML = moving.map((shot, index) => `<label class="field" for="still${index}">第 ${shot.n} 鏡　${escapeHtml(shot.who)}</label>
+    <input id="still${index}" data-still="${index}" type="file" accept="image/*" />`).join('');
   lastPlan = plan;
   box.classList.remove('hidden');
   box.scrollIntoView({ block: 'start' });
+}
+
+function fileToJpeg(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(2, Math.round(img.width * scale));
+      canvas.height = Math.max(2, Math.round(img.height * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.86));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('有一張鏡圖讀不到。'));
+    };
+    img.src = url;
+  });
+}
+
+async function chosenStills(requireAll) {
+  if (!requireAll) return null;
+  const inputs = [...document.querySelectorAll('[data-still]')];
+  if (!inputs.length || inputs.some((input) => !input.files || !input.files[0])) {
+    throw new Error('請上傳正好四張鏡圖，一鏡一張。');
+  }
+  return Promise.all(inputs.map((input) => fileToJpeg(input.files[0])));
+}
+
+function lockMake(locked) {
+  document.getElementById('uploadBtn').disabled = locked;
+  document.getElementById('makeBtn').disabled = locked;
 }
 
 function showMake(text) {
@@ -81,13 +119,13 @@ async function pollJob(id) {
   renderJob(id, body);
   showMake(body.step || '');
   if (body.status === 'done' || body.status === 'error') {
-    document.getElementById('makeBtn').disabled = false;
+    lockMake(false);
     return;
   }
   makeTimer = window.setTimeout(() => {
     pollJob(id).catch((err) => {
       showMake(err.message || '生片中斷');
-      document.getElementById('makeBtn').disabled = false;
+      lockMake(false);
     });
   }, 4000);
 }
@@ -107,7 +145,7 @@ document.getElementById('toonForm').addEventListener('submit', async (event) => 
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '切鏡失敗');
     renderPlan(body);
-    showMsg('已切好。按「在這裡生四段」，這一頁會畫靜圖並做成影片。');
+    showMsg('已切好。有鏡圖就按「用我上傳的四張」，沒有就按「幫我生成四張」。');
   } catch (err) {
     showMsg(err.message || '切鏡失敗');
   } finally {
@@ -115,29 +153,32 @@ document.getElementById('toonForm').addEventListener('submit', async (event) => 
   }
 });
 
-document.getElementById('makeBtn').addEventListener('click', async () => {
+async function startMake(upload) {
   if (!lastPlan || !Array.isArray(lastPlan.shots)) {
     showMake('請先切鏡。');
     return;
   }
-  const button = document.getElementById('makeBtn');
   window.clearTimeout(makeTimer);
-  button.disabled = true;
-  showMake('已開始。四段會一鏡一鏡做，請留在這一頁。');
+  lockMake(true);
+  showMake(upload ? '已開始。用你上傳的四張，先配音再做成影片。' : '已開始。會先畫四張靜圖，再做成影片。');
   try {
+    const stills = await chosenStills(upload);
     const res = await fetch('/api/toon/make', {
       method: 'POST',
       headers: tokenHeaders(true),
-      body: JSON.stringify({ shots: lastPlan.shots }),
+      body: JSON.stringify({ shots: lastPlan.shots, stills }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '生片失敗');
     await pollJob(body.id);
   } catch (err) {
     showMake(err.message || '生片失敗');
-    button.disabled = false;
+    lockMake(false);
   }
-});
+}
+
+document.getElementById('uploadBtn').addEventListener('click', () => startMake(true));
+document.getElementById('makeBtn').addEventListener('click', () => startMake(false));
 
 document.getElementById('copyBtn').addEventListener('click', async () => {
   if (!lastPrompts) return;

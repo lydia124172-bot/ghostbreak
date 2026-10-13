@@ -26,7 +26,7 @@
     <section class="hero research-hero">
       <p class="kicker">後台　AI 短劇</p>
       <h1>動畫短劇</h1>
-      <p class="lead">貼上劇本後按切鏡。接著在這一頁直接生四段，並把每一鏡配上聲音。旁白是有個性的女主播。狐是冷的男聲，獾是兇的，貓是累的，熊是懶的。四段影片大約台幣二十六元，四張靜圖再十幾元，配音另計一點。費用從你的 Google 和 fal 扣，不扣站上點數。</p>
+      <p class="lead">貼上劇本後按切鏡。要生片的四鏡可以上傳你自己的鏡圖，或讓這一頁生成。上傳就不必再付四張靜圖。旁白是有個性的女主播。狐、獾、貓、熊是四個不同的男聲。四段影片大約台幣二十六元，配音另計一點。費用從你的 Google 和 fal 扣，不扣站上點數。</p>
     </section>
 
     <form id="toonForm" class="panel">
@@ -41,8 +41,12 @@
 
     <section id="planBox" class="panel hidden">
       <h2 id="planTitle">分鏡</h2>
+      <h2 style="margin-top:22px;">四張鏡圖</h2>
+      <p class="lead">對應下面要生片的四鏡。不要對話框，也不要名牌。四張都上傳就略過生圖；都不上傳就由這一頁生成。</p>
+      <div id="uploadBox"></div>
       <div class="admin-actions">
-        <button class="btn btn-copper" id="makeBtn" type="button">在這裡生四段</button>
+        <button class="btn btn-copper" id="uploadBtn" type="button">用我上傳的四張</button>
+        <button class="btn btn-copper" id="makeBtn" type="button">幫我生成四張</button>
         <button class="btn btn-cream" id="copyBtn" type="button">複製四段提示詞</button>
       </div>
       <p id="makeMsg" class="lead"></p>
@@ -50,6 +54,6 @@
       <div id="shotList"></div>
     </section>
   </main>
-  <script src="/js/toon.js?v=toon4"></script>
+  <script src="/js/toon.js?v=toon5"></script>
 </body>
 </html>
