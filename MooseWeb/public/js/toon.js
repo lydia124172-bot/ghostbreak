@@ -19,6 +19,7 @@ function showMsg(text) {
 let lastPrompts = '';
 let lastPlan = null;
 let makeTimer = 0;
+let scrolledAudio = false;
 
 function renderPlan(plan) {
   const box = document.getElementById('planBox');
@@ -33,6 +34,7 @@ function renderPlan(plan) {
       : '';
     return `<article style="margin-top:18px;">
       <p class="field">第 ${shot.n} 鏡　${escapeHtml(kind)}　${escapeHtml(shot.who)}</p>
+      <p class="field">${escapeHtml(voiceOf(shot.who))}　按上面的藍色按鈕才會出聲</p>
       <p>${escapeHtml(shot.say)}</p>
       <p class="lead">${escapeHtml(shot.picture)}</p>
       ${prompt}
@@ -76,9 +78,19 @@ async function chosenStills(requireAll) {
   return Promise.all(inputs.map((input) => fileToJpeg(input.files[0])));
 }
 
+function voiceOf(who) {
+  const name = String(who || '');
+  if (/狐/.test(name)) return '配音　狐，低沉男聲';
+  if (/獾/.test(name)) return '配音　獾，急怒男聲';
+  if (/貓/.test(name)) return '配音　貓，疲憊男聲';
+  if (/熊/.test(name)) return '配音　熊，鬆弛男聲';
+  return '配音　女主播';
+}
+
 function lockMake(locked) {
-  document.getElementById('uploadBtn').disabled = locked;
-  document.getElementById('makeBtn').disabled = locked;
+  document.querySelectorAll('[data-act="upload"], [data-act="make"]').forEach((btn) => {
+    btn.disabled = locked;
+  });
 }
 
 function showMake(text) {
@@ -110,6 +122,10 @@ function renderJob(id, job) {
     </article>`;
   }).join('');
   list.innerHTML = `${videos}<h2 style="margin-top:28px;">各鏡配音</h2>${lines}`;
+  if (!scrolledAudio && (job.lines || []).some((line) => line.state === 'done' || line.state === 'running')) {
+    scrolledAudio = true;
+    list.scrollIntoView({ block: 'start' });
+  }
 }
 
 async function pollJob(id) {
@@ -145,7 +161,9 @@ document.getElementById('toonForm').addEventListener('submit', async (event) => 
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || '切鏡失敗');
     renderPlan(body);
-    showMsg('已切好。有鏡圖就按「用我上傳的四張」，沒有就按「幫我生成四張」。');
+    showMsg('已切好。按藍色的「生成四段影片和配音」。聲音和影片會出現在按鈕下面。');
+    const actions = document.querySelector('#planBox .toon-bar');
+    if (actions) actions.scrollIntoView({ block: 'center' });
   } catch (err) {
     showMsg(err.message || '切鏡失敗');
   } finally {
@@ -159,6 +177,7 @@ async function startMake(upload) {
     return;
   }
   window.clearTimeout(makeTimer);
+  scrolledAudio = false;
   lockMake(true);
   showMake(upload ? '已開始。用你上傳的四張，先配音再做成影片。' : '已開始。會先畫四張靜圖，再做成影片。');
   try {
@@ -177,15 +196,20 @@ async function startMake(upload) {
   }
 }
 
-document.getElementById('uploadBtn').addEventListener('click', () => startMake(true));
-document.getElementById('makeBtn').addEventListener('click', () => startMake(false));
-
-document.getElementById('copyBtn').addEventListener('click', async () => {
-  if (!lastPrompts) return;
-  try {
-    await navigator.clipboard.writeText(lastPrompts);
-    showMsg('四段提示詞已複製。');
-  } catch {
-    showMsg('無法自動複製，請從每段提示詞手動選取。');
-  }
+document.querySelectorAll('[data-act="upload"]').forEach((btn) => {
+  btn.addEventListener('click', () => startMake(true));
+});
+document.querySelectorAll('[data-act="make"]').forEach((btn) => {
+  btn.addEventListener('click', () => startMake(false));
+});
+document.querySelectorAll('[data-act="copy"]').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    if (!lastPrompts) return;
+    try {
+      await navigator.clipboard.writeText(lastPrompts);
+      showMsg('四段提示詞已複製。');
+    } catch {
+      showMsg('無法自動複製，請從每段提示詞手動選取。');
+    }
+  });
 });

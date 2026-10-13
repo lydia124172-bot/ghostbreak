@@ -8,6 +8,15 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/site.css?v=look5" />
+  <style>
+    .toon-bar {
+      position: sticky;
+      top: 88px;
+      z-index: 15;
+      background: #fff;
+      padding: 12px 0;
+    }
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -41,19 +50,20 @@
 
     <section id="planBox" class="panel hidden">
       <h2 id="planTitle">分鏡</h2>
-      <h2 style="margin-top:22px;">四張鏡圖</h2>
-      <p class="lead">對應下面要生片的四鏡。不要對話框，也不要名牌。四張都上傳就略過生圖；都不上傳就由這一頁生成。</p>
-      <div id="uploadBox"></div>
-      <div class="admin-actions">
-        <button class="btn btn-copper" id="uploadBtn" type="button">用我上傳的四張</button>
-        <button class="btn btn-copper" id="makeBtn" type="button">幫我生成四張</button>
-        <button class="btn btn-cream" id="copyBtn" type="button">複製四段提示詞</button>
+      <p class="lead">切鏡只先排出畫面和台詞。按藍色按鈕之後，配音和四段影片會出現在按鈕下面。</p>
+      <div class="admin-actions toon-bar">
+        <button class="btn btn-copper" type="button" data-act="make">生成四段影片和配音</button>
+        <button class="btn btn-copper" type="button" data-act="upload">用我上傳的圖，生成影片和配音</button>
+        <button class="btn btn-cream" type="button" data-act="copy">複製四段提示詞</button>
       </div>
       <p id="makeMsg" class="lead"></p>
       <div id="videoList"></div>
+      <h2 style="margin-top:22px;">四張鏡圖</h2>
+      <p class="lead">只對應要生片的四鏡。不要對話框，也不要名牌。有圖就先上傳，再按「用我上傳的圖」。</p>
+      <div id="uploadBox"></div>
       <div id="shotList"></div>
     </section>
   </main>
-  <script src="/js/toon.js?v=toon5"></script>
+  <script src="/js/toon.js?v=toon6"></script>
 </body>
 </html>
