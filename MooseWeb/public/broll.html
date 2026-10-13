@@ -27,7 +27,7 @@
     <section class="hero research-hero">
       <h1>長片文案配素材</h1>
       <p class="lead">貼上<strong>改寫旁白稿</strong>後，每鏡會標「畫面上要出現什麼」+ <strong>純英文搜尋詞</strong>（不可中英混寫）。庫存站<strong>沒有卡通 IP</strong>（派大星、漫威等），請用「真人沮喪／開心」等通用畫面代替，以表上 <strong>畫面說明</strong> 為準挑片。錄音可自由改口。</p>
-      <p class="lead">合成固定走冷感御姐口播：語速偏快、術語不屑、諷刺句收慢。配樂分四段（低音懸疑、約 96 BPM 電子拍、空靈反思、結尾拉高）。每隔十多秒會插入故障字、黑白閃切或錯誤窗。幾乎不動的照片會推近並橫移。不用抒情輕音樂。</p>
+      <p class="lead">合成固定走有個性的女主播：咬字清楚，帶一點俏皮，像在播荒謬新聞。配樂分四段（低音懸疑、約 96 BPM 電子拍、空靈反思、結尾拉高）。每隔十多秒會插入故障字、黑白閃切或錯誤窗。幾乎不動的照片會推近並橫移。不用抒情輕音樂。</p>
       <p class="lead" id="apiHint"></p>
     </section>
 
@@ -85,7 +85,7 @@
         cfgPexelsKey = Boolean(cfg.pexels_api);
         if (cfg.stock_api) {
           const who = cfg.pixabay_api ? 'Pixabay' : (cfg.pexels_api ? 'Pexels' : '素材 API');
-          apiHint.textContent = '已設定 ' + who + '：按一次會分鏡、下載素材，並用冷感御姐口播接成一支 broll-preview.mp4。';
+          apiHint.textContent = '已設定 ' + who + '：按一次會分鏡、下載素材，並用有個性的女主播接成一支 broll-preview.mp4。';
         } else {
           apiHint.innerHTML = 'Pexels <strong>暫停核發新 API 金鑰</strong>。請改用 <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener">Pixabay</a>：註冊登入後在文件頁複製 Key，寫入 MooseWeb <code>.env</code> 的 <code>PIXABAY_API_KEY=</code> 並重啟。';
         }

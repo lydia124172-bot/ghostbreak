@@ -46,7 +46,11 @@ async function speakGemini(line, cut) {
       generationConfig: {
         responseModalities: ['AUDIO'],
         speechConfig: {
-          voiceConfig: { prebuiltVoiceConfig: { voiceName: process.env.GEMINI_TTS_VOICE || 'Kore' } },
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: cut === 'youtube' ? 'Pulcherrima' : (process.env.GEMINI_TTS_VOICE || 'Kore'),
+            },
+          },
         },
       },
     }),
@@ -98,7 +102,20 @@ async function speak(text, opts) {
   if (!line) throw new Error('請先填旁白');
   if (line.length > 280) throw new Error('旁白請在 280 字內，約 10 秒口播');
   if (!configured() && !openaiReady()) throw new Error('旁白語音尚未開通。也可改傳口播音檔。');
-  if (cut === 'youtube' && openaiReady()) return speakOpenAI(line, cut);
+  // 長片 B-roll：女主播 Pulcherrima。OpenAI 只在 Gemini 配額不夠時備援，仍用女聲。
+  if (cut === 'youtube') {
+    if (!geminiBlocked && configured()) {
+      try {
+        return await speakGemini(line, cut);
+      } catch (err) {
+        if (!/quota|rate limit|429|RESOURCE_EXHAUSTED/i.test(err.message || '')) throw err;
+        geminiBlocked = true;
+      }
+    }
+    if (openaiReady()) return speakOpenAI(line, cut);
+    if (configured()) return speakGemini(line, cut);
+    throw new Error('旁白語音尚未開通。請設定 GEMINI_API_KEY 或 OPENAI_API_KEY。');
+  }
   if (geminiBlocked || !configured()) return speakOpenAI(line, cut);
   try {
     return await speakGemini(line, cut);

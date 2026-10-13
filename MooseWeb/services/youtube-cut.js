@@ -1,4 +1,4 @@
-// 長片 B-roll 的固定出片規格。下次合成直接讀這裡，不要另寫一套溫柔口播。
+// 長片 B-roll 的固定出片規格。旁白跟動畫短劇同一套女主播。
 // 不使用明星迷因、悲傷青蛙，也不使用 Windows 系統音；那些換成自製故障字、黑白閃切、錯誤窗和合成音效。
 
 const PACE = 1.08;
@@ -6,12 +6,9 @@ const PUNCH_GAP_SEC = 17;
 const FONT = 'C\\\\:/Windows/Fonts/msjhbd.ttc';
 
 const VOICE = [
-  '台灣華語。人設是高智商、毫無情感波動的冷感御姐，像沒有表情的 AI 總裁，或冷眼旁觀的哲學家姐姐。',
-  '禁止甜美客服音、溫柔說書音、輕聲、微笑、慢條斯理。',
-  '語速偏快，字字清晰。',
-  '專業術語要篤定、冷靜，帶一點不屑。',
-  '諷刺句的最後三個字故意放慢，聲音下沉。',
-  '遇到極度荒謬的職場現象，加一聲極短、輕蔑的氣音「哼」，不要笑出聲。',
+  '台灣華語女主播，聲音要有個性。',
+  '咬字清楚，語氣帶一點俏皮和態度，像在播一則荒謬新聞。',
+  '不要平鋪直敘，不要念稿腔，不要男聲，不要甜美客服音，不要音效。',
 ].join('');
 
 const CONCEPTS = [
@@ -27,11 +24,20 @@ function voiceInstructions() {
 }
 
 function geminiLine(line) {
-  return `用又快又冷、帶點不屑的台灣女聲唸，不要甜美，不要把這句指示唸出來：${line}`;
+  return `${VOICE}不要把這句指示唸出來：${line}`;
+}
+
+function openaiVoice() {
+  const name = String(process.env.OPENAI_TTS_VOICE || 'nova').trim();
+  const female = new Set(['nova', 'shimmer', 'coral', 'sage', 'fable']);
+  return female.has(name.toLowerCase()) ? name : 'nova';
 }
 
 function openaiSpec() {
-  return { voice: 'ash', instructions: VOICE };
+  return {
+    voice: openaiVoice(),
+    instructions: `${VOICE}必須是成年女主播，禁止男聲。`,
+  };
 }
 
 function cleanTitle(text) {
