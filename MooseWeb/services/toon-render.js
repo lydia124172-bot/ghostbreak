@@ -86,23 +86,39 @@ function movingShots(shots) {
   }));
 }
 
+async function submitTurbo(stillDataUrl, prompt) {
+  const key = String(process.env.FAL_KEY || '').trim();
+  const file = clipVideo.parseDataUrl(stillDataUrl);
+  const still = clipVideo.prepareStill(Buffer.from(file.b64, 'base64'), { ratio: '16:9', resolution: '720p' });
+  const imageUrl = await clipVideo.falUpload(key, still, 'image/jpeg', 'toon.jpg');
+  const model = 'minimax/h3-max-turbo/image-to-video';
+  const res = await fetch(`https://queue.fal.run/${model}`, {
+    method: 'POST',
+    headers: { Authorization: `Key ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      image_url: imageUrl,
+      duration: 5,
+      resolution: '768P',
+    }),
+  });
+  const body = await res.json().catch(() => ({}));
+  const requestId = body.request_id || body.requestId || '';
+  if (!res.ok || !requestId) throw new Error('這一鏡沒有排進生片，請再試一次。');
+  const urls = clipVideo.queueUrls(model, requestId, body);
+  return { requestId, model, statusUrl: urls.statusUrl, responseUrl: urls.responseUrl };
+}
+
 async function oneClip(shot) {
   const still = await geminiStill(shot.prompt);
-  const submitted = await clipVideo.submit({
-    images: [still],
-    product: shot.picture || shot.who || '角色',
-    prompt: [
-      shot.prompt,
-      'Horizontal 16:9, 5 seconds, one physical action.',
-      'Keep the same character from the first frame to the last frame.',
-      'No speech bubbles, nameplates, subtitles, or readable text.',
-    ].join(' '),
-    duration: '5',
-    ratio: '16:9',
-    generateAudio: false,
-  });
+  const submitted = await submitTurbo(still, [
+    shot.prompt,
+    'Horizontal 16:9, 5 seconds, one physical action.',
+    'Keep the same character from the first frame to the last frame.',
+    'No speech bubbles, nameplates, subtitles, or readable text.',
+  ].join(' '));
   const url = await waitClip(submitted);
-  const file = await clipVideo.finish(url, { duration: '5', engine: 'kling' });
+  const file = await clipVideo.finish(url, { duration: '5', engine: 'hailuo' });
   return file.buffer;
 }
 
