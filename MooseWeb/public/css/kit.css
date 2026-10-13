@@ -990,9 +990,16 @@ body.kit .more-grid .card {
 body.kit .card-art {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  height: auto;
+  max-height: none;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
+  object-position: center;
   background: #efe8df;
+}
+
+body.kit .path-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 body.kit .card-body {
