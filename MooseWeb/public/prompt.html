@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>提示詞產生器 — 麋鹿網</title>
-  <meta name="description" content="提示詞產生器：寫一句中文想法，產出可直接貼進 AI 的圖片、影片、文案提示詞。未購方案可試用 1 次。" />
+  <meta name="description" content="提示詞產生器：寫一句中文想法，或上傳圖片、短片反推，產出可直接貼進 AI 的提示詞。未購方案可試用 1 次。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
@@ -33,7 +33,7 @@
       <img class="tool-banner" src="/images/kit/prompt.jpg?v=4" alt="">
       <p class="kicker">智能體　試用 1 次</p>
       <h1>寫一句想法，變成專業提示詞。</h1>
-      <p class="lead">選要生成圖片、影片或文案，用中文寫下想要的畫面或內容，也可以放一到兩張參考圖，再挑風格與細節。產出中文與英文提示詞，複製後可直接貼進 AI 工具。</p>
+      <p class="lead">選要生成圖片、影片或文案，用中文寫下想要的畫面或內容，也可以放參考圖。已經有成品時，可以看圖反推，或上傳一支短片看影片反推。產出中文與英文提示詞，複製後可直接貼進 AI 工具。</p>
       <p class="clip-plan" id="promptPlan">未購方案可試用 1 次。</p>
     </section>
 
@@ -46,18 +46,27 @@
             <button class="btn btn-cream" type="button" data-kind="video">影片</button>
             <button class="btn btn-cream" type="button" data-kind="text">文案</button>
             <button class="btn btn-cream" type="button" data-kind="reverse">看圖反推</button>
+            <button class="btn btn-cream" type="button" data-kind="clip">看影片反推</button>
           </div>
           <p class="combo-fit hidden" id="reverseHint">丟一張已經生成得很好的圖，AI 會拆成主體、服裝、場景、構圖、光線、色調、風格七段提示詞。哪段想改就直接改，再一鍵組成新提示詞。</p>
+          <p class="combo-fit hidden" id="clipHint">丟一支 60 秒內的短片，AI 會沿著時間看動作與運鏡，拆成主體、動作、鏡頭、場景、光線、色調、風格。哪段想改就直接改，再一鍵組成新提示詞。</p>
+          <p class="combo-fit hidden" id="videoKindHint">選「影片」後，下面可以再放一支參考影片。AI 會先看動作與運鏡，再配上你的想法寫提示詞。</p>
         </div>
         <div>
           <label class="field" for="idea" id="ideaLabel">你的想法</label>
           <textarea id="idea" class="form-input" rows="3" maxlength="300" placeholder="例如：一杯拿鐵放在木桌上，早晨陽光從窗邊照進來"></textarea>
         </div>
-        <div>
+        <div id="refImageBox">
           <label class="field" for="refImg" id="refLabel">參考圖（選填，最多兩張）</label>
           <input id="refImg" class="form-input" type="file" multiple accept="image/jpeg,image/png,image/webp" />
           <p class="combo-fit">可放商品照或喜歡的風格圖，AI 會看圖再加上你的想法寫提示詞。放兩張時，想法可寫「把圖 1 的包包放進圖 2 的場景」。只放圖不寫想法也可以。</p>
           <div id="refPreview" class="hidden" style="display:flex;flex-wrap:wrap;gap:16px;"></div>
+        </div>
+        <div id="refVideoBox" class="hidden">
+          <label class="field" for="refVideo" id="videoLabel">參考影片（選填，一支）</label>
+          <input id="refVideo" class="form-input" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" />
+          <p class="combo-fit" id="videoHelp">上傳 MP4、WebM 或 MOV，60 秒內、80MB 內。AI 會看影片裡的動作與運鏡，再寫成提示詞。只放影片、不寫想法也可以。</p>
+          <div id="videoPreview" class="hidden"></div>
         </div>
         <div id="pickBox"></div>
         <div class="admin-actions">
@@ -126,6 +135,6 @@
     </div>
   </footer>
   <script src="/js/site.js?v=studio10"></script>
-  <script src="/js/prompt.js?v=7"></script>
+  <script src="/js/prompt.js?v=9"></script>
 </body>
 </html>

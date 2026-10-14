@@ -1157,7 +1157,7 @@ app.get('/api/prompt/status', (req, res) => {
   }));
 });
 
-app.post('/api/prompt', express.json({ limit: '6mb' }), async (req, res) => {
+app.post('/api/prompt', express.json({ limit: '8mb' }), async (req, res) => {
   const owner = isOwner(req);
   const access = agentAccess(req, res, 'prompt');
   if (!owner && !access.unlimited && access.left <= 0) return denyAgentTrial(res);
@@ -1167,6 +1167,8 @@ app.post('/api/prompt', express.json({ limit: '6mb' }), async (req, res) => {
       idea: String(req.body?.idea || '').trim(),
       picks: req.body?.picks && typeof req.body.picks === 'object' ? req.body.picks : {},
       images: Array.isArray(req.body?.images) ? req.body.images.filter((x) => typeof x === 'string') : [],
+      frames: Array.isArray(req.body?.frames) ? req.body.frames.filter((x) => typeof x === 'string') : [],
+      video: req.body?.video && typeof req.body.video === 'object' ? req.body.video : {},
     });
     let extra = {};
     if (owner) extra = { owner: true };
