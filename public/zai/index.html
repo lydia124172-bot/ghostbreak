@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>智迪科技團隊｜網站、自媒體、獲客</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --blue: #0c4ea2;
+    --ink: #1b2430;
+    --muted: #5d6a78;
+    --line: #e6e1d8;
+    --paper: #f7f4ee;
+    --red: #c83b2f;
+    --red-deep: #8e241c;
+    --shadow: 0 12px 28px rgba(27, 36, 48, 0.08);
+    --shadow-deep: 0 22px 40px rgba(27, 36, 48, 0.2);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: #fff;
+    font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    line-height: 1.7;
+  }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .wrap { width: min(1140px, calc(100% - 40px)); margin: 0 auto; }
+  .topnote {
+    background: #10233f;
+    color: #d5deea;
+    font-size: 13px;
+    text-align: center;
+    padding: 8px 16px;
+  }
+  .topnote a { color: #fff; font-weight: 700; }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(255,255,255,.96);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar { display: flex; align-items: center; justify-content: space-between; min-height: 78px; gap: 18px; }
+  .logo { width: 124px; height: auto; object-fit: contain; }
+  nav { display: flex; align-items: center; gap: 26px; font-size: 15px; }
+  nav a:hover { color: var(--blue); }
+  .menu-btn { display: none; }
+  .hero {
+    display: grid;
+    grid-template-columns: .9fr 1.1fr;
+    gap: 48px;
+    align-items: center;
+    padding: 64px 0 36px;
+  }
+  .kicker { margin: 0 0 10px; color: var(--blue); font-weight: 700; letter-spacing: .16em; font-size: 13px; }
+  h1 {
+    margin: 0 0 14px;
+    font-family: "Noto Serif TC", serif;
+    font-size: clamp(36px, 5vw, 58px);
+    line-height: 1.25;
+    font-weight: 700;
+  }
+  .lead { margin: 0 0 22px; color: var(--muted); font-size: 17px; max-width: 38em; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .ghost {
+    display: inline-flex;
+    align-items: center;
+    min-height: 46px;
+    padding: 0 18px;
+    border-bottom: 1px solid var(--ink);
+    font-weight: 700;
+  }
+  .hero-photo, .shot, .card-pic { overflow: hidden; border-radius: 16px; background: #ddd; }
+  .hero-photo { height: 460px; box-shadow: var(--shadow); }
+  h2 {
+    margin: 0 0 8px;
+    font-family: "Noto Serif TC", serif;
+    font-size: 32px;
+    font-weight: 700;
+  }
+  .section-lead { margin: 0 0 22px; color: var(--muted); }
+  .band { background: var(--paper); padding: 64px 0; }
+  .trio, .grid { display: grid; gap: 22px; }
+  .trio { grid-template-columns: repeat(3, 1fr); }
+  .shot { height: 240px; box-shadow: var(--shadow); }
+  .shot-card strong, .card strong { display: block; margin-top: 14px; font-size: 18px; }
+  .shot-card p, .card p { margin: 6px 0 0; color: var(--muted); }
+  .goods { padding: 64px 0; }
+  .grid { grid-template-columns: repeat(3, 1fr); }
+  .card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 12px 12px 18px;
+    box-shadow: var(--shadow);
+    transition: box-shadow .45s ease;
+  }
+  .card-pic { height: 210px; }
+  .card img, .shot img { transition: transform .55s ease; }
+  .buy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 22px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--red);
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    letter-spacing: .06em;
+    cursor: pointer;
+    transition: background .2s ease, transform .15s ease;
+  }
+  .card .buy { width: 100%; margin-top: 16px; }
+  .buy:active { transform: scale(0.96); }
+  .menu-list { display: grid; gap: 16px; }
+  .menu-item {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px 20px 8px;
+    scroll-margin-top: 96px;
+  }
+  .menu-item h3 { margin: 0 0 8px; font-size: 20px; }
+  .menu-item ul { margin: 0 0 12px; padding-left: 1.2em; }
+  .menu-item li { margin: 4px 0; }
+  .consult { margin-top: 28px; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px 20px; }
+  .consult h3 { margin: 0 0 12px; font-size: 20px; }
+  form { display: grid; gap: 12px; }
+  label { display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+  input, select, textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--ink);
+    background: #fff;
+  }
+  textarea { min-height: 110px; resize: vertical; }
+  .form-note { min-height: 1.4em; margin: 0; }
+  .about {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 28px;
+    align-items: center;
+    padding: 28px 0 72px;
+  }
+  .about img { width: 160px; height: auto; object-fit: contain; }
+  footer { background: #10233f; color: #d5deea; padding: 36px 0 28px; }
+  footer a { color: #fff; }
+  .foot { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 24px; }
+  footer h3 { margin: 0 0 8px; color: #fff; font-size: 16px; }
+  footer p { margin: 0; }
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 1s ease, transform 1s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover { box-shadow: var(--shadow-deep); }
+    .card:hover img, .shot:hover img { transform: scale(1.06); }
+    .buy:hover { background: var(--red-deep); }
+  }
+  @media (max-width: 860px) {
+    .menu-btn {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      background: #fff;
+      min-height: 40px;
+      padding: 0 12px;
+      font: inherit;
+    }
+    nav {
+      display: none;
+      position: absolute;
+      left: 0; right: 0; top: 100%;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 20px 18px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    nav.open { display: flex; }
+    .hero, .trio, .grid, .about, .foot { grid-template-columns: 1fr; }
+    .hero { padding-top: 32px; }
+    .hero-photo { height: 260px; }
+    .band, .goods { padding: 40px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .card img, .shot img, .buy, .card { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="topnote">接案洽詢　<a href="tel:0970205800">0970-205-800</a>　／　<a href="tel:0958150398">0958-150-398</a></div>
+  <header>
+    <div class="wrap bar">
+      <a href="#top"><img class="logo" src="logo.png" alt="智迪AI科技團隊" /></a>
+      <button class="menu-btn" type="button" id="menuBtn" aria-expanded="false">選單</button>
+      <nav id="nav">
+        <a href="#focus">服務</a>
+        <a href="#work">作品方向</a>
+        <a href="#about">關於</a>
+        <a href="#contact">聯絡</a>
+      </nav>
+    </div>
+  </header>
+  <main id="top">
+    <section class="wrap hero">
+      <div class="reveal">
+        <p class="kicker">智迪科技團隊</p>
+        <h1>網站、自媒體、獲客<br>都可以找我們做</h1>
+        <p class="lead">從一頁式網站、商店改版、商品圖，到短影音、社群素材和企業獲客。範圍依你的案子客製，確認後再開始。</p>
+        <div class="hero-actions">
+          <a class="buy" href="#menu">看可做項目</a>
+          <a class="ghost" href="#work">看我們做的方向</a>
+        </div>
+      </div>
+      <div class="hero-photo reveal">
+        <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1600&q=80" alt="正在編排網站的工作畫面" />
+      </div>
+    </section>
+
+    <section class="band" id="focus">
+      <div class="wrap">
+        <h2 class="reveal">三類現在就接的工作</h2>
+        <p class="section-lead reveal">網站與商店、自媒體短影音、企業獲客，可以單做，也可以一起做。</p>
+        <div class="trio">
+          <article class="shot-card reveal">
+            <div class="shot"><img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80" alt="網站數據與版面同時呈現在螢幕上" /></div>
+            <strong>網站與商店</strong>
+            <p>一頁式、品牌官網、電商、金流，以及留在現有平台上的改版。</p>
+          </article>
+          <article class="shot-card reveal">
+            <div class="shot"><img src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80" alt="拍攝短片用的攝影機" /></div>
+            <strong>自媒體與短影音</strong>
+            <p>商品圖、直式短片、短劇、社群貼文和直播開播畫面，都依這個品牌來做。</p>
+          </article>
+          <article class="shot-card reveal">
+            <div class="shot"><img src="https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80" alt="團隊討論名單與後續聯繫" /></div>
+            <strong>企業獲客</strong>
+            <p>留單、獲客助理、口播和客服問答。有人留下資料，就通知負責人。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="goods" id="work">
+      <div class="wrap">
+        <h2 class="reveal">現在可以委託的項目</h2>
+        <p class="section-lead reveal">選一項進去，就能看到這項實際會做的內容。</p>
+        <div class="grid">
+          <article class="card reveal">
+            <div class="card-pic"><img src="https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?auto=format&fit=crop&w=1000&q=80" alt="一頁式網站在筆電上的畫面" /></div>
+            <strong>一頁式形象網站</strong>
+            <p>適合先把品牌、服務和聯絡方式放在同一頁，讓客人滑完就知道怎麼找你。</p>
+            <a class="buy" href="#item-site">看可做項目</a>
+          </article>
+          <article class="card reveal">
+            <div class="card-pic"><img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1000&q=80" alt="店家用平板看商品與結帳" /></div>
+            <strong>商店版型調整</strong>
+            <p>留在目前的開店平台，改首頁、分類、商品頁和主圖。結帳與會員仍走原系統。</p>
+            <a class="buy" href="#item-shop">看可做項目</a>
+          </article>
+          <article class="card reveal">
+            <div class="card-pic"><img src="https://images.unsplash.com/photo-1542744094-3a31f272c490?auto=format&fit=crop&w=1000&q=80" alt="桌上的品牌印刷與設計稿" /></div>
+            <strong>主圖與商品圖</strong>
+            <p>首頁大圖、重點圖、商品圖一次做齊。用現有商品重製，不另外安排拍攝，全店用同一套比例和風格。</p>
+            <a class="buy" href="#item-visual">看可做項目</a>
+          </article>
+          <article class="card reveal">
+            <div class="card-pic"><img src="https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?auto=format&fit=crop&w=1000&q=80" alt="多頁官網在桌上的筆電畫面" /></div>
+            <strong>品牌官網與電商</strong>
+            <p>多頁官網、購物車、金流、舊站改版和上線後維護。頁數和功能依案子定。</p>
+            <a class="buy" href="#item-web">看可做項目</a>
+          </article>
+          <article class="card reveal">
+            <div class="card-pic"><img src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=1000&q=80" alt="直式短片正在剪輯的畫面" /></div>
+            <strong>短影音與短劇</strong>
+            <p>代製直式短片和約 15 秒的短劇，有配音。支數依你要發的頻率來排。</p>
+            <a class="buy" href="#item-video">看可做項目</a>
+          </article>
+          <article class="card reveal">
+            <div class="card-pic"><img src="https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?auto=format&fit=crop&w=1000&q=80" alt="社群平台的貼文版面" /></div>
+            <strong>自媒體素材</strong>
+            <p>社群貼文版型、直播封面、Banner、LINE 圖，以及 Logo 和品牌色。</p>
+            <a class="buy" href="#item-social">看可做項目</a>
+          </article>
+          <article class="card reveal">
+            <div class="card-pic"><img src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1000&q=80" alt="團隊看著名單討論後續聯繫" /></div>
+            <strong>企業獲客與智能體</strong>
+            <p>官網或 LINE 上的獲客助理，以及口播、選題、客服問答這類單一用途智能體。</p>
+            <a class="buy" href="#item-lead">看可做項目</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="menu">
+      <div class="wrap">
+        <h2>可做項目</h2>
+        <p class="section-lead">選好項目後，用下面的線上選單把諮詢寄出。</p>
+        <div class="menu-list">
+          <article class="menu-item" id="item-site">
+            <h3>一頁式形象網站</h3>
+            <ul>
+              <li>一頁放完品牌、服務和聯絡方式。</li>
+              <li>電腦版、手機版分開排，字和按鈕在手機上也好按。</li>
+              <li>主視覺和重點圖一起做。</li>
+              <li>圖片進畫面時淡入；電腦版滑過會略為放大、陰影加深；按鈕滑過變深、按下會縮小。</li>
+              <li>頁尾留諮詢表單，內容寄到信箱。</li>
+              <li>初稿出來後，可以再調 3 輪。</li>
+            </ul>
+          </article>
+          <article class="menu-item" id="item-shop">
+            <h3>商店版型調整</h3>
+            <ul>
+              <li>留在現在的 BVSHOP 改版面，不換系統。</li>
+              <li>改首頁、品牌故事、全部商品、商品系列、商品頁。</li>
+              <li>電腦版和手機版都排過。</li>
+              <li>首頁大圖和重點圖重做，商品卡統一大小和比例。</li>
+              <li>同樣加上淡入、電腦版滑過、按鈕互動。結帳、登入、購物車維持原系統。</li>
+              <li>初稿出來後，可以再調 3 輪。</li>
+            </ul>
+          </article>
+          <article class="menu-item" id="item-visual">
+            <h3>主圖與商品圖</h3>
+            <ul>
+              <li>首頁大圖做成橫式主視覺，上面寫清楚這家店在賣什麼。同一張會再裁一版給手機。</li>
+              <li>三張重點圖放系列、賣點或活動，和首頁大圖用同一套風格。</li>
+              <li>商品圖依目前已上架的品項重製，用現有商品資料來做，不另外安排拍攝。</li>
+              <li>比例可選 1:1、3:4、4:5、16:9、9:16。全店用同一種，商品卡才排得齊。</li>
+              <li>尺寸可做 1K 或 2K，上架前會先對過平台要的大小。</li>
+              <li>需要人物的商品，可以用現有商品做換裝圖，不用本人到場。</li>
+              <li>圖上可放品名和一句賣點，字不蓋住商品。</li>
+              <li>同一系列用同一套背景和色調，整頁看起來是同一家店。</li>
+              <li>初稿出來後，可以再調 3 輪。</li>
+            </ul>
+          </article>
+          <article class="menu-item" id="item-web">
+            <h3>品牌官網與電商</h3>
+            <ul>
+              <li>品牌形象官網約 5 到 7 頁，含公告後台、留單、Email 通知、網域上線和交站教學。</li>
+              <li>電商含購物車、會員、訂單、庫存，賣完可以顯示售完。</li>
+              <li>金流可以加在官網或電商上。</li>
+              <li>舊站改版沿用現有內容，改視覺、手機版和速度。</li>
+              <li>預約或詢問表單，含後台名單和 Email。</li>
+              <li>SEO 基礎：標題、描述、網站地圖。併入官網時一起做。</li>
+              <li>上線後可以按月維護，也可以單次改內容、小改功能。</li>
+            </ul>
+          </article>
+          <article class="menu-item" id="item-video">
+            <h3>短影音與短劇</h3>
+            <ul>
+              <li>代製直式短片，約 15 秒，5 秒和 10 秒也可以，可選 720p 或 1080p。</li>
+              <li>可以指定走路、小幅轉身這類連續動作。</li>
+              <li>短劇用三個鏡頭接成約 15 秒，直式，有配音。</li>
+              <li>短劇角色可以指定，或用你提供的照片。</li>
+              <li>一支一支交給你，不是把工具交出去自己做。</li>
+              <li>每支可以小修 2 次，整支可以重做 1 次。</li>
+              <li>支數依你要發的頻率客製，同一批一起對稿。</li>
+            </ul>
+          </article>
+          <article class="menu-item" id="item-social">
+            <h3>自媒體素材</h3>
+            <ul>
+              <li>社群貼文版型一套約 5 款，之後同一套改字就能發。</li>
+              <li>直播封面和開播角標，沿用品牌色。</li>
+              <li>Banner、LINE 圖，可單張，也可一次做一批。</li>
+              <li>品牌識別：Logo、色票、常用檔，可和官網一起做。</li>
+              <li>同一款可以做成一套：1 張橫圖加 3 張商品圖。</li>
+              <li>可以指定場景，或固定同一張臉，之後同品牌繼續沿用。</li>
+            </ul>
+          </article>
+          <article class="menu-item" id="item-lead">
+            <h3>企業獲客與智能體</h3>
+            <ul>
+              <li>企業獲客助理放在官網小窗或 LINE，引導留名單，並通知負責人。</li>
+              <li>單一用途智能體：口播腳本、直播稿、選題、貼文鉤子、客服問答，附操作說明。</li>
+              <li>已經做好的智能體，可以再加一組知識或一條問答。</li>
+              <li>網站上的新詢問，可以加 LINE 通知，推給店家。</li>
+              <li>頁數、支數、流程和知識內容，都依這個案子客製。</li>
+              <li>上面沒寫到的做法，在下面表單寫清楚，我們另排範圍。</li>
+            </ul>
+          </article>
+        </div>
+        <div class="consult" id="consult">
+          <h3>線上選單諮詢</h3>
+          <form id="ask">
+            <label>姓名<input name="name" required autocomplete="name" /></label>
+            <label>電話<input name="phone" required autocomplete="tel" /></label>
+            <label>信箱<input name="email" type="email" required autocomplete="email" /></label>
+            <label>想諮詢的項目
+              <select name="item" required>
+                <option value="">請選擇</option>
+                <option value="一頁式形象網站">一頁式形象網站</option>
+                <option value="商店版型調整">商店版型調整</option>
+                <option value="主圖與商品圖">主圖與商品圖</option>
+                <option value="品牌官網與電商">品牌官網與電商</option>
+                <option value="短影音與短劇">短影音與短劇</option>
+                <option value="自媒體素材">自媒體素材</option>
+                <option value="企業獲客與智能體">企業獲客與智能體</option>
+                <option value="其他客製">其他客製</option>
+              </select>
+            </label>
+            <label>想說的話<textarea name="message" required></textarea></label>
+            <button class="buy" type="submit">送出諮詢</button>
+            <p class="form-note" id="formNote" role="status"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap about" id="about">
+      <img src="logo.png" alt="" />
+      <div>
+        <h2>智迪科技團隊</h2>
+      </div>
+    </section>
+  </main>
+  <footer id="contact">
+    <div class="wrap foot">
+      <div>
+        <h3>聯絡</h3>
+        <p>黃紫瑄　<a href="tel:0970205800">0970-205-800</a><br>蔡龍靜　<a href="tel:0958150398">0958-150-398</a><br><a href="#consult">線上選單諮詢</a></p>
+      </div>
+      <div>
+        <h3>服務</h3>
+        <p>網站、商店、電商<br>主圖與短影音<br>自媒體素材<br>企業獲客與智能體</p>
+      </div>
+      <div>
+        <h3>公司</h3>
+        <p>智迪科技團隊<br>利迪亞商行<br>統編 61253163</p>
+      </div>
+    </div>
+  </footer>
+<script>
+  const btn = document.getElementById("menuBtn");
+  const nav = document.getElementById("nav");
+  btn.addEventListener("click", () => {
+    const open = nav.classList.toggle("open");
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  const pick = {
+    "item-site": "一頁式形象網站",
+    "item-shop": "商店版型調整",
+    "item-visual": "主圖與商品圖",
+    "item-web": "品牌官網與電商",
+    "item-video": "短影音與短劇",
+    "item-social": "自媒體素材",
+    "item-lead": "企業獲客與智能體"
+  };
+  const selectItem = document.querySelector('#ask select[name="item"]');
+  const applyPick = (id) => { if (pick[id]) selectItem.value = pick[id]; };
+  applyPick(location.hash.slice(1));
+  document.querySelectorAll('a[href^="#item-"]').forEach((link) => {
+    link.addEventListener("click", () => {
+      applyPick(link.getAttribute("href").slice(1));
+    });
+  });
+  document.getElementById("ask").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const note = document.getElementById("formNote");
+    const data = Object.fromEntries(new FormData(form).entries());
+    note.textContent = "送出中…";
+    const payload = {
+      姓名: data.name,
+      電話: data.phone,
+      信箱: data.email,
+      項目: data.item,
+      內容: data.message,
+      _subject: "智迪科技團隊 線上選單諮詢",
+      _replyto: data.email,
+      _template: "table"
+    };
+    if (location.protocol === "file:") {
+      const body = ["姓名：" + data.name, "電話：" + data.phone, "信箱：" + data.email, "項目：" + data.item, "", data.message].join("\n");
+      location.href = "mailto:lydia3530@gmail.com?subject=" + encodeURIComponent("智迪科技團隊 線上選單諮詢") + "&body=" + encodeURIComponent(body);
+      note.textContent = "已打開寄信程式。請按寄出，才會進到 lydia3530@gmail.com。";
+      return;
+    }
+    try {
+      const res = await fetch("https://formsubmit.co/ajax/lydia3530@gmail.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json().catch(() => ({}));
+      const message = String(result.message || "");
+      if (result.success === "false" || result.success === false) {
+        if (/Activation|Activate/i.test(message)) {
+          note.textContent = "信箱還沒開通。請到 lydia3530@gmail.com 的收件匣和垃圾郵件，找 FormSubmit 的 Activate Form，點開之後再送一次。";
+          return;
+        }
+        throw new Error(message || "send failed");
+      }
+      if (!res.ok) throw new Error("send failed");
+      form.reset();
+      note.textContent = "已送到 lydia3530@gmail.com。若沒看到，請看垃圾郵件。";
+    } catch (err) {
+      note.textContent = "這次沒送出，請稍後再試，或直接打電話。";
+    }
+  });
+  nav.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
+    nav.classList.remove("open");
+    btn.setAttribute("aria-expanded", "false");
+  }));
+  const nodes = document.querySelectorAll(".reveal");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce || !("IntersectionObserver" in window)) {
+    nodes.forEach((node) => node.classList.add("in"));
+  } else {
+    const seen = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("in");
+        seen.unobserve(entry.target);
+      });
+    }, { threshold: 0.2 });
+    nodes.forEach((node, index) => {
+      node.style.transitionDelay = (index % 3) * 100 + "ms";
+      seen.observe(node);
+    });
+  }
+</script>
+</body>
+</html>

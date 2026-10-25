@@ -1052,6 +1052,11 @@ app.get('/ad', (_req, res) => {
   res.type('html').send(renderPublicHtml('ad.html'));
 });
 
+app.get(['/zai', '/zai/'], (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.type('html').send(renderPublicHtml('zai/index.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   index: false,
   setHeaders(res, filePath) {
