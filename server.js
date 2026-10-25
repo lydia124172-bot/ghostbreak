@@ -1052,9 +1052,7 @@ app.get('/ad', (_req, res) => {
   res.type('html').send(renderPublicHtml('ad.html'));
 });
 
-app.get('/zai', (_req, res) => res.redirect(301, '/zai/'));
-
-app.get('/zai/', (_req, res) => {
+app.get(['/zai', '/zai/'], (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.type('html').send(renderPublicHtml('zai/index.html'));
 });
