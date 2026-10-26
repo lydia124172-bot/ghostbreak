@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>影片旁白 — 麋鹿網後台</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=look5" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/admin">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>內容後台</small></span>
+      </a>
+      <div class="admin-actions">
+        <a class="nav-link" href="/admin">回後台</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <p class="kicker">後台　只給自己用</p>
+      <h1>影片旁白</h1>
+      <p class="lead">上傳一支影片。智能體會看片裡出現的東西和整支片的風格，寫成對上時間的旁白，用來說明片中的內容。只寫看得到的東西。不扣站上點數。最長 3 分鐘。</p>
+      <p class="lead">依畫面判斷，聽不到原片的聲音。若片中已有對白，請在補充裡寫要順著或避開。</p>
+    </section>
+
+    <form id="form" class="panel">
+      <label class="field" for="file">影片</label>
+      <input id="file" class="form-input" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" required />
+      <p class="lead" id="fileMeta">尚未選片。</p>
+      <video id="preview" class="clip-video" controls playsinline hidden></video>
+      <label class="field" for="note">補充（選填）</label>
+      <textarea id="note" class="form-input" rows="3" maxlength="200" placeholder="例如：用商品廣告的口吻，重點講使用步驟。不要編價格。"></textarea>
+      <div class="admin-actions" style="margin-top:16px;">
+        <button class="btn btn-copper" id="submit" type="submit">依影片寫旁白</button>
+        <button class="btn btn-ghost hidden" id="copyBtn" type="button">複製旁白</button>
+      </div>
+      <p id="msg" class="lead"></p>
+      <section id="result" class="hidden">
+        <p class="meta" id="styleLine"></p>
+        <p id="summaryLine"></p>
+        <pre id="script" class="story-script"></pre>
+        <div id="beats" class="list" style="padding-bottom:0;"></div>
+      </section>
+    </form>
+  </main>
+  <script src="/js/narrate.js?v=1"></script>
+</body>
+</html>
