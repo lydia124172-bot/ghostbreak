@@ -27,7 +27,7 @@
       <p class="kicker">後台　只給自己用</p>
       <h1>影片旁白</h1>
       <p class="lead">上傳一支影片。旁白會跟著素材切段：畫面一換，下一句就從那一秒開始，而且只講這一段裡看得到的東西。不扣站上點數。最長 3 分鐘。</p>
-      <p class="lead">依畫面判斷，聽不到原片的聲音。若片中已有對白，請在補充裡寫要順著或避開。</p>
+      <p class="lead">依畫面判斷，聽不到原片的聲音。下面選的是唸出來的口吻。</p>
     </section>
 
     <form id="form" class="panel">
@@ -35,8 +35,19 @@
       <input id="file" class="form-input" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" required />
       <p class="lead" id="fileMeta">尚未選片。</p>
       <video id="preview" class="clip-video" controls playsinline hidden></video>
-      <label class="field" for="note">補充（選填）</label>
-      <textarea id="note" class="form-input" rows="3" maxlength="200" placeholder="例如：用商品廣告的口吻，重點講使用步驟。不要編價格。"></textarea>
+      <p class="field">旁白類型</p>
+      <div class="clip-types story-durations" id="voices">
+        <button class="clip-type active" type="button" data-voice="influencer"><strong>網紅</strong><span>口語，像在跟觀眾聊天</span></button>
+        <button class="clip-type" type="button" data-voice="doc"><strong>紀錄片</strong><span>沉穩，把看到的事說清楚</span></button>
+        <button class="clip-type" type="button" data-voice="anchor"><strong>新聞主播</strong><span>清楚、客觀、先講重點</span></button>
+        <button class="clip-type" type="button" data-voice="ad"><strong>商品廣告</strong><span>精簡有力，不編價格</span></button>
+        <button class="clip-type" type="button" data-voice="teach"><strong>教學</strong><span>按步驟把這一段講清楚</span></button>
+        <button class="clip-type" type="button" data-voice="other"><strong>其它</strong><span>自己寫要的口吻</span></button>
+      </div>
+      <div id="noteBox" class="hidden">
+        <label class="field" for="note">其它口吻</label>
+        <textarea id="note" class="form-input" rows="3" maxlength="200" placeholder="例如：像導遊在介紹，語氣輕鬆，不要用播報腔。"></textarea>
+      </div>
       <div class="admin-actions" style="margin-top:16px;">
         <button class="btn btn-copper" id="submit" type="submit">依影片寫旁白</button>
         <button class="btn btn-ghost hidden" id="copyBtn" type="button">複製旁白</button>
@@ -50,6 +61,6 @@
       </section>
     </form>
   </main>
-  <script src="/js/narrate.js?v=4"></script>
+  <script src="/js/narrate.js?v=5"></script>
 </body>
 </html>

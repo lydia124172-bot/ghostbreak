@@ -2,6 +2,8 @@ const form = document.getElementById('form');
 const fileInput = document.getElementById('file');
 const fileMeta = document.getElementById('fileMeta');
 const preview = document.getElementById('preview');
+const voices = document.getElementById('voices');
+const noteBox = document.getElementById('noteBox');
 const note = document.getElementById('note');
 const submit = document.getElementById('submit');
 const copyBtn = document.getElementById('copyBtn');
@@ -10,8 +12,29 @@ const result = document.getElementById('result');
 const styleLine = document.getElementById('styleLine');
 const scriptBox = document.getElementById('script');
 const beatsBox = document.getElementById('beats');
+const VOICES = {
+  influencer: '用網紅口吻：像台灣網紅在跟觀眾聊天，口語、親切、有一點節奏。不要新聞播報腔。',
+  doc: '用紀錄片旁白：沉穩，句子完整，把這一段看到的事說清楚。不要吆喝，不要賣東西。',
+  anchor: '用新聞主播口吻：咬字清楚、客觀、先講這一段的重點。不要撒嬌，不要用網路流行語。',
+  ad: '用商品廣告口吻：精簡有力，只講這一段看得到的特點。不要編價格和功效。',
+  teach: '用教學解說：把這一段的步驟按順序講清楚。',
+};
+let voice = 'influencer';
 let previewUrl = '';
 let lastScript = '';
+
+voices.addEventListener('click', (event) => {
+  const btn = event.target.closest('[data-voice]');
+  if (!btn) return;
+  voice = btn.getAttribute('data-voice') || 'influencer';
+  voices.querySelectorAll('[data-voice]').forEach((item) => item.classList.toggle('active', item === btn));
+  noteBox.classList.toggle('hidden', voice !== 'other');
+});
+
+function voiceNote() {
+  if (voice === 'other') return note.value.trim();
+  return VOICES[voice] || VOICES.influencer;
+}
 
 function seekVideo(video, time) {
   return new Promise((resolve, reject) => {
@@ -287,6 +310,11 @@ form.addEventListener('submit', async (event) => {
     msg.classList.add('status-err');
     return;
   }
+  if (voice === 'other' && !note.value.trim()) {
+    msg.textContent = '選了其它，請寫要的口吻。';
+    msg.classList.add('status-err');
+    return;
+  }
   submit.disabled = true;
   msg.classList.remove('status-err');
   msg.textContent = '正在依素材切段，對準每一段的秒數…';
@@ -308,7 +336,7 @@ form.addEventListener('submit', async (event) => {
           times: sampled.shots.map((shot) => (shot.start + shot.end) / 2),
           shots: sampled.shots.map((shot) => ({ start: shot.start, end: shot.end })),
         },
-        note: note.value,
+        note: voiceNote(),
       }),
     });
     const data = await res.json().catch(() => ({}));
