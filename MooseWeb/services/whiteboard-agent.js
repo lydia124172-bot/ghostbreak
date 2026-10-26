@@ -38,9 +38,14 @@ function clean(value, max) {
 }
 
 function publicError(err) {
-  const message = String(err && err.message || '');
-  if (/請|最多|至少|無法提供|尚未|轉檔|沒有產出|每一句|這次沒有|沒有寫滿/.test(message)) return message;
+  const message = String(err && err.message || '').replace(/\s+/g, ' ').trim();
+  if (/aborted|timeout/i.test(message)) return '寫旁白逾時，請再試一次。';
   if (/quota|429|RESOURCE_EXHAUSTED|high demand|UNAVAILABLE|503/i.test(message)) return '現在使用的人較多，請稍後再試。';
+  if (/請|最多|至少|無法提供|尚未|轉檔|沒有產出|每一句|這次沒有|沒有寫滿|旁白語音|生圖/.test(message)) {
+    return message.slice(0, 120);
+  }
+  const detail = message.replace(/https?:\/\/\S+/g, '').replace(/key=[^\s]+/gi, '').slice(0, 100);
+  if (detail) return `這次沒有做成：${detail}`;
   return '這次沒有做成，請再試一次。';
 }
 
@@ -71,7 +76,7 @@ async function askText(prompt) {
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: { temperature: 0.5, maxOutputTokens: 8192, responseMimeType: 'application/json' },
           }),
-          signal: AbortSignal.timeout(45000),
+          signal: AbortSignal.timeout(90000),
         },
       );
       const json = await res.json().catch(() => ({}));
@@ -112,16 +117,15 @@ function lengthChoice(count) {
 
 const DRAW = 'picture 只寫這一句要新畫上白板的那一個東西，例如：三個方框用箭頭連成流程、一個火柴人把箱子交給另一個人、一條由下往上的折線。不要寫整張照片，不要寫文字。';
 
-async function writeLines(text, voice, count, other) {
-  const choice = lengthChoice(count);
-  const n = choice.n;
+async function writeBatch(text, voice, other, choice, need, done, total) {
   const tone = voice === 'other'
     ? `口吻：${clean(other, 120) || '自然口語'}`
     : (VOICES[voice] || VOICES.teach);
   const data = await askText([
     '你要寫一支白板講解。旁白在講的時候，白板上會把對應的手繪圖畫出來。只輸出 JSON。',
     '{"lines":[{"say":"","picture":""}]}',
-    `剛好 ${n} 句，整段唸完${choice.minutes}。say 是要唸出來的繁體中文，每一句 ${choice.band}，結尾用句號。`,
+    `這一批只寫 ${need} 句。整支片共 ${total} 句、唸完${choice.minutes}，現在從第 ${done + 1} 句寫到第 ${done + need} 句。`,
+    `say 是要唸出來的繁體中文，每一句 ${choice.band}，結尾用句號。`,
     '句子要夠長，像 YouTube 知識或教學口播。整段從問題講到過程再收到結論。',
     DRAW,
     '每一句 say 和它的 picture 必須是同一件事。前面畫過的不要在 picture 裡重畫。',
@@ -129,12 +133,24 @@ async function writeLines(text, voice, count, other) {
     tone,
     `主題：${clean(text, 500)}`,
   ].join('\n'));
-  const lines = (Array.isArray(data.lines) ? data.lines : []).map((row) => ({
+  return (Array.isArray(data.lines) ? data.lines : []).map((row) => ({
     say: sentence(row && row.say),
     picture: clean(row && row.picture, 180),
-  })).filter((row) => row.say && row.picture).slice(0, n);
+  })).filter((row) => row.say && row.picture).slice(0, need);
+}
+
+async function writeLines(text, voice, count, other) {
+  const choice = lengthChoice(count);
+  const n = choice.n;
+  const lines = [];
+  while (lines.length < n) {
+    const need = Math.min(6, n - lines.length);
+    const batch = await writeBatch(text, voice, other, choice, need, lines.length, n);
+    if (!batch.length) break;
+    lines.push(...batch);
+  }
   if (lines.length < n - 2) throw new Error('沒有寫滿這支片的句數，請再試一次。');
-  return lines;
+  return lines.slice(0, n);
 }
 
 async function picturesFor(says) {
@@ -154,7 +170,8 @@ async function picturesFor(says) {
 }
 
 function partImage(part) {
-  const inline = part && (part.inlineData || part.inline_data);
+  if (!part || part.thought) return null;
+  const inline = part.inlineData || part.inline_data;
   if (!inline || !inline.data) return null;
   return Buffer.from(inline.data, 'base64');
 }
@@ -162,37 +179,45 @@ function partImage(part) {
 async function generateSketch(picture) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [{
-            text: [
-              '1:1 白板手繪。純白背景，黑色馬克筆線條。',
-              `只畫這一個說明元素，放在正中，四周留白：${picture}`,
-              '可以是箭頭、方框流程、火柴人、簡單圖示。線條清楚，像老師在白板上現畫。',
-              '不要照片、不要彩色填色、不要陰影、不要灰色紙、不要格子、不要任何文字、數字、字幕、商標。',
-              '只輸出圖像。',
-            ].join('\n'),
-          }],
-        }],
-        generationConfig: {
-          responseModalities: ['TEXT', 'IMAGE'],
-          imageConfig: { aspectRatio: '1:1', imageSize: '1K' },
+  const prompt = [
+    '1:1 白板手繪。純白背景，黑色馬克筆線條。',
+    `只畫這一個說明元素，放在正中，四周留白：${picture}`,
+    '可以是箭頭、方框流程、火柴人、簡單圖示。線條清楚，像老師在白板上現畫。',
+    '不要照片、不要彩色填色、不要陰影、不要灰色紙、不要格子、不要任何文字、數字、字幕、商標。',
+    '只輸出圖像。',
+  ].join('\n');
+  const configs = [
+    { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio: '1:1', imageSize: '1K' } },
+    { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio: '1:1' } },
+    { responseModalities: ['IMAGE'] },
+  ];
+  let lastErr = new Error('沒有產出圖片');
+  for (const generationConfig of configs) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig,
+          }),
+          signal: AbortSignal.timeout(90000),
         },
-      }),
-      signal: AbortSignal.timeout(90000),
-    },
-  );
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error?.message || `生圖服務 ${res.status}`);
-  const image = (body.candidates?.[0]?.content?.parts || []).map(partImage).find(Boolean);
-  if (!image) throw new Error('沒有產出圖片');
-  return image;
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error?.message || `生圖服務 ${res.status}`);
+      const parts = body.candidates?.[0]?.content?.parts || [];
+      const image = parts.map(partImage).filter(Boolean).pop();
+      if (!image) throw new Error('沒有產出圖片');
+      return image;
+    } catch (err) {
+      lastErr = err;
+      if (err.name === 'TimeoutError' || /aborted|timeout/i.test(err.message || '')) throw err;
+    }
+  }
+  throw lastErr;
 }
 
 function frameOf(ratio) {
@@ -234,40 +259,92 @@ function probeDuration(file) {
   });
 }
 
-function inkFilter(box, reveal) {
-  const grow = reveal
-    ? `,scale=w='min(iw\\,max(2\\,iw*t/${reveal}))':h=ih:eval=frame`
-    : '';
-  return `[1:v]scale=${box.w}:${box.h}:force_original_aspect_ratio=decrease,pad=${box.w}:${box.h}:(ow-iw)/2:(oh-ih)/2:white,format=rgba,colorkey=0xFFFFFF:0.12:0.04${grow}[ink];[0:v][ink]overlay=${box.x}:${box.y}:format=auto`;
+function ffmpeg(args, output) {
+  const bin = ffmpegBin();
+  if (!bin) return Promise.reject(new Error('轉檔工具尚未就緒，這次沒有生圖。'));
+  return new Promise((resolve, reject) => {
+    const proc = spawn(bin, args, { windowsHide: true });
+    let err = '';
+    proc.stderr.on('data', (chunk) => {
+      err += chunk;
+      if (err.length > 4000) err = err.slice(-4000);
+    });
+    proc.on('error', reject);
+    proc.on('close', (code) => {
+      if (code === 0 && fs.existsSync(output) && fs.statSync(output).size > 0) resolve(output);
+      else {
+        const line = err.split(/\r?\n/).map((row) => row.trim()).filter(Boolean).pop() || '沒有產出畫面';
+        reject(new Error(`轉檔失敗：${line.slice(0, 140)}`));
+      }
+    });
+  });
 }
 
-async function blankBoard(file, frame) {
-  await runFfmpeg([
-    '-y', '-f', 'lavfi', '-i', `color=c=white:s=${frame.w}x${frame.h}`,
-    '-frames:v', '1', file,
-  ], file);
+function inkFilter(box, mode, reveal) {
+  let extra = '';
+  if (mode === 'reveal' && reveal) extra = `,scale=w='min(iw\\,max(2\\,iw*t/${reveal}))':h=ih:eval=frame`;
+  else if (mode === 'fade' && reveal) extra = `,fade=t=in:st=0:d=${reveal}:alpha=1`;
+  const key = mode === 'box' ? '' : ',format=rgba,colorkey=0xFFFFFF:0.12:0.04';
+  return `[1:v]scale=${box.w}:${box.h}:force_original_aspect_ratio=decrease,pad=${box.w}:${box.h}:(ow-iw)/2:(oh-ih)/2:white${key}${extra}[ink];[0:v][ink]overlay=${box.x}:${box.y}:format=auto`;
+}
+
+function blankBoard(file, frame) {
+  const row = Math.ceil((frame.w * 3) / 4) * 4;
+  const pixels = row * frame.h;
+  const buf = Buffer.alloc(54 + pixels);
+  buf.fill(0xff, 54);
+  buf.write('BM', 0);
+  buf.writeUInt32LE(54 + pixels, 2);
+  buf.writeUInt32LE(54, 10);
+  buf.writeUInt32LE(40, 14);
+  buf.writeInt32LE(frame.w, 18);
+  buf.writeInt32LE(frame.h, 22);
+  buf.writeUInt16LE(1, 26);
+  buf.writeUInt16LE(24, 28);
+  buf.writeUInt32LE(pixels, 34);
+  fs.writeFileSync(file, buf);
 }
 
 async function stampBoard(base, ink, box, dest) {
-  await runFfmpeg([
-    '-y', '-i', base, '-i', ink,
-    '-filter_complex', `${inkFilter(box, 0)},format=rgb24`,
-    '-frames:v', '1', dest,
-  ], dest);
+  let lastErr;
+  for (const mode of ['plain', 'box']) {
+    try {
+      await ffmpeg([
+        '-y', '-i', base, '-i', ink,
+        '-filter_complex', `${inkFilter(box, mode, 0)},format=rgb24`,
+        '-frames:v', '1', dest,
+      ], dest);
+      return;
+    } catch (err) {
+      lastErr = err;
+      fs.rmSync(dest, { force: true });
+    }
+  }
+  throw lastErr;
 }
 
-async function drawClip(base, ink, audioPath, box, frame, dur, dest) {
+async function drawClip(base, ink, audioPath, box, dur, dest) {
   const reveal = Math.min(1.8, Math.max(0.7, dur * 0.45)).toFixed(2);
-  await runFfmpeg([
-    '-y', '-loop', '1', '-i', base, '-loop', '1', '-i', ink, '-i', audioPath,
-    '-t', dur.toFixed(2),
-    '-filter_complex', `${inkFilter(box, reveal)},fps=30,format=yuv420p[v]`,
-    '-map', '[v]', '-map', '2:a',
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '23',
-    '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-    '-shortest', '-movflags', '+faststart',
-    dest,
-  ], dest);
+  let lastErr;
+  for (const mode of ['reveal', 'fade', 'box']) {
+    try {
+      await ffmpeg([
+        '-y', '-loop', '1', '-framerate', '30', '-i', base, '-loop', '1', '-framerate', '30', '-i', ink, '-i', audioPath,
+        '-t', dur.toFixed(2),
+        '-filter_complex', `${inkFilter(box, mode, reveal)},fps=30,format=yuv420p[v]`,
+        '-map', '[v]', '-map', '2:a',
+        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '23',
+        '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+        '-shortest', '-movflags', '+faststart',
+        dest,
+      ], dest);
+      return;
+    } catch (err) {
+      lastErr = err;
+      fs.rmSync(dest, { force: true });
+    }
+  }
+  throw lastErr;
 }
 
 async function concatClips(files, work) {
@@ -300,22 +377,23 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
     : await writeLines(topic, voice, count, other);
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'whiteboard-'));
   try {
-    let board = path.join(work, 'board-0.png');
-    await blankBoard(board, frame);
+    let board = path.join(work, 'board-0.bmp');
+    blankBoard(board, frame);
     const clips = [];
     for (let i = 0; i < lines.length; i += 1) {
       onPhase(`正在畫第 ${i + 1} 筆，共 ${lines.length} 筆，並配上這一句`);
       const box = slotBox(frame, i);
-      const base = box.fresh ? path.join(work, `blank-${i}.png`) : board;
-      if (box.fresh) await blankBoard(base, frame);
+      const base = box.fresh ? path.join(work, `blank-${i}.bmp`) : board;
+      if (box.fresh) blankBoard(base, frame);
       const ink = path.join(work, `ink-${i}.png`);
       fs.writeFileSync(ink, await generateSketch(lines[i].picture));
       const audio = await clipTts.speak(lines[i].say);
-      const aud = path.join(work, `aud-${i}.wav`);
+      const ext = /mpeg|mp3/i.test(audio.mime || '') ? 'mp3' : 'wav';
+      const aud = path.join(work, `aud-${i}.${ext}`);
       fs.writeFileSync(aud, audio.buffer);
       const dur = Math.min(18, Math.max(1.2, (await probeDuration(aud)) || 4));
       const clip = path.join(work, `clip-${i}.mp4`);
-      await drawClip(base, ink, aud, box, frame, dur, clip);
+      await drawClip(base, ink, aud, box, dur, clip);
       const next = path.join(work, `board-${i + 1}.png`);
       await stampBoard(base, ink, box, next);
       board = next;
