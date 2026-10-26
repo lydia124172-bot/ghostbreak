@@ -115,28 +115,43 @@ function lengthChoice(count) {
   return LENGTHS[count] || LENGTHS[18];
 }
 
-const DRAW = 'picture 要讓人一眼看出這一句在講什麼。寫這句旁白裡真的有的物件和關係。能用物件說明就不要畫人。若一定要人，寫成有厚度的說明插畫人物：橢圓頭、有寬度的軀幹、有粗細的手腳。禁止火柴人、棍狀人、圓頭加一條線的手腳。不要搞笑，不要寫整張照片，不要寫文字。';
+const OPS = new Set(['object', 'label', 'circle', 'arrow']);
+const PLAN = [
+  '你在安排一支白板教學。老師是在同一張圖上越畫越完整，不是每句換一張不相干的圖。只輸出 JSON。',
+  '{"beats":[{"say":"","op":"object","what":"","text":""}]}',
+  'op 只能是 object、label、circle、arrow。',
+  'object：新畫一個實物，what 寫清楚那個東西。不要畫人，除非這句沒有人就講不清楚。禁止火柴人。',
+  'label：在剛畫好的東西旁邊寫很短的字，text 最多 8 個字，例如 +1,000、10,000、複利。',
+  'circle：把剛剛那個重點圈起來。text 留空。',
+  'arrow：從剛畫的東西拉出箭頭，text 可寫箭頭指到的短字。',
+  '順序固定成一輪一輪：先 object，再 label，再 circle 或 arrow，然後才換下一個 object。大約每 3 到 4 筆才有一個 object。',
+  'say 是這一筆要唸出來的繁體中文，必須在講畫面上正在加的那一筆。',
+].join('\n');
+
+function asBeats(rows, limit) {
+  const beats = (Array.isArray(rows) ? rows : []).map((row) => ({
+    say: sentence(row && row.say),
+    op: OPS.has(row && row.op) ? row.op : 'label',
+    what: clean(row && row.what, 180),
+    text: clean(row && row.text, 16),
+  })).filter((row) => row.say);
+  if (beats.length && beats[0].op !== 'object') beats[0].op = 'object';
+  return beats.slice(0, limit);
+}
 
 async function writeBatch(text, voice, other, choice, need, done, total) {
   const tone = voice === 'other'
     ? `口吻：${clean(other, 120) || '自然口語'}`
     : (VOICES[voice] || VOICES.teach);
   const data = await askText([
-    '你要寫一支白板講解。旁白在講的時候，白板上會把對應的手繪圖畫出來。只輸出 JSON。',
-    '{"lines":[{"say":"","picture":""}]}',
-    `這一批只寫 ${need} 句。整支片共 ${total} 句、唸完${choice.minutes}，現在從第 ${done + 1} 句寫到第 ${done + need} 句。`,
-    `say 是要唸出來的繁體中文，每一句 ${choice.band}，結尾用句號。`,
-    '句子要夠長，像 YouTube 知識或教學口播。整段從問題講到過程再收到結論。',
-    DRAW,
-    '每一句 say 和它的 picture 必須是同一件事。前面畫過的不要在 picture 裡重畫。',
+    PLAN,
+    `這一批只寫 ${need} 筆。整支片共 ${total} 筆、唸完${choice.minutes}，現在從第 ${done + 1} 筆寫到第 ${done + need} 筆。`,
+    `每一筆 say 是繁體中文，${choice.band}，結尾用句號。句子要像老師邊畫邊講。`,
     '只講主題裡有的內容，不要編價格、功效、人名。色情、未成年性相關、犯罪教學就回 {"error":"無法提供"}。',
     tone,
     `主題：${clean(text, 500)}`,
   ].join('\n'));
-  return (Array.isArray(data.lines) ? data.lines : []).map((row) => ({
-    say: sentence(row && row.say),
-    picture: clean(row && row.picture, 240),
-  })).filter((row) => row.say && row.picture).slice(0, need);
+  return asBeats(data.beats, need);
 }
 
 async function writeLines(text, voice, count, other) {
@@ -149,23 +164,24 @@ async function writeLines(text, voice, count, other) {
     if (!batch.length) break;
     lines.push(...batch);
   }
-  if (lines.length < n - 2) throw new Error('沒有寫滿這支片的句數，請再試一次。');
+  if (lines.length < Math.min(4, n)) throw new Error('沒有寫滿這支片的句數，請再試一次。');
   return lines.slice(0, n);
 }
 
 async function picturesFor(says) {
   const data = await askText([
-    '下面每一句旁白都要在白板上新畫一個東西。不要改旁白的字。只輸出 JSON。',
-    '{"pictures":[""]}',
-    'pictures 的數量和順序必須跟旁白一樣。',
-    DRAW,
+    PLAN,
+    '下面每一句都已經寫好，不要改 say 的字，只要決定 op、what、text。筆數和順序必須一樣。',
     '色情、未成年性相關、犯罪教學就回 {"error":"無法提供"}。',
     ...says.map((say, i) => `${i + 1}. ${say}`),
   ].join('\n'));
-  const pictures = Array.isArray(data.pictures) ? data.pictures : [];
+  const beats = asBeats(data.beats, says.length);
+  if (beats.length === says.length) return beats.map((beat, i) => ({ ...beat, say: says[i] }));
   return says.map((say, i) => ({
     say,
-    picture: clean(pictures[i], 240) || say,
+    op: i % 4 === 0 ? 'object' : (i % 4 === 1 ? 'label' : (i % 4 === 2 ? 'circle' : 'arrow')),
+    what: say,
+    text: '',
   }));
 }
 
@@ -176,17 +192,14 @@ function partImage(part) {
   return Buffer.from(inline.data, 'base64');
 }
 
-async function generateSketch(picture) {
+async function generateSketch(picture, promptOverride) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
-  const prompt = [
-    '1:1。純白背景。專業白板講解插畫，黑色線條乾淨、粗細穩定，主體佔畫面大約七成。',
-    `這張圖必須讓人立刻看懂這一句，畫的就是這件事：${picture}`,
-    '畫旁白裡的實際物件和關係。不要換成不相干的符號、天平或打叉。',
-    '禁止火柴人。禁止圓形頭接單線手腳，禁止棍狀身體。',
-    '若畫面有人，畫成專業白板動畫人物：橢圓的頭、有寬度的軀幹、手臂和腿都有粗細。No stick figures.',
-    '可以加一條重點箭頭，或只用淡藍色標一個重點。其餘保持黑線，不要整張塗色。',
-    '不要照片、不要灰色紙、不要格子、不要任何文字、數字、字幕、商標。',
+  const prompt = promptOverride || [
+    '1:1。純白背景。專業白板插畫，黑色線條乾淨，這個物件畫滿畫面大約八成。',
+    `只畫這一個東西：${picture}`,
+    '不要畫人，不要火柴人，不要箭頭，不要方框，不要任何文字和數字。',
+    '不要照片、不要彩色塗滿、不要灰色紙、不要格子、不要商標。',
     '只輸出圖像。',
   ].join('\n');
   const configs = [
@@ -291,6 +304,124 @@ function inkFilter(box, mode, reveal) {
   return `[1:v]scale=${box.w}:${box.h}:force_original_aspect_ratio=decrease,pad=${box.w}:${box.h}:(ow-iw)/2:(oh-ih)/2:white${key}${extra}[ink];[0:v][ink]overlay=${box.x}:${box.y}:format=auto`;
 }
 
+function fontArg() {
+  const file = path.join(__dirname, '..', 'assets', 'jf-openhuninn-2.1.ttf');
+  if (!fs.existsSync(file)) throw new Error('白板字型尚未就緒。');
+  return `'${file.replace(/\\/g, '/').replace(':', '\\:')}'`;
+}
+
+function escText(text) {
+  return String(text || '').replace(/[\\'%:]/g, '').slice(0, 16);
+}
+
+function writeMarkBmp(file, w, h, paint) {
+  const width = Math.max(8, w);
+  const height = Math.max(8, h);
+  const row = Math.ceil((width * 3) / 4) * 4;
+  const pixels = row * height;
+  const buf = Buffer.alloc(54 + pixels);
+  buf.fill(0xff, 54);
+  buf.write('BM', 0);
+  buf.writeUInt32LE(54 + pixels, 2);
+  buf.writeUInt32LE(54, 10);
+  buf.writeUInt32LE(40, 14);
+  buf.writeInt32LE(width, 18);
+  buf.writeInt32LE(height, 22);
+  buf.writeUInt16LE(1, 26);
+  buf.writeUInt16LE(24, 28);
+  buf.writeUInt32LE(pixels, 34);
+  const set = (x, y) => {
+    const px = Math.round(x);
+    const py = Math.round(y);
+    if (px < 0 || py < 0 || px >= width || py >= height) return;
+    const off = 54 + (height - 1 - py) * row + px * 3;
+    buf[off] = 0;
+    buf[off + 1] = 0;
+    buf[off + 2] = 0;
+  };
+  paint(set, width, height);
+  fs.writeFileSync(file, buf);
+}
+
+function circleInk(file, w, h) {
+  writeMarkBmp(file, w, h, (set, width, height) => {
+    const cx = width / 2;
+    const cy = height / 2;
+    const rx = width / 2 - 8;
+    const ry = height / 2 - 8;
+    for (let deg = 0; deg < 360; deg += 1) {
+      const t = deg * Math.PI / 180;
+      for (let thick = 0; thick < 6; thick += 1) {
+        set(cx + (rx - thick) * Math.cos(t), cy + (ry - thick) * Math.sin(t));
+      }
+    }
+  });
+}
+
+function arrowInk(file, w, h) {
+  writeMarkBmp(file, w, h, (set, width, height) => {
+    const y = Math.round(height / 2);
+    for (let x = 6; x < width - 26; x += 1) {
+      for (let k = -3; k <= 3; k += 1) set(x, y + k);
+    }
+    for (let i = 0; i < 24; i += 1) {
+      for (let k = -Math.floor(i * 0.7); k <= Math.floor(i * 0.7); k += 1) set(width - 8 - i, y + k);
+    }
+  });
+}
+
+async function labelInk(file, w, h, text) {
+  const label = escText(text) || '重點';
+  await ffmpeg([
+    '-y', '-f', 'lavfi', '-i', `color=c=white:s=${Math.max(8, w)}x${Math.max(8, h)}`,
+    '-vf', `drawtext=fontfile=${fontArg()}:text=${label}:text_shaping=1:fontsize=42:fontcolor=black:x=(w-text_w)/2:y=(h-text_h)/2`,
+    '-frames:v', '1', '-update', '1', file,
+  ], file);
+}
+
+function layoutBeats(frame, beats) {
+  let x = 48;
+  let y = 64;
+  let rowH = 0;
+  let last = null;
+  return beats.map((beat) => {
+    const op = OPS.has(beat.op) ? beat.op : 'label';
+    const text = clean(beat.text, 16);
+    const w = op === 'object'
+      ? Math.min(360, Math.floor(frame.w * 0.34))
+      : (op === 'arrow' ? 240 : (op === 'circle' && last ? last.w + 36 : Math.min(460, 36 + Math.max(2, text.length) * 46)));
+    const h = op === 'object'
+      ? Math.min(300, Math.floor(frame.h * 0.4))
+      : (op === 'circle' && last ? last.h + 36 : (op === 'arrow' ? 90 : 92));
+    let bx = x;
+    let by = y;
+    let fresh = false;
+    if (op === 'object' || !last) {
+      if (x + w > frame.w - 36) { x = 48; y += rowH + 24; rowH = 0; }
+      if (y + h > frame.h - 36) { fresh = true; x = 48; y = 64; rowH = 0; }
+      bx = x;
+      by = y;
+      x += w + 24;
+      rowH = Math.max(rowH, h);
+    } else if (op === 'circle') {
+      bx = Math.max(8, last.x - 18);
+      by = Math.max(8, last.y - 18);
+    } else if (op === 'label') {
+      bx = last.x + last.w + 12;
+      by = last.y + Math.max(0, Math.floor((last.h - h) / 2));
+      if (bx + w > frame.w - 24) { bx = last.x; by = last.y + last.h + 10; }
+      if (by + h > frame.h - 24) { fresh = true; bx = 48; by = 64; x = 48 + w + 24; y = 64; rowH = h; }
+    } else {
+      bx = Math.min(frame.w - w - 24, last.x + last.w + 8);
+      by = last.y + Math.max(0, Math.floor(last.h / 2) - 30);
+      if (by + h > frame.h - 24 || bx < 8) { fresh = true; bx = 48; by = 80; }
+    }
+    const box = { x: Math.max(8, Math.round(bx)), y: Math.max(8, Math.round(by)), w: Math.round(w), h: Math.round(h) };
+    if (op !== 'circle') last = box;
+    return { say: beat.say, op, what: beat.what, text, box, fresh };
+  });
+}
+
 function blankBoard(file, frame) {
   const row = Math.ceil((frame.w * 3) / 4) * 4;
   const pixels = row * frame.h;
@@ -326,21 +457,32 @@ async function stampBoard(base, ink, box, dest) {
   throw lastErr;
 }
 
-async function drawClip(base, ink, audioPath, box, dur, dest) {
+async function drawClip(base, ink, audioPath, box, dur, dest, hand) {
   const reveal = Math.min(1.8, Math.max(0.7, dur * 0.45)).toFixed(2);
+  const handOn = hand
+    ? `;[2:v]scale=150:150:force_original_aspect_ratio=decrease,format=rgba,colorkey=0xFFFFFF:0.18:0.08[hand];[drawn][hand]overlay=x='${box.x}+min(${Math.max(1, box.w - 40)}\\,max(0\\,${box.w}*t/${reveal}))-30':y='${box.y + Math.round(box.h * 0.35)}':format=auto`
+    : '';
   let lastErr;
   for (const mode of ['reveal', 'fade', 'box']) {
     try {
-      await ffmpeg([
-        '-y', '-loop', '1', '-framerate', '30', '-i', base, '-loop', '1', '-framerate', '30', '-i', ink, '-i', audioPath,
-        '-t', dur.toFixed(2),
-        '-filter_complex', `${inkFilter(box, mode, reveal)},fps=30,format=yuv420p[v]`,
-        '-map', '[v]', '-map', '2:a',
+      const args = [
+        '-y', '-loop', '1', '-framerate', '30', '-i', base, '-loop', '1', '-framerate', '30', '-i', ink,
+      ];
+      if (hand) args.push('-loop', '1', '-framerate', '30', '-i', hand);
+      args.push('-i', audioPath, '-t', dur.toFixed(2));
+      const drawn = inkFilter(box, mode, reveal);
+      const filter = hand
+        ? `${drawn.replace(/format=auto$/, 'format=auto[drawn]')}${handOn},fps=30,format=yuv420p[v]`
+        : `${drawn},fps=30,format=yuv420p[v]`;
+      args.push(
+        '-filter_complex', filter,
+        '-map', '[v]', '-map', `${hand ? 3 : 2}:a`,
         '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '23',
         '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
         '-shortest', '-movflags', '+faststart',
         dest,
-      ], dest);
+      );
+      await ffmpeg(args, dest);
       return;
     } catch (err) {
       lastErr = err;
@@ -374,31 +516,54 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
   const topic = String(text || '').trim();
   if (looksLikeJailbreak(topic) || looksLikeJailbreak(other)) throw new Error('無法提供');
   const frame = frameOf(ratio === '9:16' ? '9:16' : '16:9');
-  onPhase('正在寫旁白');
-  const lines = mode === 'script'
+  onPhase('正在安排要畫的順序');
+  const lines = layoutBeats(frame, mode === 'script'
     ? await picturesFor(splitScript(topic))
-    : await writeLines(topic, voice, count, other);
+    : await writeLines(topic, voice, count, other));
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'whiteboard-'));
   try {
+    let hand = '';
+    try {
+      const handFile = path.join(work, 'hand.png');
+      fs.writeFileSync(handFile, await generateSketch('', [
+        '1:1。純白背景。',
+        '畫一隻右手握著黑色馬克筆，從斜上方看，只有手和筆，線條乾淨，像在白板上畫。',
+        '不要火柴人，不要身體，不要臉，不要文字。',
+        '只輸出圖像。',
+      ].join('\n')));
+      hand = handFile;
+    } catch (err) {
+      console.error('[whiteboard] hand', err.message);
+    }
     let board = path.join(work, 'board-0.bmp');
     blankBoard(board, frame);
     const clips = [];
+    const stepName = { object: '畫上新的東西', label: '寫上短字', circle: '把重點圈起來', arrow: '畫箭頭' };
     for (let i = 0; i < lines.length; i += 1) {
-      onPhase(`正在畫第 ${i + 1} 筆，共 ${lines.length} 筆，並配上這一句`);
-      const box = slotBox(frame, i);
-      const base = box.fresh ? path.join(work, `blank-${i}.bmp`) : board;
-      if (box.fresh) blankBoard(base, frame);
-      const ink = path.join(work, `ink-${i}.png`);
-      fs.writeFileSync(ink, await generateSketch(lines[i].picture));
-      const audio = await clipTts.speak(lines[i].say);
+      const item = lines[i];
+      onPhase(`正在第 ${i + 1} 筆，共 ${lines.length} 筆，${stepName[item.op] || '往下畫'}`);
+      const base = item.fresh ? path.join(work, `blank-${i}.bmp`) : board;
+      if (item.fresh) blankBoard(base, frame);
+      const ink = path.join(work, `ink-${i}.${item.op === 'object' || item.op === 'label' ? 'png' : 'bmp'}`);
+      if (item.op === 'object') fs.writeFileSync(ink, await generateSketch(item.what || item.say));
+      else if (item.op === 'label') await labelInk(ink, item.box.w, item.box.h, item.text || item.say.slice(0, 8));
+      else if (item.op === 'circle') circleInk(ink, item.box.w, item.box.h);
+      else arrowInk(ink, item.box.w, item.box.h);
+      const audio = await clipTts.speak(item.say);
       const ext = /mpeg|mp3/i.test(audio.mime || '') ? 'mp3' : 'wav';
       const aud = path.join(work, `aud-${i}.${ext}`);
       fs.writeFileSync(aud, audio.buffer);
       const dur = Math.min(18, Math.max(1.2, (await probeDuration(aud)) || 4));
       const clip = path.join(work, `clip-${i}.mp4`);
-      await drawClip(base, ink, aud, box, dur, clip);
+      try {
+        await drawClip(base, ink, aud, item.box, dur, clip, hand);
+      } catch (err) {
+        if (!hand) throw err;
+        console.error('[whiteboard] hand', err.message);
+        await drawClip(base, ink, aud, item.box, dur, clip, '');
+      }
       const next = path.join(work, `board-${i + 1}.png`);
-      await stampBoard(base, ink, box, next);
+      await stampBoard(base, ink, item.box, next);
       board = next;
       clips.push(clip);
     }
@@ -407,7 +572,7 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
     return {
       buffer: fs.readFileSync(file),
       script: lines.map((row) => row.say).join(''),
-      lines: lines.map((row) => ({ say: row.say, picture: row.picture })),
+      lines: lines.map((row) => ({ say: row.say, picture: row.text || row.what || row.op })),
     };
   } finally {
     fs.rmSync(work, { recursive: true, force: true });

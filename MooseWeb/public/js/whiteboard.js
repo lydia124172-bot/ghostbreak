@@ -138,7 +138,7 @@ form.addEventListener('submit', async (event) => {
   submit.disabled = true;
   result.classList.add('hidden');
   msg.classList.remove('status-err');
-  msg.textContent = '已送出。每一句都會畫一筆並配音，請留在這個畫面。';
+  msg.textContent = '已送出。同一張圖會一直留著，講到哪裡就畫到哪裡。請留在這個畫面。';
   try {
     const res = await fetch('/api/whiteboard', {
       method: 'POST',
