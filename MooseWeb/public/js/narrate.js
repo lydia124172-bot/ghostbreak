@@ -233,9 +233,17 @@ fileInput.addEventListener('change', () => {
   fileMeta.textContent = `${file.name}　選好了，按下方按鈕就會依時間看畫面。`;
 });
 
+function spokenScript(lines) {
+  return lines.map((line, i) => {
+    const text = String(line || '').trim();
+    if (!text || i === lines.length - 1) return text;
+    return /[。！？…]$/.test(text) ? text : `${text}。`;
+  }).filter(Boolean).join('');
+}
+
 function showResult(data) {
   const beats = data.beats || [];
-  lastScript = beats.map((row) => `${Number(row.start).toFixed(1)}–${Number(row.end).toFixed(1)} 秒\n${row.line}`).join('\n\n');
+  lastScript = String(data.script || '').trim() || spokenScript(beats.map((row) => row.line));
   styleLine.textContent = data.style ? `風格：${data.style}` : '';
   scriptBox.textContent = lastScript;
   beatsBox.innerHTML = beats.map((row) => `
