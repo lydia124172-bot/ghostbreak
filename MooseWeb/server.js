@@ -39,6 +39,7 @@ const hotAgent = require('./services/hot-agent');
 const promptAgent = require('./services/prompt-agent');
 const narrateAgent = require('./services/narrate-agent');
 const talkpic = require('./services/talkpic-agent');
+const whiteboard = require('./services/whiteboard-agent');
 const hookAgent = require('./services/hook-agent');
 const dressAgent = require('./services/dress-agent');
 const editAgent = require('./services/edit-agent');
@@ -343,6 +344,38 @@ app.get('/api/talkpic/last', (req, res) => {
 app.get('/api/talkpic/job/:id', (req, res) => {
   if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
   const job = talkpic.getJob(req.params.id, clipSid(req, res));
+  if (!job) return res.status(404).json({ error: '找不到這次片子' });
+  res.json(job);
+});
+app.get('/whiteboard', (req, res) => {
+  if (!isOwner(req)) return res.redirect(302, '/admin');
+  return sendPage(req, res, 'whiteboard.html');
+});
+app.post('/api/whiteboard', express.json({ limit: '64kb' }), (req, res) => {
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  try {
+    res.json(whiteboard.startJob({
+      sid: clipSid(req, res),
+      text: String(req.body?.text || ''),
+      voice: String(req.body?.voice || ''),
+      other: String(req.body?.other || ''),
+      ratio: req.body?.ratio === '9:16' ? '9:16' : '16:9',
+      mode: req.body?.mode === 'script' ? 'script' : 'write',
+      count: [8, 12, 18, 24, 30].includes(Number(req.body?.count)) ? Number(req.body.count) : 18,
+    }));
+  } catch (err) {
+    res.status(400).json({ error: err.message || '這次沒有做成' });
+  }
+});
+app.get('/api/whiteboard/last', (req, res) => {
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const job = whiteboard.latestJob(clipSid(req, res));
+  if (!job) return res.status(404).json({ error: '沒有可取回的片子' });
+  res.json(job);
+});
+app.get('/api/whiteboard/job/:id', (req, res) => {
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const job = whiteboard.getJob(req.params.id, clipSid(req, res));
   if (!job) return res.status(404).json({ error: '找不到這次片子' });
   res.json(job);
 });

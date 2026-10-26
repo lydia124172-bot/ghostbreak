@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>白板講解 — 麋鹿網後台</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/images/logo.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=look5" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/admin">
+        <img src="/images/logo.png" alt="麋鹿網" width="52" height="52" />
+        <span>麋鹿網<small>內容後台</small></span>
+      </a>
+      <div class="admin-actions">
+        <a class="nav-link" href="/admin">回後台</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero research-hero">
+      <p class="kicker">後台　只給自己用</p>
+      <h1>白板講解</h1>
+      <p class="lead">一邊講，一邊在白板上把圖畫出來。講到流程就畫箭頭和方框，講到人就畫人物。畫過的會留在板上，畫滿再換下一張白板。可選約 1 到 5 分鐘。不扣站上點數。</p>
+    </section>
+
+    <form id="form" class="panel">
+      <p class="field">做法</p>
+      <div class="clip-types story-durations" id="modes">
+        <button class="clip-type active" type="button" data-mode="write"><strong>幫我寫</strong><span>給主題，寫成講解</span></button>
+        <button class="clip-type" type="button" data-mode="script"><strong>用我寫的稿</strong><span>一句畫一筆，用句號分開</span></button>
+      </div>
+      <label class="field" for="text" id="textLabel">主題</label>
+      <textarea id="text" class="form-input" rows="6" maxlength="4000" placeholder="例如：一家店怎麼把客人從看到廣告帶到回購"></textarea>
+      <p class="field">旁白類型</p>
+      <div class="clip-types story-durations" id="voices">
+        <button class="clip-type" type="button" data-voice="teach"><strong>教學</strong><span>按步驟講清楚</span></button>
+        <button class="clip-type" type="button" data-voice="doc"><strong>紀錄片</strong><span>沉穩，把看到的事說清楚</span></button>
+        <button class="clip-type" type="button" data-voice="anchor"><strong>新聞主播</strong><span>清楚、客觀、先講重點</span></button>
+        <button class="clip-type" type="button" data-voice="influencer"><strong>網紅</strong><span>口語，像在跟觀眾聊天</span></button>
+        <button class="clip-type" type="button" data-voice="ad"><strong>商品廣告</strong><span>精簡有力，不編價格</span></button>
+        <button class="clip-type" type="button" data-voice="other"><strong>其它</strong><span>自己寫要的口吻</span></button>
+      </div>
+      <div id="noteBox" class="hidden">
+        <label class="field" for="note">其它口吻</label>
+        <textarea id="note" class="form-input" rows="2" maxlength="120" placeholder="例如：像顧問在簡報，語氣清楚。"></textarea>
+      </div>
+      <p class="field" id="countLabel">長度</p>
+      <div class="clip-types story-durations" id="counts">
+        <button class="clip-type" type="button" data-count="8"><strong>約 1 分鐘</strong><span>8 筆</span></button>
+        <button class="clip-type" type="button" data-count="12"><strong>約 2 分鐘</strong><span>12 筆</span></button>
+        <button class="clip-type active" type="button" data-count="18"><strong>約 3 分鐘</strong><span>18 筆</span></button>
+        <button class="clip-type" type="button" data-count="24"><strong>約 4 分鐘</strong><span>24 筆</span></button>
+        <button class="clip-type" type="button" data-count="30"><strong>約 5 分鐘</strong><span>30 筆</span></button>
+      </div>
+      <p class="field">比例</p>
+      <div class="clip-types story-durations" id="ratios">
+        <button class="clip-type active" type="button" data-ratio="16:9"><strong>橫式</strong><span>16:9，YouTube</span></button>
+        <button class="clip-type" type="button" data-ratio="9:16"><strong>直式</strong><span>9:16，短片</span></button>
+      </div>
+      <div class="admin-actions" style="margin-top:16px;">
+        <button class="btn btn-copper" id="submit" type="submit">開始畫</button>
+        <button class="btn btn-ghost" id="recover" type="button">取回剛才的片子</button>
+      </div>
+      <p id="msg" class="lead"></p>
+      <section id="result" class="hidden">
+        <video id="preview" class="clip-video" controls playsinline style="width:min(100%,720px);aspect-ratio:16/9;"></video>
+        <div class="admin-actions" style="margin-top:12px;">
+          <a class="btn btn-copper" id="download" href="#" download="whiteboard.mp4">下載影片</a>
+          <button class="btn btn-ghost" id="copyBtn" type="button">複製旁白</button>
+        </div>
+        <pre id="script" class="story-script"></pre>
+      </section>
+    </form>
+  </main>
+  <script src="/js/whiteboard.js?v=1"></script>
+</body>
+</html>
