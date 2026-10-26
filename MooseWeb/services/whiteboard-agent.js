@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
+const opentype = require('opentype.js');
 const { ffmpegBin, runFfmpeg } = require('./clip-export');
 const clipTts = require('./clip-tts');
 const clipStore = require('./clip-store');
@@ -289,7 +290,8 @@ function ffmpeg(args, output) {
     proc.on('close', (code) => {
       if (code === 0 && fs.existsSync(output) && fs.statSync(output).size > 0) resolve(output);
       else {
-        const line = err.split(/\r?\n/).map((row) => row.trim()).filter(Boolean).pop() || '沒有產出畫面';
+        const lines = err.split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
+        const line = lines.find((row) => /No such filter|Filter not found|Invalid|Error/i.test(row)) || lines[lines.length - 1] || '沒有產出畫面';
         reject(new Error(`轉檔失敗：${line.slice(0, 140)}`));
       }
     });
@@ -304,14 +306,59 @@ function inkFilter(box, mode, reveal) {
   return `[1:v]scale=${box.w}:${box.h}:force_original_aspect_ratio=decrease,pad=${box.w}:${box.h}:(ow-iw)/2:(oh-ih)/2:white${key}${extra}[ink];[0:v][ink]overlay=${box.x}:${box.y}:format=auto`;
 }
 
-function fontArg() {
+let boardFont;
+
+function loadedFont() {
+  if (boardFont) return boardFont;
   const file = path.join(__dirname, '..', 'assets', 'jf-openhuninn-2.1.ttf');
   if (!fs.existsSync(file)) throw new Error('白板字型尚未就緒。');
-  return `'${file.replace(/\\/g, '/').replace(':', '\\:')}'`;
+  boardFont = opentype.loadSync(file);
+  return boardFont;
 }
 
-function escText(text) {
-  return String(text || '').replace(/[\\'%:]/g, '').slice(0, 16);
+function glyphContours(text) {
+  const glyphPath = loadedFont().getPath(text, 0, 64, 64);
+  const contours = [];
+  let current = null;
+  let cx = 0;
+  let cy = 0;
+  const lineTo = (x, y) => {
+    current.push({ x, y });
+    cx = x;
+    cy = y;
+  };
+  glyphPath.commands.forEach((cmd) => {
+    if (cmd.type === 'M') {
+      current = [{ x: cmd.x, y: cmd.y }];
+      contours.push(current);
+      cx = cmd.x;
+      cy = cmd.y;
+    } else if (cmd.type === 'L') {
+      lineTo(cmd.x, cmd.y);
+    } else if (cmd.type === 'Q') {
+      const x0 = cx;
+      const y0 = cy;
+      for (let step = 1; step <= 10; step += 1) {
+        const t = step / 10;
+        const mt = 1 - t;
+        lineTo(mt * mt * x0 + 2 * mt * t * cmd.x1 + t * t * cmd.x, mt * mt * y0 + 2 * mt * t * cmd.y1 + t * t * cmd.y);
+      }
+    } else if (cmd.type === 'C') {
+      const x0 = cx;
+      const y0 = cy;
+      for (let step = 1; step <= 10; step += 1) {
+        const t = step / 10;
+        const mt = 1 - t;
+        lineTo(
+          mt * mt * mt * x0 + 3 * mt * mt * t * cmd.x1 + 3 * mt * t * t * cmd.x2 + t * t * t * cmd.x,
+          mt * mt * mt * y0 + 3 * mt * mt * t * cmd.y1 + 3 * mt * t * t * cmd.y2 + t * t * t * cmd.y,
+        );
+      }
+    } else if (cmd.type === 'Z' && current && current.length) {
+      current.push({ x: current[0].x, y: current[0].y });
+    }
+  });
+  return contours.filter((pts) => pts.length > 2);
 }
 
 function writeMarkBmp(file, w, h, paint) {
@@ -370,13 +417,44 @@ function arrowInk(file, w, h) {
   });
 }
 
-async function labelInk(file, w, h, text) {
-  const label = escText(text) || '重點';
-  await ffmpeg([
-    '-y', '-f', 'lavfi', '-i', `color=c=white:s=${Math.max(8, w)}x${Math.max(8, h)}`,
-    '-vf', `drawtext=fontfile=${fontArg()}:text=${label}:text_shaping=1:fontsize=42:fontcolor=black:x=(w-text_w)/2:y=(h-text_h)/2`,
-    '-frames:v', '1', '-update', '1', file,
-  ], file);
+function labelInk(file, w, h, text) {
+  const label = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 16) || '重點';
+  const contours = glyphContours(label);
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  contours.forEach((pts) => pts.forEach((pt) => {
+    minX = Math.min(minX, pt.x);
+    minY = Math.min(minY, pt.y);
+    maxX = Math.max(maxX, pt.x);
+    maxY = Math.max(maxY, pt.y);
+  }));
+  const gw = Math.max(1, maxX - minX);
+  const gh = Math.max(1, maxY - minY);
+  const scale = Math.min((Math.max(8, w) - 8) / gw, (Math.max(8, h) - 8) / gh);
+  const dx = (w - gw * scale) / 2 - minX * scale;
+  const dy = (h - gh * scale) / 2 - minY * scale;
+  const placed = contours.map((pts) => pts.map((pt) => ({ x: pt.x * scale + dx, y: pt.y * scale + dy })));
+  writeMarkBmp(file, w, h, (set, width, height) => {
+    for (let y = 0; y < height; y += 1) {
+      const hits = [];
+      placed.forEach((pts) => {
+        for (let i = 0; i < pts.length - 1; i += 1) {
+          const a = pts[i];
+          const b = pts[i + 1];
+          if ((a.y > y) === (b.y > y)) continue;
+          hits.push(a.x + (b.x - a.x) * (y - a.y) / (b.y - a.y));
+        }
+      });
+      hits.sort((p, q) => p - q);
+      for (let i = 0; i + 1 < hits.length; i += 2) {
+        const from = Math.max(0, Math.ceil(hits[i]));
+        const to = Math.min(width - 1, Math.floor(hits[i + 1]));
+        for (let x = from; x <= to; x += 1) set(x, y);
+      }
+    }
+  });
 }
 
 function layoutBeats(frame, beats) {
