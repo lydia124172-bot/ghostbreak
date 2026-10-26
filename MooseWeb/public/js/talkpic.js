@@ -18,7 +18,7 @@ const copyBtn = document.getElementById('copyBtn');
 const scriptBox = document.getElementById('script');
 let mode = 'write';
 let voice = 'influencer';
-let count = '4';
+let count = '18';
 let ratio = '9:16';
 let timer = 0;
 let lastScript = '';
@@ -37,7 +37,7 @@ pick(modes, 'data-mode', mode, (value) => {
   mode = value;
   const script = mode === 'script';
   textLabel.textContent = script ? '旁白稿' : '主題';
-  text.placeholder = script ? '一句一行的感覺，用句號分開。例如：早上七點，店門打開。咖啡機開始預熱。' : '例如：一家咖啡店怎麼從早上開店講到打烊';
+  text.placeholder = script ? '用句號分開，最多 30 句。例如：早上七點，店門打開。咖啡機開始預熱。' : '例如：一家咖啡店怎麼從早上開店講到打烊';
   countLabel.classList.toggle('hidden', script);
   counts.classList.toggle('hidden', script);
 });

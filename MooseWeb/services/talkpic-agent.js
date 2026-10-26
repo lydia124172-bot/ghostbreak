@@ -61,7 +61,7 @@ async function askText(prompt) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.5, maxOutputTokens: 2500, responseMimeType: 'application/json' },
+            generationConfig: { temperature: 0.5, maxOutputTokens: 8192, responseMimeType: 'application/json' },
           }),
           signal: AbortSignal.timeout(45000),
         },
@@ -93,31 +93,45 @@ function splitScript(text) {
   if (parts.length === 1 && parts[0].length > 80) throw new Error('請用句號分成幾句，每一句 80 字以內。');
   parts = parts.map((item) => sentence(item.replace(/[。！？]+$/g, ''))).filter((item) => item.length >= 3);
   if (!parts.length) throw new Error('請先寫要講的內容。');
-  if (parts.length > 6) throw new Error('最多 6 句。');
+  if (parts.length > 30) throw new Error('最多 30 句，大約 5 分鐘。');
   if (parts.some((item) => item.length > 81)) throw new Error('每一句請在 80 字以內。');
   return parts;
 }
 
+const LENGTHS = {
+  8: { n: 8, band: '22 到 32 個字', minutes: '約 1 分鐘' },
+  12: { n: 12, band: '32 到 40 個字', minutes: '約 2 分鐘' },
+  18: { n: 18, band: '36 到 44 個字', minutes: '約 3 分鐘' },
+  24: { n: 24, band: '36 到 44 個字', minutes: '約 4 分鐘' },
+  30: { n: 30, band: '36 到 46 個字', minutes: '約 5 分鐘' },
+};
+
+function lengthChoice(count) {
+  return LENGTHS[count] || LENGTHS[18];
+}
+
 async function writeLines(text, voice, count, other) {
-  const n = count === 6 ? 6 : 4;
+  const choice = lengthChoice(count);
+  const n = choice.n;
   const tone = voice === 'other'
     ? `口吻：${clean(other, 120) || '自然口語'}`
     : (VOICES[voice] || VOICES.influencer);
   const data = await askText([
-    '你要寫一支邊講邊換圖的短片旁白。只輸出 JSON。',
+    '你要寫一支 YouTube 旁白，邊講邊換圖。只輸出 JSON。',
     '{"lines":[{"say":"","picture":""}]}',
-    `剛好 ${n} 句。say 是要唸出來的繁體中文，每一句 18 到 40 個字，結尾用句號。`,
+    `剛好 ${n} 句，整段唸完${choice.minutes}。say 是要唸出來的繁體中文，每一句 ${choice.band}，結尾用句號。`,
+    '句子要夠長，像 YouTube 口播，不要短句湊數。整段從開頭講到收尾，中間有過程，不要只停在開頭。',
     'picture 寫這一張圖要畫的具體畫面：誰、什麼東西、在做什麼、在哪裡。不要寫「畫面中」，不要寫文字、字幕、商標。',
-    '每一句 say 和它的 picture 必須是同一件事。後一句不要提前講到後面才出現的東西以外的新主題，整段要連得起來。',
+    '每一句 say 和它的 picture 必須是同一件事。整段要連得起來。',
     '只講主題裡有的內容，不要編價格、功效、人名。色情、未成年性相關、犯罪教學就回 {"error":"無法提供"}。',
     tone,
-    `主題：${clean(text, 300)}`,
+    `主題：${clean(text, 500)}`,
   ].join('\n'));
   const lines = (Array.isArray(data.lines) ? data.lines : []).map((row) => ({
     say: sentence(row && row.say),
     picture: clean(row && row.picture, 180),
   })).filter((row) => row.say && row.picture).slice(0, n);
-  if (lines.length < Math.min(2, n)) throw new Error('沒有產出旁白');
+  if (lines.length < n - 2) throw new Error('沒有寫滿這支片的句數，請再試一次。');
   return lines;
 }
 
@@ -248,7 +262,7 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
   try {
     const clips = [];
     for (let i = 0; i < lines.length; i += 1) {
-      onPhase(`正在生第 ${i + 1} 張圖，並配上這一句`);
+      onPhase(`正在生第 ${i + 1} 張，共 ${lines.length} 張，並配上這一句`);
       const image = await generateImage(lines[i].picture, shape);
       const audio = await clipTts.speak(lines[i].say);
       clips.push(await stillWithVoice(image, audio, shape, work, i));

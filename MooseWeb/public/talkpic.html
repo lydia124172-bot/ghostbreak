@@ -26,7 +26,7 @@
     <section class="hero research-hero">
       <p class="kicker">後台　只給自己用</p>
       <h1>邊講邊生圖</h1>
-      <p class="lead">寫一個主題，或貼上你要講的稿。每一句話會生一張對應的圖，圖在這句開始時出現，並停到這句講完。做好可下載。一次最多 6 句，不扣站上點數。</p>
+      <p class="lead">寫一個主題，或貼上你要講的稿。每一句話會生一張對應的圖，圖在這句開始時出現，並停到這句講完。可以做到約 1 到 5 分鐘。句數愈多愈久，請留在這個畫面。不扣站上點數。</p>
     </section>
 
     <form id="form" class="panel">
@@ -36,7 +36,7 @@
         <button class="clip-type" type="button" data-mode="script"><strong>用我寫的稿</strong><span>一句一張圖，用句號分開</span></button>
       </div>
       <label class="field" for="text" id="textLabel">主題</label>
-      <textarea id="text" class="form-input" rows="5" maxlength="800" placeholder="例如：一家咖啡店怎麼從早上開店講到打烊"></textarea>
+      <textarea id="text" class="form-input" rows="6" maxlength="4000" placeholder="例如：一家咖啡店怎麼從早上開店講到打烊"></textarea>
       <p class="field">旁白類型</p>
       <div class="clip-types story-durations" id="voices">
         <button class="clip-type active" type="button" data-voice="influencer"><strong>網紅</strong><span>口語，像在跟觀眾聊天</span></button>
@@ -50,10 +50,13 @@
         <label class="field" for="note">其它口吻</label>
         <textarea id="note" class="form-input" rows="2" maxlength="120" placeholder="例如：像導遊在介紹，語氣輕鬆。"></textarea>
       </div>
-      <p class="field" id="countLabel">句數</p>
+      <p class="field" id="countLabel">長度</p>
       <div class="clip-types story-durations" id="counts">
-        <button class="clip-type active" type="button" data-count="4"><strong>4 句</strong></button>
-        <button class="clip-type" type="button" data-count="6"><strong>6 句</strong></button>
+        <button class="clip-type" type="button" data-count="8"><strong>約 1 分鐘</strong><span>8 句</span></button>
+        <button class="clip-type" type="button" data-count="12"><strong>約 2 分鐘</strong><span>12 句</span></button>
+        <button class="clip-type active" type="button" data-count="18"><strong>約 3 分鐘</strong><span>18 句</span></button>
+        <button class="clip-type" type="button" data-count="24"><strong>約 4 分鐘</strong><span>24 句</span></button>
+        <button class="clip-type" type="button" data-count="30"><strong>約 5 分鐘</strong><span>30 句</span></button>
       </div>
       <p class="field">比例</p>
       <div class="clip-types story-durations" id="ratios">
@@ -75,6 +78,6 @@
       </section>
     </form>
   </main>
-  <script src="/js/talkpic.js?v=1"></script>
+  <script src="/js/talkpic.js?v=2"></script>
 </body>
 </html>

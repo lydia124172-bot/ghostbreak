@@ -328,7 +328,7 @@ app.post('/api/talkpic', express.json({ limit: '64kb' }), (req, res) => {
       other: String(req.body?.other || ''),
       ratio: req.body?.ratio === '16:9' ? '16:9' : '9:16',
       mode: req.body?.mode === 'script' ? 'script' : 'write',
-      count: Number(req.body?.count) === 6 ? 6 : 4,
+      count: [8, 12, 18, 24, 30].includes(Number(req.body?.count)) ? Number(req.body.count) : 18,
     }));
   } catch (err) {
     res.status(400).json({ error: err.message || '這次沒有做成' });
