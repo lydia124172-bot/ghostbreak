@@ -8,7 +8,6 @@ const copyBtn = document.getElementById('copyBtn');
 const msg = document.getElementById('msg');
 const result = document.getElementById('result');
 const styleLine = document.getElementById('styleLine');
-const summaryLine = document.getElementById('summaryLine');
 const scriptBox = document.getElementById('script');
 const beatsBox = document.getElementById('beats');
 let previewUrl = '';
@@ -50,9 +49,83 @@ function frameLooksBlank(ctx, width, height) {
   return n > 0 && sum / (n * 3) < 8;
 }
 
-function frameCount(duration) {
-  if (duration < 6) return 4;
-  return Math.min(16, Math.max(6, Math.round(duration / 5)));
+function scanStep(duration) {
+  if (duration <= 20) return 0.5;
+  if (duration <= 60) return 1;
+  if (duration <= 120) return 1.5;
+  return 2;
+}
+
+function thumbOf(ctx, canvas) {
+  const w = 32;
+  const h = 18;
+  const thumb = document.createElement('canvas');
+  thumb.width = w;
+  thumb.height = h;
+  const tctx = thumb.getContext('2d', { willReadFrequently: true });
+  tctx.drawImage(canvas, 0, 0, w, h);
+  return tctx.getImageData(0, 0, w, h).data;
+}
+
+function diffScore(a, b) {
+  let sum = 0;
+  let n = 0;
+  const len = Math.min(a.length, b.length);
+  for (let i = 0; i < len; i += 4) {
+    sum += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+    n += 1;
+  }
+  return n ? sum / (n * 3) : 0;
+}
+
+function capMarks(marks) {
+  const rows = marks.slice();
+  while (rows.length - 1 > 12) {
+    let weakest = 1;
+    for (let i = 2; i < rows.length - 1; i += 1) {
+      if (rows[i].score < rows[weakest].score) weakest = i;
+    }
+    rows.splice(weakest, 1);
+  }
+  return rows;
+}
+
+function buildMarks(duration, samples) {
+  const marks = [{ t: 0, score: Infinity }];
+  samples.forEach((row) => {
+    if (row.score >= 28 && row.t - marks[marks.length - 1].t >= 0.9) {
+      marks.push({ t: row.t, score: row.score });
+    }
+  });
+  marks.push({ t: duration, score: Infinity });
+  const split = [marks[0]];
+  for (let i = 1; i < marks.length; i += 1) {
+    const prev = split[split.length - 1].t;
+    const span = marks[i].t - prev;
+    if (span > 3) {
+      const parts = Math.ceil(span / 3);
+      const step = span / parts;
+      for (let p = 1; p < parts; p += 1) {
+        split.push({ t: Number((prev + step * p).toFixed(2)), score: 0 });
+      }
+    }
+    split.push(marks[i]);
+  }
+  for (let i = 1; i < split.length - 1;) {
+    if (split[i].t - split[i - 1].t < 0.8) split.splice(i, 1);
+    else i += 1;
+  }
+  return capMarks(split);
+}
+
+async function drawAt(video, ctx, canvas, time) {
+  await seekVideo(video, time);
+  await new Promise((r) => requestAnimationFrame(r));
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  if (frameLooksBlank(ctx, canvas.width, canvas.height)) {
+    await new Promise((r) => setTimeout(r, 80));
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  }
 }
 
 function sampleVideo(file) {
@@ -66,7 +139,7 @@ function sampleVideo(file) {
     video.style.cssText = 'position:fixed;left:-9999px;width:160px;height:90px;';
     document.body.appendChild(video);
     let settled = false;
-    const timer = setTimeout(() => finish(new Error('影片解析逾時，請換一支 MP4。')), 25000);
+    const timer = setTimeout(() => finish(new Error('影片解析逾時，請換一支 MP4。')), 90000);
     const finish = (err, data) => {
       if (settled) return;
       settled = true;
@@ -91,41 +164,45 @@ function sampleVideo(file) {
         await video.play().catch(() => {});
         video.pause();
       } catch { /* 有些瀏覽器不讓自動播放，改直接跳時間 */ }
-      const count = frameCount(duration);
-      const times = [];
-      for (let i = 0; i < count; i += 1) {
-        const t = (duration * (i + 0.5)) / count;
-        times.push(Number(Math.max(0.05, Math.min(duration - 0.05, t)).toFixed(2)));
-      }
-      const maxSide = 512;
+      const maxSide = 480;
       const scale = Math.min(1, maxSide / Math.max(video.videoWidth || 640, video.videoHeight || 640));
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round((video.videoWidth || 640) * scale));
       canvas.height = Math.max(1, Math.round((video.videoHeight || 360) * scale));
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      const images = [];
+      const step = scanStep(duration);
+      const samples = [];
       try {
-        for (const t of times) {
-          await seekVideo(video, t);
-          await new Promise((r) => requestAnimationFrame(r));
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          if (frameLooksBlank(ctx, canvas.width, canvas.height)) {
-            await new Promise((r) => setTimeout(r, 120));
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          }
-          images.push(canvas.toDataURL('image/jpeg', 0.66));
+        let prev = null;
+        for (let t = step; t < duration - 0.05; t += step) {
+          const time = Number(Math.min(duration - 0.05, t).toFixed(2));
+          await drawAt(video, ctx, canvas, time);
+          const thumb = thumbOf(ctx, canvas);
+          samples.push({ t: time, score: prev ? diffScore(prev, thumb) : 0 });
+          prev = thumb;
         }
+        const marks = buildMarks(duration, samples);
+        const shots = [];
+        for (let i = 0; i < marks.length - 1; i += 1) {
+          const start = i === 0 ? 0 : marks[i].t;
+          const end = i === marks.length - 2 ? duration : marks[i + 1].t;
+          const mid = Math.min(end - 0.05, Math.max(start + 0.05, (start + end) / 2));
+          await drawAt(video, ctx, canvas, mid);
+          shots.push({
+            start: Number(start.toFixed(2)),
+            end: Number(end.toFixed(2)),
+            image: canvas.toDataURL('image/jpeg', 0.62),
+          });
+        }
+        finish(null, {
+          duration: Number(duration.toFixed(1)),
+          width: video.videoWidth,
+          height: video.videoHeight,
+          shots,
+        });
       } catch (err) {
         finish(err instanceof Error ? err : new Error('影片無法解析，請換一支 MP4。'));
-        return;
       }
-      finish(null, {
-        duration: Number(duration.toFixed(1)),
-        width: video.videoWidth,
-        height: video.videoHeight,
-        images,
-        times,
-      });
     };
     video.src = url;
     video.load();
@@ -135,13 +212,6 @@ function sampleVideo(file) {
 function escapeHtml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function clock(sec) {
-  const n = Math.max(0, Number(sec) || 0);
-  const m = Math.floor(n / 60);
-  const s = (n % 60).toFixed(1).padStart(m ? 4 : 3, '0');
-  return m ? `${m}:${s}` : `${s} 秒`;
 }
 
 fileInput.addEventListener('change', () => {
@@ -164,16 +234,16 @@ fileInput.addEventListener('change', () => {
 });
 
 function showResult(data) {
-  lastScript = data.script || '';
+  const beats = data.beats || [];
+  lastScript = beats.map((row) => `${Number(row.start).toFixed(1)}–${Number(row.end).toFixed(1)} 秒\n${row.line}`).join('\n\n');
   styleLine.textContent = data.style ? `風格：${data.style}` : '';
-  summaryLine.textContent = data.summary || '';
   scriptBox.textContent = lastScript;
-  beatsBox.innerHTML = (data.beats || []).map((row) => `
+  beatsBox.innerHTML = beats.map((row) => `
     <article class="item">
       <div>
-        <p class="meta">${clock(row.start)} – ${clock(row.end)}${row.long ? '　這句字數偏多，配音可能超過這一段' : ''}</p>
+        <p class="meta">${Number(row.start).toFixed(1)}–${Number(row.end).toFixed(1)} 秒${row.long ? '　這句字數偏多，配音可能超過這一段' : ''}</p>
         <h3>${escapeHtml(row.line)}</h3>
-        ${row.see ? `<p>畫面：${escapeHtml(row.see)}</p>` : ''}
+        ${row.see ? `<p>這段素材：${escapeHtml(row.see)}</p>` : ''}
       </div>
       <button type="button" class="btn btn-ghost" data-seek="${row.start}">對這段</button>
     </article>
@@ -211,7 +281,7 @@ form.addEventListener('submit', async (event) => {
   }
   submit.disabled = true;
   msg.classList.remove('status-err');
-  msg.textContent = '正在看畫面，依內容和風格寫旁白…';
+  msg.textContent = '正在依素材切段，對準每一段的秒數…';
   result.classList.add('hidden');
   try {
     const sampled = await sampleVideo(file);
@@ -222,12 +292,13 @@ form.addEventListener('submit', async (event) => {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        frames: sampled.images,
+        frames: sampled.shots.map((shot) => shot.image),
         video: {
           duration: sampled.duration,
           width: sampled.width,
           height: sampled.height,
-          times: sampled.times,
+          times: sampled.shots.map((shot) => (shot.start + shot.end) / 2),
+          shots: sampled.shots.map((shot) => ({ start: shot.start, end: shot.end })),
         },
         note: note.value,
       }),
@@ -236,7 +307,7 @@ form.addEventListener('submit', async (event) => {
     if (res.status === 401) throw new Error('請先登入後台');
     if (!res.ok) throw new Error(data.error || '旁白產出失敗');
     showResult(data);
-    msg.textContent = `旁白好了，對上約 ${data.duration || sampled.duration} 秒。點「對這段」可核對畫面。`;
+    msg.textContent = `旁白已跟素材對好，從 0 秒到 ${data.duration || sampled.duration} 秒。點「對這段」可核對那一秒。`;
   } catch (err) {
     msg.textContent = err.message || '旁白產出失敗';
     msg.classList.add('status-err');
