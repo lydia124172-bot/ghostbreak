@@ -115,7 +115,7 @@ function lengthChoice(count) {
   return LENGTHS[count] || LENGTHS[18];
 }
 
-const DRAW = 'picture 只寫這一句要新畫上白板的那一個東西，例如：三個方框用箭頭連成流程、一個火柴人把箱子交給另一個人、一條由下往上的折線。不要寫整張照片，不要寫文字。';
+const DRAW = 'picture 要讓人一眼看出這一句在講什麼。寫一個具體畫面：誰、什麼物件、彼此什麼關係，而且必須是這句旁白裡真的有的東西。不要改畫成不相干的符號或天平。人物用簡筆但比例正常，不要火柴人，不要搞笑。不要寫整張照片，不要寫文字。';
 
 async function writeBatch(text, voice, other, choice, need, done, total) {
   const tone = voice === 'other'
@@ -135,7 +135,7 @@ async function writeBatch(text, voice, other, choice, need, done, total) {
   ].join('\n'));
   return (Array.isArray(data.lines) ? data.lines : []).map((row) => ({
     say: sentence(row && row.say),
-    picture: clean(row && row.picture, 180),
+    picture: clean(row && row.picture, 240),
   })).filter((row) => row.say && row.picture).slice(0, need);
 }
 
@@ -165,7 +165,7 @@ async function picturesFor(says) {
   const pictures = Array.isArray(data.pictures) ? data.pictures : [];
   return says.map((say, i) => ({
     say,
-    picture: clean(pictures[i], 180) || say,
+    picture: clean(pictures[i], 240) || say,
   }));
 }
 
@@ -180,10 +180,12 @@ async function generateSketch(picture) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
   const prompt = [
-    '1:1 白板手繪。純白背景，黑色馬克筆線條。',
-    `只畫這一個說明元素，放在正中，四周留白：${picture}`,
-    '可以是箭頭、方框流程、火柴人、簡單圖示。線條清楚，像老師在白板上現畫。',
-    '不要照片、不要彩色填色、不要陰影、不要灰色紙、不要格子、不要任何文字、數字、字幕、商標。',
+    '1:1。純白背景。專業白板講解插畫，黑色線條乾淨、粗細穩定，主體佔畫面大約七成。',
+    `這張圖必須讓人立刻看懂這一句，畫的就是這件事：${picture}`,
+    '畫旁白裡的實際物件和關係。不要換成不相干的符號、天平或打叉。',
+    '人物是簡筆，但頭、身體、手脚有正常比例。不要火柴人，不要滑稽表情，不要搞笑動作。',
+    '可以加一條重點箭頭，或只用淡藍色標一個重點。其餘保持黑線，不要整張塗色。',
+    '不要照片、不要灰色紙、不要格子、不要任何文字、數字、字幕、商標。',
     '只輸出圖像。',
   ].join('\n');
   const configs = [
@@ -221,8 +223,8 @@ async function generateSketch(picture) {
 }
 
 function frameOf(ratio) {
-  if (ratio === '9:16') return { w: 720, h: 1280, cols: 2, rows: 3 };
-  return { w: 1280, h: 720, cols: 3, rows: 2 };
+  if (ratio === '9:16') return { w: 720, h: 1280, cols: 1, rows: 2 };
+  return { w: 1280, h: 720, cols: 2, rows: 2 };
 }
 
 function slotBox(frame, index) {
