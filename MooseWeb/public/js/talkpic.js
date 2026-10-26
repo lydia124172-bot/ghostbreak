@@ -1,0 +1,157 @@
+const form = document.getElementById('form');
+const text = document.getElementById('text');
+const textLabel = document.getElementById('textLabel');
+const modes = document.getElementById('modes');
+const voices = document.getElementById('voices');
+const noteBox = document.getElementById('noteBox');
+const note = document.getElementById('note');
+const counts = document.getElementById('counts');
+const countLabel = document.getElementById('countLabel');
+const ratios = document.getElementById('ratios');
+const submit = document.getElementById('submit');
+const recover = document.getElementById('recover');
+const msg = document.getElementById('msg');
+const result = document.getElementById('result');
+const preview = document.getElementById('preview');
+const download = document.getElementById('download');
+const copyBtn = document.getElementById('copyBtn');
+const scriptBox = document.getElementById('script');
+let mode = 'write';
+let voice = 'influencer';
+let count = '4';
+let ratio = '9:16';
+let timer = 0;
+let lastScript = '';
+
+function pick(box, attr, current, apply) {
+  box.addEventListener('click', (event) => {
+    const btn = event.target.closest('[' + attr + ']');
+    if (!btn) return;
+    current = btn.getAttribute(attr);
+    box.querySelectorAll('[' + attr + ']').forEach((item) => item.classList.toggle('active', item === btn));
+    apply(current);
+  });
+}
+
+pick(modes, 'data-mode', mode, (value) => {
+  mode = value;
+  const script = mode === 'script';
+  textLabel.textContent = script ? '旁白稿' : '主題';
+  text.placeholder = script ? '一句一行的感覺，用句號分開。例如：早上七點，店門打開。咖啡機開始預熱。' : '例如：一家咖啡店怎麼從早上開店講到打烊';
+  countLabel.classList.toggle('hidden', script);
+  counts.classList.toggle('hidden', script);
+});
+pick(voices, 'data-voice', voice, (value) => {
+  voice = value;
+  noteBox.classList.toggle('hidden', voice !== 'other');
+});
+pick(counts, 'data-count', count, (value) => { count = value; });
+pick(ratios, 'data-ratio', ratio, (value) => { ratio = value; });
+
+function authHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = sessionStorage.getItem('moose_admin_token') || '';
+  if (token) headers.Authorization = 'Bearer ' + token;
+  return headers;
+}
+
+function showDone(data) {
+  clearInterval(timer);
+  lastScript = data.script || '';
+  const url = data.videoUrl + '?v=' + Date.now();
+  preview.src = url;
+  download.href = url;
+  scriptBox.textContent = lastScript;
+  result.classList.remove('hidden');
+  msg.textContent = '片子好了。每一句話都有自己的圖。';
+  msg.classList.remove('status-err');
+  submit.disabled = false;
+}
+
+function fail(message) {
+  clearInterval(timer);
+  msg.textContent = message || '這次沒有做成';
+  msg.classList.add('status-err');
+  submit.disabled = false;
+}
+
+function poll(jobId) {
+  clearInterval(timer);
+  timer = setInterval(async () => {
+    try {
+      const res = await fetch('/api/talkpic/job/' + jobId, { headers: authHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) return fail('請先登入後台');
+      if (!res.ok && !data.phase) return fail(data.error || '這次沒有做成');
+      if (data.status === 'done' && data.videoUrl) return showDone(data);
+      if (data.status === 'error' || data.error) return fail(data.error || '這次沒有做成');
+      msg.textContent = data.phase || '正在做…';
+    } catch {
+      msg.textContent = '還在做，請留在這個畫面。';
+    }
+  }, 2000);
+}
+
+copyBtn.addEventListener('click', async () => {
+  if (!lastScript) return;
+  try {
+    await navigator.clipboard.writeText(lastScript);
+    msg.textContent = '旁白已複製。';
+    msg.classList.remove('status-err');
+  } catch {
+    msg.textContent = '這台裝置無法直接複製，請手動選取旁白。';
+    msg.classList.add('status-err');
+  }
+});
+
+recover.addEventListener('click', async () => {
+  msg.classList.remove('status-err');
+  msg.textContent = '正在取回剛才的片子…';
+  try {
+    const res = await fetch('/api/talkpic/last', { headers: authHeaders() });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || '沒有可取回的片子');
+    if (data.videoUrl) showDone(data);
+    else if (data.jobId) poll(data.jobId);
+    else throw new Error('沒有可取回的片子');
+  } catch (err) {
+    fail(err.message);
+  }
+});
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!text.value.trim()) {
+    fail(mode === 'script' ? '請先貼上旁白稿。' : '請先寫主題。');
+    return;
+  }
+  if (voice === 'other' && !note.value.trim()) {
+    fail('選了其它，請寫要的口吻。');
+    return;
+  }
+  submit.disabled = true;
+  result.classList.add('hidden');
+  msg.classList.remove('status-err');
+  msg.textContent = '已送出。每一句都會生圖並配音，請留在這個畫面。';
+  try {
+    const res = await fetch('/api/talkpic', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        text: text.value,
+        voice,
+        other: note.value,
+        ratio,
+        mode,
+        count,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) throw new Error('請先登入後台');
+    if (!res.ok) throw new Error(data.error || '這次沒有做成');
+    if (data.videoUrl) showDone(data);
+    else poll(data.jobId);
+  } catch (err) {
+    fail(err.message);
+  }
+});
