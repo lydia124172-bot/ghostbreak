@@ -69,7 +69,7 @@ function showDone(data) {
   download.href = url;
   scriptBox.textContent = lastScript;
   result.classList.remove('hidden');
-  msg.textContent = '白板講解好了。按影片左下角的播放，每一句會先講，接著才畫出來。';
+  msg.textContent = '白板講解好了。按影片左下角的播放，每一句先講，圖會很快畫完。';
   msg.classList.remove('status-err');
   submit.disabled = false;
 }

@@ -967,13 +967,12 @@ async function drawSpeed(base, plan, audioPath, box, dur, dest, board) {
   } else if (!plan.pts || plan.pts.length < 2) {
     throw new Error('這一筆太少');
   }
-  let lead = Math.min(1.5, Math.max(0.6, dur * 0.36));
-  let drawSec = dur - lead - 0.1;
-  if (drawSec < 0.75) {
-    drawSec = Math.max(0.6, dur * 0.6);
-    lead = Math.max(0.35, dur - drawSec - 0.08);
+  let lead = Math.min(0.7, Math.max(0.35, dur * 0.18));
+  let drawSec = Math.min(1.6, Math.max(0.7, dur - lead - 0.08));
+  if (lead + drawSec > dur - 0.05) {
+    drawSec = Math.max(0.55, dur - lead - 0.05);
   }
-  const frames = Math.max(8, Math.min(28, Math.round(drawSec * 8)));
+  const frames = Math.max(8, Math.min(14, Math.round(drawSec * 10)));
   const dir = path.join(path.dirname(dest), `spd-${path.basename(dest, '.mp4')}`);
   fs.mkdirSync(dir, { recursive: true });
   const frame = Buffer.alloc(boardRgb.length);
@@ -1053,7 +1052,7 @@ async function drawSpeed(base, plan, audioPath, box, dur, dest, board) {
 }
 
 async function drawClip(base, ink, audioPath, box, dur, dest, pen) {
-  const reveal = Math.max(0.8, Math.min(dur * 0.75, dur - 0.2)).toFixed(2);
+  const reveal = Math.max(0.6, Math.min(1.6, dur - 0.15)).toFixed(2);
   const penOn = pen
     ? `;[2:v]scale=36:36,format=rgba,colorkey=0xFFFFFF:0.2:0.08[pen];[drawn][pen]overlay=x='${box.x}+min(${Math.max(1, box.w - 20)}\\,max(0\\,${box.w}*t/${reveal}))-8':y='${box.y + Math.round(box.h * 0.42)}':format=auto`
     : '';
