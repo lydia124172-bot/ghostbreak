@@ -266,46 +266,69 @@ function probeDuration(file) {
   const bin = ffmpegBin();
   if (!bin || !fs.existsSync(file)) return Promise.resolve(0);
   return new Promise((resolve) => {
-    const proc = spawn(bin, ['-i', file, '-f', 'null', '-'], { windowsHide: true });
+    const proc = spawn(bin, ['-threads', '1', '-i', file, '-f', 'null', '-'], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
     let stderr = '';
     proc.stderr.on('data', (chunk) => { stderr += chunk; });
+    const timer = setTimeout(() => { proc.kill('SIGKILL'); }, 20000);
     proc.on('close', () => {
+      clearTimeout(timer);
       const match = stderr.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/);
       if (!match) return resolve(0);
       resolve(Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]));
     });
-    proc.on('error', () => resolve(0));
+    proc.on('error', () => { clearTimeout(timer); resolve(0); });
   });
 }
 
 function ffmpeg(args, output) {
   const bin = ffmpegBin();
   if (!bin) return Promise.reject(new Error('轉檔工具尚未就緒，這次沒有生圖。'));
+  const full = ['-threads', '1', '-filter_threads', '1', ...args];
   return new Promise((resolve, reject) => {
-    const proc = spawn(bin, args, { windowsHide: true });
+    const proc = spawn(bin, full, { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
     let err = '';
     proc.stderr.on('data', (chunk) => {
       err += chunk;
       if (err.length > 4000) err = err.slice(-4000);
     });
-    proc.on('error', reject);
-    proc.on('close', (code) => {
+    const timer = setTimeout(() => { proc.kill('SIGKILL'); }, 90000);
+    const finish = (fn) => {
+      clearTimeout(timer);
+      fn();
+    };
+    proc.on('error', (error) => finish(() => reject(error)));
+    proc.on('close', (code) => finish(() => {
       if (code === 0 && fs.existsSync(output) && fs.statSync(output).size > 0) resolve(output);
       else {
         const lines = err.split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
         const line = lines.find((row) => /No such filter|Filter not found|Invalid|Error/i.test(row)) || lines[lines.length - 1] || '沒有產出畫面';
         reject(new Error(`轉檔失敗：${line.slice(0, 140)}`));
       }
-    });
+    }));
   });
 }
 
 function inkFilter(box, mode, reveal) {
-  let extra = '';
-  if (mode === 'reveal' && reveal) extra = `,scale=w='min(iw\\,max(2\\,iw*t/${reveal}))':h=ih:eval=frame`;
-  else if (mode === 'fade' && reveal) extra = `,fade=t=in:st=0:d=${reveal}:alpha=1`;
-  const key = mode === 'box' ? '' : ',format=rgba,colorkey=0xFFFFFF:0.12:0.04';
-  return `[1:v]scale=${box.w}:${box.h}:force_original_aspect_ratio=decrease,pad=${box.w}:${box.h}:(ow-iw)/2:(oh-ih)/2:white${key}${extra}[ink];[0:v][ink]overlay=${box.x}:${box.y}:format=auto`;
+  const parts = [
+    `scale=${box.w}:${box.h}:force_original_aspect_ratio=decrease`,
+    `pad=${box.w}:${box.h}:(ow-iw)/2:(oh-ih)/2:white`,
+  ];
+  if (mode !== 'box') parts.push('format=rgba', 'colorkey=0xFFFFFF:0.12:0.04');
+  if (mode === 'reveal' && reveal) parts.push(`crop=w='max(2\\,min(iw\\,iw*t/${reveal}))':h=ih:0:0`);
+  else if (mode === 'fade' && reveal) parts.push(`fade=t=in:st=0:d=${reveal}:alpha=1`);
+  return `[1:v]${parts.join(',')}[ink];[0:v][ink]overlay=${box.x}:${box.y}:format=auto`;
+}
+
+async function fitStill(input, w, h, dest) {
+  await ffmpeg([
+    '-y', '-i', input,
+    '-vf', `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:white,format=rgba`,
+    '-frames:v', '1', dest,
+  ], dest);
+}
+
+function releaseFont() {
+  boardFont = null;
 }
 
 let boardFont;
@@ -557,7 +580,7 @@ async function drawClip(base, ink, audioPath, box, dur, dest, hand) {
       args.push(
         '-filter_complex', filter,
         '-map', '[v]', '-map', `${hand ? 3 : 2}:a`,
-        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '23',
+        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '23',
         '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
         '-shortest', '-movflags', '+faststart',
         dest,
@@ -580,8 +603,8 @@ async function concatClips(files, work) {
     await runFfmpeg(['-y', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-movflags', '+faststart', out], out);
   } catch {
     await runFfmpeg([
-      '-y', '-f', 'concat', '-safe', '0', '-i', list,
-      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '23',
+      '-y', '-threads', '1', '-f', 'concat', '-safe', '0', '-i', list,
+      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '23',
       '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart',
       out,
     ], out);
@@ -604,16 +627,19 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
   try {
     let hand = '';
     try {
-      const handFile = path.join(work, 'hand.png');
-      fs.writeFileSync(handFile, await generateSketch('', [
+      const rawHand = path.join(work, 'hand-raw.png');
+      fs.writeFileSync(rawHand, await generateSketch('', [
         '1:1。純白背景。',
         '畫一隻右手握著黑色馬克筆，從斜上方看，只有手和筆，線條乾淨，像在白板上畫。',
         '不要火柴人，不要身體，不要臉，不要文字。',
         '只輸出圖像。',
       ].join('\n')));
+      const handFile = path.join(work, 'hand.png');
+      await fitStill(rawHand, 150, 150, handFile);
+      fs.rmSync(rawHand, { force: true });
       hand = handFile;
     } catch (err) {
-      console.error('[whiteboard] hand', err.message);
+      console.error('[whiteboard] hand', err && err.message);
     }
     let board = path.join(work, 'board-0.bmp');
     blankBoard(board, frame);
@@ -624,10 +650,23 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
       onPhase(`正在第 ${i + 1} 筆，共 ${lines.length} 筆，${stepName[item.op] || '往下畫'}`);
       const base = item.fresh ? path.join(work, `blank-${i}.bmp`) : board;
       if (item.fresh) blankBoard(base, frame);
-      const ink = path.join(work, `ink-${i}.${item.op === 'object' || item.op === 'label' ? 'png' : 'bmp'}`);
-      if (item.op === 'object') fs.writeFileSync(ink, await generateSketch(item.what || item.say));
-      else if (item.op === 'label') await labelInk(ink, item.box.w, item.box.h, item.text || item.say.slice(0, 8));
-      else if (item.op === 'circle') circleInk(ink, item.box.w, item.box.h);
+      const ink = path.join(work, `ink-${i}.png`);
+      if (item.op === 'object') {
+        const rawInk = path.join(work, `raw-${i}.png`);
+        fs.writeFileSync(rawInk, await generateSketch(item.what || item.say));
+        try {
+          await fitStill(rawInk, item.box.w, item.box.h, ink);
+          fs.rmSync(rawInk, { force: true });
+        } catch (err) {
+          console.error('[whiteboard] fit', err && err.message);
+          fs.renameSync(rawInk, ink);
+        }
+      } else if (item.op === 'label') {
+        const bmp = path.join(work, `ink-${i}.bmp`);
+        labelInk(bmp, item.box.w, item.box.h, item.text || item.say.slice(0, 8));
+        releaseFont();
+        fs.renameSync(bmp, ink);
+      } else if (item.op === 'circle') circleInk(ink, item.box.w, item.box.h);
       else arrowInk(ink, item.box.w, item.box.h);
       const audio = await clipTts.speak(item.say);
       const ext = /mpeg|mp3/i.test(audio.mime || '') ? 'mp3' : 'wav';

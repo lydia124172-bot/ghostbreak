@@ -97,6 +97,9 @@ function reason(res, data, raw) {
   if (message && message !== '這次沒有做成') return message;
   const snippet = String(raw || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
   const status = res ? res.status : 0;
+  if (status === 502 || status === 503 || status === 504 || /font-face|<html|bad gateway/i.test(snippet)) {
+    return '網站剛剛斷線，請再按一次開始畫。';
+  }
   if (snippet && snippet !== message) return '這次沒有做成（HTTP ' + status + '）' + snippet;
   return '這次沒有做成（HTTP ' + status + '）';
 }
