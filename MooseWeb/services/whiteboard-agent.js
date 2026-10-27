@@ -52,24 +52,86 @@ function publicError(err) {
   return '這次沒有做成，請再試一次。';
 }
 
+function unwrapPlan(data) {
+  if (Array.isArray(data)) {
+    const beats = [];
+    data.forEach((row) => {
+      if (Array.isArray(row?.beats)) beats.push(...row.beats);
+      else if (row && (row.say || row.text || row.op)) beats.push(row);
+    });
+    return { beats };
+  }
+  return data;
+}
+
+function closeJson(raw) {
+  let text = String(raw || '').trim().replace(/,\s*$/, '');
+  if ((text.match(/"/g) || []).length % 2 === 1) text = text.replace(/"[^"]*$/, '').replace(/,\s*$/, '');
+  const curly = (text.match(/{/g) || []).length - (text.match(/}/g) || []).length;
+  const square = (text.match(/\[/g) || []).length - (text.match(/]/g) || []).length;
+  return text + ']'.repeat(Math.max(0, square)) + '}'.repeat(Math.max(0, curly));
+}
+
 function extractJson(text) {
-  const raw = String(text || '').trim().replace(/^```json\s*|\s*```$/g, '').trim();
+  const raw = String(text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
+  const tries = [raw];
   const from = raw.indexOf('{');
   const to = raw.lastIndexOf('}');
-  if (from < 0 || to <= from) throw new Error('沒有產出旁白');
-  try {
-    return JSON.parse(raw.slice(from, to + 1));
-  } catch {
-    throw new Error('沒有產出旁白');
+  if (from >= 0 && to > from) tries.push(raw.slice(from, to + 1));
+  const start = raw.indexOf('[');
+  const end = raw.lastIndexOf(']');
+  if (start >= 0 && end > start) tries.push(raw.slice(start, end + 1));
+  if (from >= 0) tries.push(closeJson(raw.slice(from)));
+  for (const item of tries) {
+    if (!item) continue;
+    for (const body of [item, item.replace(/,\s*([}\]])/g, '$1')]) {
+      try {
+        return unwrapPlan(JSON.parse(body));
+      } catch {
+        /* 下一筆 */
+      }
+    }
   }
+  throw new Error('沒有產出旁白');
 }
+
+const BEAT_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    beats: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          say: { type: 'STRING' },
+          op: { type: 'STRING' },
+          what: { type: 'STRING' },
+          text: { type: 'STRING' },
+        },
+        required: ['say', 'op'],
+      },
+    },
+  },
+  required: ['beats'],
+};
 
 async function askText(prompt) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   if (!key) throw new Error('生圖尚未開通。');
   let lastErr;
-  for (const model of ['gemini-flash-lite-latest', 'gemini-3.6-flash']) {
+  const attempts = [
+    ['gemini-flash-lite-latest', true],
+    ['gemini-flash-lite-latest', false],
+    ['gemini-3.6-flash', true],
+    ['gemini-3.6-flash', false],
+  ];
+  for (const [model, schema] of attempts) {
     try {
+      const generationConfig = { temperature: 0.4, maxOutputTokens: 4096 };
+      if (schema) {
+        generationConfig.responseMimeType = 'application/json';
+        generationConfig.responseSchema = BEAT_SCHEMA;
+      }
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
         {
@@ -77,14 +139,16 @@ async function askText(prompt) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.5, maxOutputTokens: 8192, responseMimeType: 'application/json' },
+            generationConfig,
           }),
           signal: AbortSignal.timeout(90000),
         },
       );
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error?.message || `旁白服務 ${res.status}`);
-      const text = (json.candidates?.[0]?.content?.parts || []).map((part) => part.text || '').join('\n');
+      const parts = json.candidates?.[0]?.content?.parts || [];
+      const text = parts.filter((part) => part && part.text && !part.thought).map((part) => part.text).join('\n')
+        || parts.map((part) => part.text || '').join('\n');
       const data = extractJson(text);
       if (String(data.error || '').trim()) throw new Error('無法提供');
       return data;
@@ -132,12 +196,16 @@ const PLAN = [
 ].join('\n');
 
 function asBeats(rows, limit) {
-  const beats = (Array.isArray(rows) ? rows : []).map((row) => ({
-    say: sentence(row && row.say),
-    op: OPS.has(row && row.op) ? row.op : 'label',
-    what: clean(row && row.what, 180),
-    text: clean(row && row.text, 16),
-  })).filter((row) => row.say);
+  const beats = (Array.isArray(rows) ? rows : []).map((row) => {
+    const written = clean(row && row.text, 80);
+    const spoken = clean(row && row.say, 80) || (written.length > 12 ? written : '');
+    return {
+      say: sentence(spoken),
+      op: OPS.has(row && row.op) ? row.op : 'label',
+      what: clean(row && row.what, 180),
+      text: spoken && spoken !== written && written.length <= 16 ? written : '',
+    };
+  }).filter((row) => row.say);
   if (beats.length && beats[0].op !== 'object') beats[0].op = 'object';
   return beats.slice(0, limit);
 }
@@ -157,29 +225,51 @@ async function writeBatch(text, voice, other, choice, need, done, total) {
   return asBeats(data.beats, need);
 }
 
+function localBeats(topic, n) {
+  const subject = clean(topic, 36) || '這件事';
+  const pattern = [
+    { op: 'object', what: subject, text: '', say: `先把「${subject}」畫在白板中間，後面每一步都留在同一張圖上。` },
+    { op: 'label', what: '', text: '開始', say: '在旁邊寫上開始，表示我們從這裡往下算。' },
+    { op: 'circle', what: '', text: '', say: '把剛剛那個起點圈起來，這是等一下要拿來比較的地方。' },
+    { op: 'arrow', what: '', text: '變多', say: '從起點拉出箭頭，下一步會在原來的基礎上再增加。' },
+  ];
+  return Array.from({ length: n }, (_, index) => {
+    const row = pattern[index % pattern.length];
+    return { ...row, say: sentence(row.say) };
+  });
+}
+
 async function writeLines(text, voice, count, other) {
   const choice = lengthChoice(count);
   const n = choice.n;
   const lines = [];
-  while (lines.length < n) {
-    const need = Math.min(6, n - lines.length);
-    const batch = await writeBatch(text, voice, other, choice, need, lines.length, n);
-    if (!batch.length) break;
-    lines.push(...batch);
+  try {
+    while (lines.length < n) {
+      const need = Math.min(6, n - lines.length);
+      const batch = await writeBatch(text, voice, other, choice, need, lines.length, n);
+      if (!batch.length) break;
+      lines.push(...batch);
+    }
+  } catch (err) {
+    if (err.message === '無法提供') throw err;
   }
-  if (lines.length < Math.min(4, n)) throw new Error('沒有寫滿這支片的句數，請再試一次。');
-  return lines.slice(0, n);
+  if (lines.length >= Math.min(4, n)) return lines.slice(0, n);
+  return localBeats(text, n);
 }
 
 async function picturesFor(says) {
-  const data = await askText([
-    PLAN,
-    '下面每一句都已經寫好，不要改 say 的字，只要決定 op、what、text。筆數和順序必須一樣。',
-    '色情、未成年性相關、犯罪教學就回 {"error":"無法提供"}。',
-    ...says.map((say, i) => `${i + 1}. ${say}`),
-  ].join('\n'));
-  const beats = asBeats(data.beats, says.length);
-  if (beats.length === says.length) return beats.map((beat, i) => ({ ...beat, say: says[i] }));
+  try {
+    const data = await askText([
+      PLAN,
+      '下面每一句都已經寫好，不要改 say 的字，只要決定 op、what、text。筆數和順序必須一樣。',
+      '色情、未成年性相關、犯罪教學就回 {"error":"無法提供"}。',
+      ...says.map((say, i) => `${i + 1}. ${say}`),
+    ].join('\n'));
+    const beats = asBeats(data.beats, says.length);
+    if (beats.length === says.length) return beats.map((beat, i) => ({ ...beat, say: says[i] }));
+  } catch (err) {
+    if (err.message === '無法提供') throw err;
+  }
   return says.map((say, i) => ({
     say,
     op: i % 4 === 0 ? 'object' : (i % 4 === 1 ? 'label' : (i % 4 === 2 ? 'circle' : 'arrow')),
