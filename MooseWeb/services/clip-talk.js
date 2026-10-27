@@ -10,7 +10,7 @@ function configured() {
 }
 
 function talkModel() {
-  return process.env.FAL_TALK_MODEL || 'fal-ai/sync-lipsync/v3/image-to-video';
+  return process.env.FAL_TALK_MODEL || 'fal-ai/kling-video/ai-avatar/v2/pro';
 }
 
 function creditCost(seconds) {
@@ -53,7 +53,7 @@ function quoteSeconds({ narration, voice }) {
 }
 
 function engine() {
-  return configured() ? 'sync3' : '';
+  return configured() ? 'kling' : '';
 }
 
 async function submit({ images, narration, voice }) {
@@ -77,6 +77,7 @@ async function submit({ images, narration, voice }) {
     body: JSON.stringify({
       image_url: imageUrl,
       audio_url: audioUrl,
+      prompt: 'Speaking naturally to the camera. Small head movement and blinks. Keep the same face, clothes, and background.',
     }),
   });
   const body = await res.json().catch(() => ({}));
