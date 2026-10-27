@@ -313,11 +313,11 @@ async function generateSketch(picture, promptOverride) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
   const prompt = promptOverride || [
-    '1:1。純白背景。彩色白板插畫，平塗、顏色清楚，這個物件畫滿畫面大約八成。',
+    '1:1。純白背景。精緻的彩色扁平圖示，線條細、邊緣乾淨，這個物件畫滿畫面大約八成。',
     `只畫這一個東西：${picture}`,
     '不要畫人，不要火柴人，不要箭頭，不要方框，不要任何文字和數字。',
-    '不要照片、不要黑白線稿、不要灰色紙、不要格子、不要商標。',
-    '成長或變多就畫成往上的階梯，或一根往上的線。不要畫成一圈圈的螺旋，也不要彩虹圈。',
+    '不要照片、不要黑白線稿、不要灰色紙、不要格子、不要商標、不要粗馬克筆、不要蠟筆塗鴉。',
+    '成長或變多就畫成細的往上階梯，或一根細的往上折線。不要畫成一圈圈的螺旋，也不要彩虹圈。',
     '只輸出圖像。',
   ].join('\n');
   const configs = [
@@ -547,13 +547,13 @@ function circleInk(file, w, h) {
     const cy = height / 2;
     const rx = width / 2 - 8;
     const ry = height / 2 - 8;
-    for (let deg = 0; deg < 360; deg += 2) {
+    for (let deg = 0; deg < 360; deg += 1) {
       const t = deg * Math.PI / 180;
       const x = cx + rx * Math.cos(t);
       const y = cy + ry * Math.sin(t);
-      for (let oy = -4; oy <= 4; oy += 1) {
-        for (let ox = -4; ox <= 4; ox += 1) {
-          if (ox * ox + oy * oy <= 16) set(x + ox, y + oy);
+      for (let oy = -1; oy <= 1; oy += 1) {
+        for (let ox = -1; ox <= 1; ox += 1) {
+          if (ox * ox + oy * oy <= 2) set(x + ox, y + oy);
         }
       }
     }
@@ -566,7 +566,7 @@ function penInk(file) {
     const cy = height / 2;
     for (let y = 0; y < height; y += 1) {
       for (let x = 0; x < width; x += 1) {
-        if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= 49) set(x, y);
+        if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= 4) set(x, y);
       }
     }
   }, { r: 22, g: 110, b: 184 });
@@ -575,11 +575,11 @@ function penInk(file) {
 function arrowInk(file, w, h) {
   return writeMarkBmp(file, w, h, (set, width, height) => {
     const y = Math.round(height / 2);
-    for (let x = 6; x < width - 26; x += 1) {
-      for (let k = -3; k <= 3; k += 1) set(x, y + k);
+    for (let x = 6; x < width - 18; x += 1) {
+      for (let k = -1; k <= 1; k += 1) set(x, y + k);
     }
-    for (let i = 0; i < 24; i += 1) {
-      for (let k = -Math.floor(i * 0.7); k <= Math.floor(i * 0.7); k += 1) set(width - 8 - i, y + k);
+    for (let i = 0; i < 14; i += 1) {
+      for (let k = -Math.floor(i * 0.45); k <= Math.floor(i * 0.45); k += 1) set(width - 6 - i, y + k);
     }
   }, { r: 22, g: 110, b: 184 });
 }
@@ -605,11 +605,11 @@ function labelInk(file, w, h, text) {
   const placed = contours.map((pts) => pts.map((pt) => ({ x: pt.x * scale + dx, y: pt.y * scale + dy })));
   return writeMarkBmp(file, w, h, (set, width, height, cut) => {
     const dot = (x, y) => {
-      for (let oy = -2; oy <= 2; oy += 1) {
-        for (let ox = -2; ox <= 2; ox += 1) {
-          if (ox * ox + oy * oy <= 5) set(x + ox, y + oy);
-        }
-      }
+      set(x, y);
+      set(x + 1, y);
+      set(x - 1, y);
+      set(x, y + 1);
+      set(x, y - 1);
     };
     placed.forEach((stroke) => {
       for (let i = 0; i < stroke.length - 1; i += 1) {
@@ -880,17 +880,7 @@ function planImage(rgb, w, h) {
   const time = new Int32Array(n);
   time.fill(-1);
   path.forEach((i, tick) => {
-    const x = i % w;
-    const y = (i / w) | 0;
-    for (let oy = -1; oy <= 1; oy += 1) {
-      for (let ox = -1; ox <= 1; ox += 1) {
-        const xx = x + ox;
-        const yy = y + oy;
-        if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
-        const j = yy * w + xx;
-        if (ink[j] && time[j] < 0) time[j] = tick;
-      }
-    }
+    if (ink[i] && time[i] < 0) time[i] = tick;
   });
   const edgeEnd = Math.max(1, path.length);
   const dist = new Int32Array(n);
@@ -939,17 +929,11 @@ function putRgb(buf, w, h, x, y, color) {
 function drawNib(buf, w, h, x, y) {
   const tip = [20, 24, 32];
   const body = [22, 110, 184];
-  for (let oy = -2; oy <= 2; oy += 1) {
-    for (let ox = -2; ox <= 2; ox += 1) {
-      if (ox * ox + oy * oy <= 5) putRgb(buf, w, h, x + ox, y + oy, tip);
-    }
-  }
-  for (let s = 3; s <= 16; s += 1) {
-    const px = x - s;
-    const py = y - Math.round(s * 0.45);
-    putRgb(buf, w, h, px, py, body);
-    putRgb(buf, w, h, px, py + 1, body);
-    putRgb(buf, w, h, px + 1, py, body);
+  putRgb(buf, w, h, x, y, tip);
+  putRgb(buf, w, h, x - 1, y, tip);
+  putRgb(buf, w, h, x, y - 1, tip);
+  for (let s = 2; s <= 10; s += 1) {
+    putRgb(buf, w, h, x - s, y - Math.round(s * 0.4), body);
   }
 }
 
@@ -1041,7 +1025,7 @@ async function drawSpeed(base, plan, audioPath, box, dur, dest, board) {
       '-y', '-framerate', fps.toFixed(3), '-start_number', '0', '-i', path.join(dir, 'f-%03d.bmp'),
       '-i', audioPath, '-t', dur.toFixed(2), '-vf', vf,
       '-map', '0:v', '-map', '1:a',
-      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '23',
+      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '18',
       '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
       '-shortest', '-movflags', '+faststart',
       dest,
@@ -1071,7 +1055,7 @@ async function drawClip(base, ink, audioPath, box, dur, dest, pen) {
       args.push(
         '-filter_complex', filter,
         '-map', '[v]', '-map', `${pen ? 3 : 2}:a`,
-        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '23',
+        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '18',
         '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
         '-shortest', '-movflags', '+faststart',
         dest,
