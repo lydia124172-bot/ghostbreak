@@ -520,6 +520,18 @@ function circleInk(file, w, h) {
   });
 }
 
+function penInk(file) {
+  writeMarkBmp(file, 36, 36, (set, width, height) => {
+    const cx = width / 2;
+    const cy = height / 2;
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= 49) set(x, y);
+      }
+    }
+  });
+}
+
 function arrowInk(file, w, h) {
   writeMarkBmp(file, w, h, (set, width, height) => {
     const y = Math.round(height / 2);
@@ -572,47 +584,64 @@ function labelInk(file, w, h, text) {
   });
 }
 
-function layoutBeats(frame, beats) {
-  let x = 48;
-  let y = 64;
+function placeBeats(frame, beats, scale) {
+  let x = 36;
+  let y = 36;
   let rowH = 0;
   let last = null;
-  return beats.map((beat) => {
+  let overflow = false;
+  const edge = 16;
+  const items = beats.map((beat) => {
     const op = OPS.has(beat.op) ? beat.op : 'label';
-    const text = clean(beat.text, 16);
-    const w = op === 'object'
-      ? Math.min(360, Math.floor(frame.w * 0.34))
-      : (op === 'arrow' ? 240 : (op === 'circle' && last ? last.w + 36 : Math.min(460, 36 + Math.max(2, text.length) * 46)));
-    const h = op === 'object'
-      ? Math.min(300, Math.floor(frame.h * 0.4))
-      : (op === 'circle' && last ? last.h + 36 : (op === 'arrow' ? 90 : 92));
+    const text = clean(beat.text, 8);
+    const w = Math.max(48, Math.round((op === 'object'
+      ? Math.min(280, frame.w * 0.28)
+      : (op === 'arrow' ? 160 : (op === 'circle' && last ? last.w + 28 : Math.min(280, 28 + Math.max(2, text.length) * 36)))) * scale));
+    const h = Math.max(36, Math.round((op === 'object'
+      ? Math.min(220, frame.h * 0.32)
+      : (op === 'circle' && last ? last.h + 28 : (op === 'arrow' ? 64 : 72))) * scale));
     let bx = x;
     let by = y;
-    let fresh = false;
     if (op === 'object' || !last) {
-      if (x + w > frame.w - 36) { x = 48; y += rowH + 24; rowH = 0; }
-      if (y + h > frame.h - 36) { fresh = true; x = 48; y = 64; rowH = 0; }
+      if (x + w > frame.w - edge) { x = 36; y += rowH + 16; rowH = 0; }
       bx = x;
       by = y;
-      x += w + 24;
+      x += w + 16;
       rowH = Math.max(rowH, h);
     } else if (op === 'circle') {
-      bx = Math.max(8, last.x - 18);
-      by = Math.max(8, last.y - 18);
+      bx = last.x - 12;
+      by = last.y - 12;
     } else if (op === 'label') {
-      bx = last.x + last.w + 12;
+      bx = last.x + last.w + 10;
       by = last.y + Math.max(0, Math.floor((last.h - h) / 2));
-      if (bx + w > frame.w - 24) { bx = last.x; by = last.y + last.h + 10; }
-      if (by + h > frame.h - 24) { fresh = true; bx = 48; by = 64; x = 48 + w + 24; y = 64; rowH = h; }
+      if (bx + w > frame.w - edge) { bx = last.x; by = last.y + last.h + 8; }
     } else {
-      bx = Math.min(frame.w - w - 24, last.x + last.w + 8);
-      by = last.y + Math.max(0, Math.floor(last.h / 2) - 30);
-      if (by + h > frame.h - 24 || bx < 8) { fresh = true; bx = 48; by = 80; }
+      bx = last.x + last.w + 8;
+      by = last.y + Math.max(0, Math.floor(last.h / 2) - Math.floor(h / 2));
+      if (bx + w > frame.w - edge) { bx = last.x; by = last.y + last.h + 8; }
     }
-    const box = { x: Math.max(8, Math.round(bx)), y: Math.max(8, Math.round(by)), w: Math.round(w), h: Math.round(h) };
-    if (op !== 'circle') last = box;
-    return { say: beat.say, op, what: beat.what, text, box, fresh };
+    if (bx < 8 || by < 8 || bx + w > frame.w - edge || by + h > frame.h - edge) overflow = true;
+    const box = {
+      x: Math.max(8, Math.min(frame.w - w - 8, Math.round(bx))),
+      y: Math.max(8, Math.min(frame.h - h - 8, Math.round(by))),
+      w: Math.round(w),
+      h: Math.round(h),
+    };
+    if (op !== 'circle') {
+      last = box;
+      rowH = Math.max(rowH, (box.y + box.h) - y);
+    }
+    return { say: beat.say, op, what: beat.what, text, box, fresh: false };
   });
+  return { items, overflow };
+}
+
+function layoutBeats(frame, beats) {
+  let chosen = placeBeats(frame, beats, 1);
+  for (let scale = 0.92; scale >= 0.46 && chosen.overflow; scale -= 0.08) {
+    chosen = placeBeats(frame, beats, scale);
+  }
+  return chosen.items;
 }
 
 function blankBoard(file, frame) {
@@ -650,26 +679,26 @@ async function stampBoard(base, ink, box, dest) {
   throw lastErr;
 }
 
-async function drawClip(base, ink, audioPath, box, dur, dest, hand) {
-  const reveal = Math.min(1.8, Math.max(0.7, dur * 0.45)).toFixed(2);
-  const handOn = hand
-    ? `;[2:v]scale=150:150:force_original_aspect_ratio=decrease,format=rgba,colorkey=0xFFFFFF:0.18:0.08[hand];[drawn][hand]overlay=x='${box.x}+min(${Math.max(1, box.w - 40)}\\,max(0\\,${box.w}*t/${reveal}))-30':y='${box.y + Math.round(box.h * 0.35)}':format=auto`
+async function drawClip(base, ink, audioPath, box, dur, dest, pen) {
+  const reveal = Math.max(0.8, Math.min(dur * 0.75, dur - 0.2)).toFixed(2);
+  const penOn = pen
+    ? `;[2:v]scale=36:36,format=rgba,colorkey=0xFFFFFF:0.2:0.08[pen];[drawn][pen]overlay=x='${box.x}+min(${Math.max(1, box.w - 20)}\\,max(0\\,${box.w}*t/${reveal}))-8':y='${box.y + Math.round(box.h * 0.42)}':format=auto`
     : '';
   let lastErr;
-  for (const mode of ['reveal', 'fade', 'box']) {
+  for (const mode of ['reveal', 'fade']) {
     try {
       const args = [
         '-y', '-loop', '1', '-framerate', '30', '-i', base, '-loop', '1', '-framerate', '30', '-i', ink,
       ];
-      if (hand) args.push('-loop', '1', '-framerate', '30', '-i', hand);
+      if (pen) args.push('-loop', '1', '-framerate', '30', '-i', pen);
       args.push('-i', audioPath, '-t', dur.toFixed(2));
       const drawn = inkFilter(box, mode, reveal);
-      const filter = hand
-        ? `${drawn.replace(/format=auto$/, 'format=auto[drawn]')}${handOn},fps=30,format=yuv420p[v]`
+      const filter = pen
+        ? `${drawn.replace(/format=auto$/, 'format=auto[drawn]')}${penOn},fps=30,format=yuv420p[v]`
         : `${drawn},fps=30,format=yuv420p[v]`;
       args.push(
         '-filter_complex', filter,
-        '-map', '[v]', '-map', `${hand ? 3 : 2}:a`,
+        '-map', '[v]', '-map', `${pen ? 3 : 2}:a`,
         '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '23',
         '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
         '-shortest', '-movflags', '+faststart',
@@ -715,22 +744,8 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
     : await writeLines(topic, voice, count, other));
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'whiteboard-'));
   try {
-    let hand = '';
-    try {
-      const rawHand = path.join(work, 'hand-raw.png');
-      fs.writeFileSync(rawHand, await generateSketch('', [
-        '1:1。純白背景。',
-        '畫一隻右手握著黑色馬克筆，從斜上方看，只有手和筆，線條乾淨，像在白板上畫。',
-        '不要火柴人，不要身體，不要臉，不要文字。',
-        '只輸出圖像。',
-      ].join('\n')));
-      const handFile = path.join(work, 'hand.png');
-      await fitStill(rawHand, 150, 150, handFile);
-      fs.rmSync(rawHand, { force: true });
-      hand = handFile;
-    } catch (err) {
-      console.error('[whiteboard] hand', err && err.message);
-    }
+    const pen = path.join(work, 'pen.bmp');
+    penInk(pen);
     let board = path.join(work, 'board-0.bmp');
     blankBoard(board, frame);
     const clips = [];
@@ -738,8 +753,7 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
     for (let i = 0; i < lines.length; i += 1) {
       const item = lines[i];
       onPhase(`正在第 ${i + 1} 筆，共 ${lines.length} 筆，${stepName[item.op] || '往下畫'}`);
-      const base = item.fresh ? path.join(work, `blank-${i}.bmp`) : board;
-      if (item.fresh) blankBoard(base, frame);
+      const base = board;
       const ink = path.join(work, `ink-${i}.png`);
       if (item.op === 'object') {
         const rawInk = path.join(work, `raw-${i}.png`);
@@ -765,10 +779,9 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
       const dur = Math.min(18, Math.max(1.2, (await probeDuration(aud)) || 4));
       const clip = path.join(work, `clip-${i}.mp4`);
       try {
-        await drawClip(base, ink, aud, item.box, dur, clip, hand);
+        await drawClip(base, ink, aud, item.box, dur, clip, pen);
       } catch (err) {
-        if (!hand) throw err;
-        console.error('[whiteboard] hand', err.message);
+        console.error('[whiteboard] pen', err && err.message);
         await drawClip(base, ink, aud, item.box, dur, clip, '');
       }
       const next = path.join(work, `board-${i + 1}.png`);
