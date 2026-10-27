@@ -493,6 +493,8 @@ function writeMarkBmp(file, w, h, paint, color) {
   buf.writeUInt16LE(1, 26);
   buf.writeUInt16LE(24, 28);
   buf.writeUInt32LE(pixels, 34);
+  const pts = [];
+  const seen = new Uint8Array(width * height);
   const set = (x, y) => {
     const px = Math.round(x);
     const py = Math.round(y);
@@ -501,21 +503,33 @@ function writeMarkBmp(file, w, h, paint, color) {
     buf[off] = ink.b;
     buf[off + 1] = ink.g;
     buf[off + 2] = ink.r;
+    const i = py * width + px;
+    if (!seen[i]) {
+      seen[i] = 1;
+      pts.push(i);
+    }
   };
-  paint(set, width, height);
+  let splitAt = null;
+  const cut = () => { if (splitAt == null) splitAt = pts.length; };
+  paint(set, width, height, cut);
   fs.writeFileSync(file, buf);
+  return { pts, split: splitAt == null ? pts.length : splitAt, color: ink, width, height };
 }
 
 function circleInk(file, w, h) {
-  writeMarkBmp(file, w, h, (set, width, height) => {
+  return writeMarkBmp(file, w, h, (set, width, height) => {
     const cx = width / 2;
     const cy = height / 2;
     const rx = width / 2 - 8;
     const ry = height / 2 - 8;
-    for (let deg = 0; deg < 360; deg += 1) {
+    for (let deg = 0; deg < 360; deg += 2) {
       const t = deg * Math.PI / 180;
-      for (let thick = 0; thick < 6; thick += 1) {
-        set(cx + (rx - thick) * Math.cos(t), cy + (ry - thick) * Math.sin(t));
+      const x = cx + rx * Math.cos(t);
+      const y = cy + ry * Math.sin(t);
+      for (let oy = -4; oy <= 4; oy += 1) {
+        for (let ox = -4; ox <= 4; ox += 1) {
+          if (ox * ox + oy * oy <= 16) set(x + ox, y + oy);
+        }
       }
     }
   }, { r: 196, g: 48, b: 43 });
@@ -534,7 +548,7 @@ function penInk(file) {
 }
 
 function arrowInk(file, w, h) {
-  writeMarkBmp(file, w, h, (set, width, height) => {
+  return writeMarkBmp(file, w, h, (set, width, height) => {
     const y = Math.round(height / 2);
     for (let x = 6; x < width - 26; x += 1) {
       for (let k = -3; k <= 3; k += 1) set(x, y + k);
@@ -564,7 +578,26 @@ function labelInk(file, w, h, text) {
   const dx = (w - gw * scale) / 2 - minX * scale;
   const dy = (h - gh * scale) / 2 - minY * scale;
   const placed = contours.map((pts) => pts.map((pt) => ({ x: pt.x * scale + dx, y: pt.y * scale + dy })));
-  writeMarkBmp(file, w, h, (set, width, height) => {
+  return writeMarkBmp(file, w, h, (set, width, height, cut) => {
+    const dot = (x, y) => {
+      for (let oy = -2; oy <= 2; oy += 1) {
+        for (let ox = -2; ox <= 2; ox += 1) {
+          if (ox * ox + oy * oy <= 5) set(x + ox, y + oy);
+        }
+      }
+    };
+    placed.forEach((stroke) => {
+      for (let i = 0; i < stroke.length - 1; i += 1) {
+        const a = stroke[i];
+        const b = stroke[i + 1];
+        const steps = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y)));
+        for (let s = 0; s <= steps; s += 1) {
+          const t = s / steps;
+          dot(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+        }
+      }
+    });
+    cut();
     for (let y = 0; y < height; y += 1) {
       const hits = [];
       placed.forEach((pts) => {
@@ -680,6 +713,311 @@ async function stampBoard(base, ink, box, dest) {
   throw lastErr;
 }
 
+function probeSize(file) {
+  const bin = ffmpegBin();
+  if (!bin || !fs.existsSync(file)) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const proc = spawn(bin, ['-i', file], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
+    let stderr = '';
+    proc.stderr.on('data', (chunk) => { stderr += chunk; });
+    const timer = setTimeout(() => { proc.kill('SIGKILL'); }, 15000);
+    proc.on('close', () => {
+      clearTimeout(timer);
+      const found = [...stderr.matchAll(/(\d{2,5})x(\d{2,5})/g)];
+      const last = found[found.length - 1];
+      resolve(last ? { w: Number(last[1]), h: Number(last[2]) } : null);
+    });
+    proc.on('error', () => { clearTimeout(timer); resolve(null); });
+  });
+}
+
+async function readRgb(file, w, h) {
+  const raw = `${file}.rgb`;
+  await ffmpeg(['-y', '-i', file, '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-frames:v', '1', raw], raw);
+  const buf = fs.readFileSync(raw);
+  fs.rmSync(raw, { force: true });
+  if (buf.length < w * h * 3) throw new Error('畫面讀不出來');
+  return buf.subarray(0, w * h * 3);
+}
+
+function writeFrameBmp(file, rgb, w, h) {
+  const row = Math.ceil((w * 3) / 4) * 4;
+  const pixels = row * h;
+  const buf = Buffer.alloc(54 + pixels);
+  buf.fill(0xff, 54);
+  buf.write('BM', 0);
+  buf.writeUInt32LE(54 + pixels, 2);
+  buf.writeUInt32LE(54, 10);
+  buf.writeUInt32LE(40, 14);
+  buf.writeInt32LE(w, 18);
+  buf.writeInt32LE(h, 22);
+  buf.writeUInt16LE(1, 26);
+  buf.writeUInt16LE(24, 28);
+  buf.writeUInt32LE(pixels, 34);
+  for (let y = 0; y < h; y += 1) {
+    const src = y * w * 3;
+    const off = 54 + (h - 1 - y) * row;
+    for (let x = 0; x < w; x += 1) {
+      buf[off + x * 3] = rgb[src + x * 3 + 2];
+      buf[off + x * 3 + 1] = rgb[src + x * 3 + 1];
+      buf[off + x * 3 + 2] = rgb[src + x * 3];
+    }
+  }
+  fs.writeFileSync(file, buf);
+}
+
+function traceEdges(edge, w, h) {
+  const list = [];
+  for (let i = 0; i < edge.length; i += 1) if (edge[i]) list.push(i);
+  if (!list.length) return list;
+  const cell = 12;
+  const cols = Math.ceil(w / cell);
+  const rows = Math.ceil(h / cell);
+  const buckets = Array.from({ length: rows * cols }, () => []);
+  const alive = new Uint8Array(edge.length);
+  list.forEach((i) => {
+    alive[i] = 1;
+    const x = i % w;
+    const y = (i / w) | 0;
+    buckets[((y / cell) | 0) * cols + ((x / cell) | 0)].push(i);
+  });
+  const path = [];
+  let unused = list.length;
+  let startAt = 0;
+  while (unused > 0) {
+    while (startAt < list.length && !alive[list[startAt]]) startAt += 1;
+    if (startAt >= list.length) break;
+    let cur = list[startAt];
+    alive[cur] = 0;
+    unused -= 1;
+    path.push(cur);
+    while (unused > 0) {
+      const x = cur % w;
+      const y = (cur / w) | 0;
+      let best = -1;
+      let bestD = 18 * 18;
+      const cx0 = Math.max(0, ((x / cell) | 0) - 1);
+      const cy0 = Math.max(0, ((y / cell) | 0) - 1);
+      const cx1 = Math.min(cols - 1, ((x / cell) | 0) + 1);
+      const cy1 = Math.min(rows - 1, ((y / cell) | 0) + 1);
+      for (let cy = cy0; cy <= cy1; cy += 1) {
+        for (let cx = cx0; cx <= cx1; cx += 1) {
+          const bucket = buckets[cy * cols + cx];
+          for (let k = 0; k < bucket.length; k += 1) {
+            const j = bucket[k];
+            if (!alive[j]) continue;
+            const dx = (j % w) - x;
+            const dy = ((j / w) | 0) - y;
+            const dist = dx * dx + dy * dy;
+            if (dist > 0 && dist < bestD) { bestD = dist; best = j; }
+          }
+        }
+      }
+      if (best < 0) break;
+      alive[best] = 0;
+      unused -= 1;
+      path.push(best);
+      cur = best;
+    }
+  }
+  return path;
+}
+
+function planImage(rgb, w, h) {
+  const n = w * h;
+  const ink = new Uint8Array(n);
+  const edge = new Uint8Array(n);
+  const nearWhite = (i) => rgb[i] > 244 && rgb[i + 1] > 244 && rgb[i + 2] > 244;
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const i = y * w + x;
+      if (nearWhite(i * 3)) continue;
+      ink[i] = 1;
+      let border = x === 0 || y === 0 || x === w - 1 || y === h - 1;
+      if (!border) {
+        const c = rgb[i * 3] + rgb[i * 3 + 1] + rgb[i * 3 + 2];
+        const neighbors = [i - 1, i + 1, i - w, i + w];
+        for (let k = 0; k < neighbors.length; k += 1) {
+          const j = neighbors[k];
+          if (nearWhite(j * 3)) { border = true; break; }
+          const d = rgb[j * 3] + rgb[j * 3 + 1] + rgb[j * 3 + 2];
+          if (Math.abs(c - d) > 72) { border = true; break; }
+        }
+      }
+      if (border) edge[i] = 1;
+    }
+  }
+  let path = traceEdges(edge, w, h);
+  if (path.length < 12) {
+    path = [];
+    for (let i = 0; i < n; i += 4) if (ink[i]) path.push(i);
+  }
+  const time = new Int32Array(n);
+  time.fill(-1);
+  path.forEach((i, tick) => {
+    const x = i % w;
+    const y = (i / w) | 0;
+    for (let oy = -1; oy <= 1; oy += 1) {
+      for (let ox = -1; ox <= 1; ox += 1) {
+        const xx = x + ox;
+        const yy = y + oy;
+        if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+        const j = yy * w + xx;
+        if (ink[j] && time[j] < 0) time[j] = tick;
+      }
+    }
+  });
+  const edgeEnd = Math.max(1, path.length);
+  const dist = new Int32Array(n);
+  dist.fill(-1);
+  const queue = [];
+  for (let i = 0; i < n; i += 1) {
+    if (time[i] >= 0) { dist[i] = 0; queue.push(i); }
+  }
+  let head = 0;
+  while (head < queue.length) {
+    const i = queue[head];
+    head += 1;
+    const x = i % w;
+    const y = (i / w) | 0;
+    const next = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (let k = 0; k < next.length; k += 1) {
+      const xx = x + next[k][0];
+      const yy = y + next[k][1];
+      if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+      const j = yy * w + xx;
+      if (!ink[j] || dist[j] >= 0) continue;
+      dist[j] = dist[i] + 1;
+      time[j] = edgeEnd + dist[j];
+      queue.push(j);
+    }
+  }
+  let maxTime = edgeEnd;
+  for (let i = 0; i < n; i += 1) {
+    if (!ink[i]) continue;
+    if (time[i] < 0) time[i] = edgeEnd;
+    if (time[i] > maxTime) maxTime = time[i];
+  }
+  return { time, edgeEnd, maxTime, path };
+}
+
+function putRgb(buf, w, h, x, y, color) {
+  const px = Math.round(x);
+  const py = Math.round(y);
+  if (px < 0 || py < 0 || px >= w || py >= h) return;
+  const off = (py * w + px) * 3;
+  buf[off] = color[0];
+  buf[off + 1] = color[1];
+  buf[off + 2] = color[2];
+}
+
+function drawNib(buf, w, h, x, y) {
+  const tip = [20, 24, 32];
+  const body = [22, 110, 184];
+  for (let oy = -2; oy <= 2; oy += 1) {
+    for (let ox = -2; ox <= 2; ox += 1) {
+      if (ox * ox + oy * oy <= 5) putRgb(buf, w, h, x + ox, y + oy, tip);
+    }
+  }
+  for (let s = 3; s <= 16; s += 1) {
+    const px = x - s;
+    const py = y - Math.round(s * 0.45);
+    putRgb(buf, w, h, px, py, body);
+    putRgb(buf, w, h, px, py + 1, body);
+    putRgb(buf, w, h, px + 1, py, body);
+  }
+}
+
+async function drawSpeed(base, plan, audioPath, box, dur, dest, board) {
+  const size = await probeSize(base);
+  if (!size || size.w !== board.w || size.h !== board.h) throw new Error('白板尺寸對不上');
+  const boardRgb = Buffer.from(await readRgb(base, board.w, board.h));
+  let image = null;
+  if (plan.kind === 'image') {
+    const shot = await probeSize(plan.file);
+    if (!shot || shot.w !== box.w || shot.h !== box.h) throw new Error('圖的尺寸對不上');
+    const rgb = await readRgb(plan.file, box.w, box.h);
+    image = { rgb, ...planImage(rgb, box.w, box.h) };
+    if (!image.path.length) throw new Error('這張圖沒有可畫的筆畫');
+  } else if (!plan.pts || plan.pts.length < 2) {
+    throw new Error('這一筆太少');
+  }
+  const drawSec = Math.max(0.9, Math.min(dur * 0.78, dur - 0.12));
+  const frames = Math.max(10, Math.min(32, Math.round(drawSec * 8)));
+  const dir = path.join(path.dirname(dest), `spd-${path.basename(dest, '.mp4')}`);
+  fs.mkdirSync(dir, { recursive: true });
+  const frame = Buffer.alloc(boardRgb.length);
+  const split = plan.kind === 'marks' ? Math.max(1, Math.min(plan.pts.length, plan.split || plan.pts.length)) : 0;
+  try {
+    for (let f = 0; f < frames; f += 1) {
+      boardRgb.copy(frame);
+      const t = (f + 1) / frames;
+      let penAt = null;
+      if (image) {
+        const edgeEnd = image.edgeEnd;
+        const threshold = image.maxTime <= edgeEnd || t >= 1
+          ? Math.ceil(t * image.maxTime)
+          : (t < 0.58
+            ? Math.ceil((t / 0.58) * edgeEnd)
+            : edgeEnd + Math.ceil(((t - 0.58) / 0.42) * (image.maxTime - edgeEnd)));
+        for (let y = 0; y < box.h; y += 1) {
+          for (let x = 0; x < box.w; x += 1) {
+            const i = y * box.w + x;
+            if (image.time[i] < 0 || image.time[i] > threshold) continue;
+            const src = i * 3;
+            const dx = box.x + x;
+            const dy = box.y + y;
+            if (dx < 0 || dy < 0 || dx >= board.w || dy >= board.h) continue;
+            const off = (dy * board.w + dx) * 3;
+            frame[off] = image.rgb[src];
+            frame[off + 1] = image.rgb[src + 1];
+            frame[off + 2] = image.rgb[src + 2];
+          }
+        }
+        const at = image.path[Math.min(image.path.length - 1, Math.floor(t * (image.path.length - 1)))];
+        penAt = { x: box.x + (at % box.w), y: box.y + ((at / box.w) | 0) };
+      } else {
+        const total = plan.pts.length;
+        const count = split >= total - 2
+          ? Math.max(1, Math.ceil(t * total))
+          : (t < 0.6
+            ? Math.max(1, Math.ceil((t / 0.6) * split))
+            : Math.min(total, split + Math.ceil(((t - 0.6) / 0.4) * (total - split))));
+        const color = [plan.color.r, plan.color.g, plan.color.b];
+        const mw = plan.width || box.w;
+        for (let p = 0; p < count; p += 1) {
+          const i = plan.pts[p];
+          const x = box.x + (i % mw);
+          const y = box.y + ((i / mw) | 0);
+          putRgb(frame, board.w, board.h, x, y, color);
+        }
+        const tip = plan.pts[Math.min(count, Math.max(split, 1)) - 1];
+        const along = plan.pts[Math.min(split - 1, Math.floor(t * (split - 1)))];
+        const use = t < 0.6 || split >= total - 2 ? tip : along;
+        penAt = { x: box.x + (use % mw), y: box.y + ((use / mw) | 0) };
+      }
+      if (f < frames - 1 && penAt) drawNib(frame, board.w, board.h, penAt.x, penAt.y);
+      writeFrameBmp(path.join(dir, `f-${String(f).padStart(3, '0')}.bmp`), frame, board.w, board.h);
+    }
+    const fps = frames / drawSec;
+    const hold = Math.max(0, dur - drawSec);
+    const vf = hold > 0.05
+      ? `tpad=stop_mode=clone:stop_duration=${hold.toFixed(2)},fps=12,format=yuv420p`
+      : 'fps=12,format=yuv420p';
+    await ffmpeg([
+      '-y', '-framerate', fps.toFixed(3), '-start_number', '0', '-i', path.join(dir, 'f-%03d.bmp'),
+      '-i', audioPath, '-t', dur.toFixed(2), '-vf', vf,
+      '-map', '0:v', '-map', '1:a',
+      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '23',
+      '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+      '-shortest', '-movflags', '+faststart',
+      dest,
+    ], dest);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 async function drawClip(base, ink, audioPath, box, dur, dest, pen) {
   const reveal = Math.max(0.8, Math.min(dur * 0.75, dur - 0.2)).toFixed(2);
   const penOn = pen
@@ -756,6 +1094,7 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
       onPhase(`正在第 ${i + 1} 筆，共 ${lines.length} 筆，${stepName[item.op] || '往下畫'}`);
       const base = board;
       const ink = path.join(work, `ink-${i}.png`);
+      let plan;
       if (item.op === 'object') {
         const rawInk = path.join(work, `raw-${i}.png`);
         fs.writeFileSync(rawInk, await generateSketch(item.what || item.say));
@@ -766,13 +1105,17 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
           console.error('[whiteboard] fit', err && err.message);
           fs.renameSync(rawInk, ink);
         }
+        plan = { kind: 'image', file: ink };
       } else if (item.op === 'label') {
         const bmp = path.join(work, `ink-${i}.bmp`);
-        labelInk(bmp, item.box.w, item.box.h, item.text || item.say.slice(0, 8));
+        plan = { kind: 'marks', ...labelInk(bmp, item.box.w, item.box.h, item.text || item.say.slice(0, 8)) };
         releaseFont();
         fs.renameSync(bmp, ink);
-      } else if (item.op === 'circle') circleInk(ink, item.box.w, item.box.h);
-      else arrowInk(ink, item.box.w, item.box.h);
+      } else if (item.op === 'circle') {
+        plan = { kind: 'marks', ...circleInk(ink, item.box.w, item.box.h) };
+      } else {
+        plan = { kind: 'marks', ...arrowInk(ink, item.box.w, item.box.h) };
+      }
       const audio = await clipTts.speak(item.say);
       const ext = /mpeg|mp3/i.test(audio.mime || '') ? 'mp3' : 'wav';
       const aud = path.join(work, `aud-${i}.${ext}`);
@@ -780,10 +1123,15 @@ async function produce({ text, voice, other, ratio, mode, count, onPhase }) {
       const dur = Math.min(18, Math.max(1.2, (await probeDuration(aud)) || 4));
       const clip = path.join(work, `clip-${i}.mp4`);
       try {
-        await drawClip(base, ink, aud, item.box, dur, clip, pen);
+        await drawSpeed(base, plan, aud, item.box, dur, clip, frame);
       } catch (err) {
-        console.error('[whiteboard] pen', err && err.message);
-        await drawClip(base, ink, aud, item.box, dur, clip, '');
+        console.error('[whiteboard] speed', err && err.message);
+        try {
+          await drawClip(base, ink, aud, item.box, dur, clip, pen);
+        } catch (penErr) {
+          console.error('[whiteboard] pen', penErr && penErr.message);
+          await drawClip(base, ink, aud, item.box, dur, clip, '');
+        }
       }
       const next = path.join(work, `board-${i + 1}.png`);
       await stampBoard(base, ink, item.box, next);

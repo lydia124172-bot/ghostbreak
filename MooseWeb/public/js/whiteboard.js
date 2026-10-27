@@ -69,7 +69,7 @@ function showDone(data) {
   download.href = url;
   scriptBox.textContent = lastScript;
   result.classList.remove('hidden');
-  msg.textContent = '白板講解好了。按影片左下角的播放，圖會留在同一張板上。';
+  msg.textContent = '白板講解好了。按影片左下角的播放，筆會先勾線再上色。';
   msg.classList.remove('status-err');
   submit.disabled = false;
 }
