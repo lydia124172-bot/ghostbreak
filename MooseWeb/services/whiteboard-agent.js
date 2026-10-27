@@ -39,7 +39,7 @@ function clean(value, max) {
 }
 
 function publicError(err) {
-  const message = String(err && err.message || '').replace(/\s+/g, ' ').trim();
+  const message = String(err && (err.message || err) || '').replace(/\s+/g, ' ').trim();
   if (/aborted|timeout/i.test(message)) return '寫旁白逾時，請再試一次。';
   if (/quota|429|RESOURCE_EXHAUSTED|high demand|UNAVAILABLE|503/i.test(message)) return '現在使用的人較多，請稍後再試。';
   if (/請|最多|至少|無法提供|尚未|轉檔|沒有產出|每一句|這次沒有|沒有寫滿|旁白語音|生圖/.test(message)) {
@@ -47,6 +47,8 @@ function publicError(err) {
   }
   const detail = message.replace(/https?:\/\/\S+/g, '').replace(/key=[^\s]+/gi, '').slice(0, 100);
   if (detail) return `這次沒有做成：${detail}`;
+  const name = err && err.name ? String(err.name) : '';
+  if (name && name !== 'Error') return `這次沒有做成：${name}`;
   return '這次沒有做成，請再試一次。';
 }
 
@@ -714,8 +716,12 @@ function startJob({ sid, text, voice, other, ratio, mode, count }) {
       };
       job.phase = '完成';
     }).catch((err) => {
-      job.error = publicError(err);
-      console.error('[whiteboard]', err.message);
+      try {
+        job.error = publicError(err);
+      } catch (inner) {
+        job.error = '這次沒有做成：' + String(inner && inner.message || inner || '錯誤').slice(0, 80);
+      }
+      console.error('[whiteboard]', err && (err.stack || err.message || err));
     });
   });
   return publicJob(job);

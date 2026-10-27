@@ -352,8 +352,8 @@ app.get('/whiteboard', (req, res) => {
   return sendPage(req, res, 'whiteboard.html');
 });
 app.post('/api/whiteboard', express.json({ limit: '64kb' }), (req, res) => {
-  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
   try {
+    if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
     res.json(whiteboard.startJob({
       sid: clipSid(req, res),
       text: String(req.body?.text || ''),
@@ -364,7 +364,9 @@ app.post('/api/whiteboard', express.json({ limit: '64kb' }), (req, res) => {
       count: [8, 12, 18, 24, 30].includes(Number(req.body?.count)) ? Number(req.body.count) : 18,
     }));
   } catch (err) {
-    res.status(400).json({ error: err.message || '這次沒有做成' });
+    console.error('[whiteboard] post', err && (err.stack || err));
+    const message = String(err && (err.message || err) || '').trim();
+    res.status(400).json({ error: (message || '這次沒有做成，請再按一次。').slice(0, 180) });
   }
 });
 app.get('/api/whiteboard/last', (req, res) => {
@@ -789,7 +791,13 @@ function parseCookies(req) {
   String(req.headers.cookie || '').split(';').forEach((part) => {
     const i = part.indexOf('=');
     if (i < 0) return;
-    out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+    const key = part.slice(0, i).trim();
+    const raw = part.slice(i + 1).trim();
+    try {
+      out[key] = decodeURIComponent(raw);
+    } catch {
+      out[key] = raw;
+    }
   });
   return out;
 }
@@ -3043,11 +3051,17 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
-  if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+  const status = Number(err && (err.status || err.statusCode)) || 500;
+  if (err && (err.type === 'entity.too.large' || status === 413)) {
     return res.status(413).json({ error: '圖片太大，單張請小於 2MB。' });
   }
-  if (err instanceof SyntaxError && err.status === 400) {
+  if (err instanceof SyntaxError && status === 400) {
     return res.status(400).json({ error: '送出的內容無法讀取。' });
+  }
+  if (String(req.path || '').startsWith('/api')) {
+    console.error('[api]', req.method, req.path, err && (err.stack || err.message || err));
+    const message = String(err && (err.message || err) || '這次沒有做成，請再按一次。').replace(/\s+/g, ' ').trim().slice(0, 180);
+    return res.status(status >= 400 && status < 600 ? status : 500).json({ error: message });
   }
   return next(err);
 });

@@ -76,23 +76,57 @@ function showDone(data) {
 
 function fail(message) {
   clearInterval(timer);
-  msg.textContent = message || '這次沒有做成';
+  msg.textContent = message || '這次沒有做成，請再按一次。';
   msg.classList.add('status-err');
   submit.disabled = false;
 }
 
+async function readBody(res) {
+  const raw = await res.text();
+  try {
+    return { data: raw ? JSON.parse(raw) : {}, raw };
+  } catch {
+    return { data: {}, raw };
+  }
+}
+
+function reason(res, data, raw) {
+  let message = '';
+  if (data && typeof data.error === 'string') message = data.error.trim();
+  else if (data && data.error) message = JSON.stringify(data.error).slice(0, 160);
+  if (message && message !== '這次沒有做成') return message;
+  const snippet = String(raw || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+  const status = res ? res.status : 0;
+  if (snippet && snippet !== message) return '這次沒有做成（HTTP ' + status + '）' + snippet;
+  return '這次沒有做成（HTTP ' + status + '）';
+}
+
+let blips = 0;
+
 function poll(jobId) {
   clearInterval(timer);
+  blips = 0;
   timer = setInterval(async () => {
     try {
       const res = await fetch('/api/whiteboard/job/' + jobId, { headers: authHeaders() });
-      const data = await res.json().catch(() => ({}));
+      const { data, raw } = await readBody(res);
       if (res.status === 401) return fail('請先登入後台');
-      if (!res.ok && !data.phase) return fail(data.error || '這次沒有做成');
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        blips += 1;
+        if (blips < 8) {
+          msg.classList.remove('status-err');
+          msg.textContent = '還在畫，請留在這個畫面。';
+          return;
+        }
+        return fail(reason(res, data, raw));
+      }
+      blips = 0;
+      if (!res.ok && !data.phase) return fail(reason(res, data, raw));
       if (data.status === 'done' && data.videoUrl) return showDone(data);
-      if (data.status === 'error' || data.error) return fail(data.error || '這次沒有做成');
+      if (data.status === 'error' || data.error) return fail(reason(res, data, raw));
       msg.textContent = data.phase || '正在畫…';
     } catch {
+      msg.classList.remove('status-err');
       msg.textContent = '還在畫，請留在這個畫面。';
     }
   }, 2000);
@@ -115,8 +149,8 @@ recover.addEventListener('click', async () => {
   msg.textContent = '正在取回剛才的片子…';
   try {
     const res = await fetch('/api/whiteboard/last', { headers: authHeaders() });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || '沒有可取回的片子');
+    const { data, raw } = await readBody(res);
+    if (!res.ok) throw new Error(data.error || reason(res, data, raw));
     if (data.videoUrl) showDone(data);
     else if (data.jobId) poll(data.jobId);
     else throw new Error('沒有可取回的片子');
@@ -152,12 +186,13 @@ form.addEventListener('submit', async (event) => {
         count,
       }),
     });
-    const data = await res.json().catch(() => ({}));
+    const { data, raw } = await readBody(res);
     if (res.status === 401) throw new Error('請先登入後台');
-    if (!res.ok) throw new Error(data.error || '這次沒有做成');
+    if (!res.ok) throw new Error(reason(res, data, raw));
     if (data.videoUrl) showDone(data);
-    else poll(data.jobId);
+    else if (data.jobId) poll(data.jobId);
+    else throw new Error(reason(res, data, raw));
   } catch (err) {
-    fail(err.message);
+    fail(err && err.message ? err.message : '連不上，請再按一次。');
   }
 });
