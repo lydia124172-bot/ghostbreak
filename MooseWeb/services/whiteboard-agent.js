@@ -967,11 +967,17 @@ async function drawSpeed(base, plan, audioPath, box, dur, dest, board) {
   } else if (!plan.pts || plan.pts.length < 2) {
     throw new Error('這一筆太少');
   }
-  const drawSec = Math.max(0.9, Math.min(dur * 0.78, dur - 0.12));
-  const frames = Math.max(10, Math.min(32, Math.round(drawSec * 8)));
+  let lead = Math.min(1.5, Math.max(0.6, dur * 0.36));
+  let drawSec = dur - lead - 0.1;
+  if (drawSec < 0.75) {
+    drawSec = Math.max(0.6, dur * 0.6);
+    lead = Math.max(0.35, dur - drawSec - 0.08);
+  }
+  const frames = Math.max(8, Math.min(28, Math.round(drawSec * 8)));
   const dir = path.join(path.dirname(dest), `spd-${path.basename(dest, '.mp4')}`);
   fs.mkdirSync(dir, { recursive: true });
   const frame = Buffer.alloc(boardRgb.length);
+  writeFrameBmp(path.join(dir, 'f-000.bmp'), boardRgb, board.w, board.h);
   const split = plan.kind === 'marks' ? Math.max(1, Math.min(plan.pts.length, plan.split || plan.pts.length)) : 0;
   try {
     for (let f = 0; f < frames; f += 1) {
@@ -1022,13 +1028,16 @@ async function drawSpeed(base, plan, audioPath, box, dur, dest, board) {
         penAt = { x: box.x + (use % mw), y: box.y + ((use / mw) | 0) };
       }
       if (f < frames - 1 && penAt) drawNib(frame, board.w, board.h, penAt.x, penAt.y);
-      writeFrameBmp(path.join(dir, `f-${String(f).padStart(3, '0')}.bmp`), frame, board.w, board.h);
+      writeFrameBmp(path.join(dir, `f-${String(f + 1).padStart(3, '0')}.bmp`), frame, board.w, board.h);
     }
     const fps = frames / drawSec;
-    const hold = Math.max(0, dur - drawSec);
-    const vf = hold > 0.05
-      ? `tpad=stop_mode=clone:stop_duration=${hold.toFixed(2)},fps=12,format=yuv420p`
-      : 'fps=12,format=yuv420p';
+    const startPad = Math.max(0, lead - (1 / fps));
+    const hold = Math.max(0, dur - lead - drawSec);
+    const pad = [
+      startPad > 0.05 ? `start_mode=clone:start_duration=${startPad.toFixed(2)}` : '',
+      hold > 0.05 ? `stop_mode=clone:stop_duration=${hold.toFixed(2)}` : '',
+    ].filter(Boolean);
+    const vf = `${pad.length ? `tpad=${pad.join(':')},` : ''}fps=12,format=yuv420p`;
     await ffmpeg([
       '-y', '-framerate', fps.toFixed(3), '-start_number', '0', '-i', path.join(dir, 'f-%03d.bmp'),
       '-i', audioPath, '-t', dur.toFixed(2), '-vf', vf,
