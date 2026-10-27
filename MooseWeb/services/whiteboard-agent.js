@@ -17,11 +17,11 @@ const VOICES = {
 };
 
 const LENGTHS = {
-  8: { n: 8, band: '22 到 32 個字', minutes: '約 1 分鐘' },
-  12: { n: 12, band: '32 到 40 個字', minutes: '約 2 分鐘' },
-  18: { n: 18, band: '36 到 44 個字', minutes: '約 3 分鐘' },
-  24: { n: 24, band: '36 到 44 個字', minutes: '約 4 分鐘' },
-  30: { n: 30, band: '36 到 46 個字', minutes: '約 5 分鐘' },
+  8: { n: 8, band: '38 到 46 個字', total: '320 到 360 個字', minutes: '約 1 分鐘' },
+  12: { n: 12, band: '42 到 50 個字', total: '520 到 600 個字', minutes: '約 2 分鐘' },
+  18: { n: 18, band: '42 到 50 個字', total: '780 到 900 個字', minutes: '約 3 分鐘' },
+  24: { n: 24, band: '42 到 50 個字', total: '1040 到 1200 個字', minutes: '約 4 分鐘' },
+  30: { n: 30, band: '42 到 50 個字', total: '1300 到 1500 個字', minutes: '約 5 分鐘' },
 };
 
 const jobs = new Map();
@@ -183,16 +183,18 @@ function lengthChoice(count) {
 }
 
 const OPS = new Set(['object', 'label', 'circle', 'arrow']);
+const DRAW_TALK = /白板|畫出|畫上|畫一個|畫成|寫上|圈起來|拉出箭頭|圖示|這一筆|箭頭指向/;
 const PLAN = [
-  '你在安排一支白板教學。老師是在同一張圖上越畫越完整，不是每句換一張不相干的圖。只輸出 JSON。',
+  '你在安排一支白板教學。旁白只教主題，圖負責把那一句畫出來。只輸出 JSON。',
   '{"beats":[{"say":"","op":"object","what":"","text":""}]}',
   'op 只能是 object、label、circle、arrow。',
-  'object：新畫一個實物，what 寫清楚那個東西。不要畫人，除非這句沒有人就講不清楚。禁止火柴人。',
-  'label：在剛畫好的東西旁邊寫很短的字，text 最多 8 個字，例如 +1,000、10,000、複利。',
-  'circle：把剛剛那個重點圈起來。text 留空。',
-  'arrow：從剛畫的東西拉出箭頭，text 可寫箭頭指到的短字。',
+  'object：這一筆要出現的實物，what 寫清楚那個東西。不要畫人，除非這句沒有人就講不清楚。禁止火柴人。',
+  'label：在剛出現的東西旁邊寫很短的字，text 最多 8 個字，例如 +1,000、10,000、複利。',
+  'circle：標出剛剛那個重點。text 留空。',
+  'arrow：從剛出現的東西指向下一步。text 可寫指到的短字。',
   '順序固定成一輪一輪：先 object，再 label，再 circle 或 arrow，然後才換下一個 object。大約每 3 到 4 筆才有一個 object。',
-  'say 是這一筆要唸出來的繁體中文，必須在講畫面上正在加的那一筆。',
+  'say 是老師對觀眾講的繁體中文，在教主題本身。聽到這句時，畫面同時加上對應的那一筆。',
+  'say 禁止描述作畫。不要出現白板、畫出、畫上、寫上、圈起來、拉箭頭、圖示、這一筆。',
 ].join('\n');
 
 function asBeats(rows, limit) {
@@ -210,28 +212,50 @@ function asBeats(rows, limit) {
   return beats.slice(0, limit);
 }
 
+function drawingTalk(beats) {
+  return beats.filter((row) => DRAW_TALK.test(row.say)).length;
+}
+
 async function writeBatch(text, voice, other, choice, need, done, total) {
   const tone = voice === 'other'
     ? `口吻：${clean(other, 120) || '自然口語'}`
     : (VOICES[voice] || VOICES.teach);
-  const data = await askText([
+  const lesson = [
     PLAN,
-    `這一批只寫 ${need} 筆。整支片共 ${total} 筆、唸完${choice.minutes}，現在從第 ${done + 1} 筆寫到第 ${done + need} 筆。`,
-    `每一筆 say 是繁體中文，${choice.band}，結尾用句號。句子要像老師邊畫邊講。`,
+    `這一批只寫 ${need} 筆。整支片共 ${total} 筆，現在從第 ${done + 1} 筆寫到第 ${done + need} 筆。`,
+    `整支片唸完要${choice.minutes}，全部 say 加起來 ${choice.total}。這一筆每一句 ${choice.band}，結尾用句號。`,
+    '句子接起來是一堂課：第一筆點出主題，中間按順序講原因和做法，最後一筆留一個記得住的結論。',
+    '份量要剛好塞進這個長度。選較短就少講幾件事，不要把長課硬塞進來，也不要只剩幾句空話。',
     '只講主題裡有的內容，不要編價格、功效、人名。色情、未成年性相關、犯罪教學就回 {"error":"無法提供"}。',
     tone,
     `主題：${clean(text, 500)}`,
-  ].join('\n'));
-  return asBeats(data.beats, need);
+  ];
+  let best = [];
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const extra = attempt
+        ? '上一批在教怎麼畫。這次 say 只能教主題，禁止白板、畫出、寫上、圈起來、箭頭、圖示。'
+        : '';
+      const data = await askText([...lesson, extra].filter(Boolean).join('\n'));
+      const beats = asBeats(data.beats, need);
+      if (!best.length || drawingTalk(beats) < drawingTalk(best)) best = beats;
+      if (beats.length && drawingTalk(beats) === 0) return beats;
+    } catch (err) {
+      if (err.message === '無法提供') throw err;
+      if (best.length) return best;
+      throw err;
+    }
+  }
+  return best;
 }
 
 function localBeats(topic, n) {
-  const subject = clean(topic, 36) || '這件事';
+  const subject = clean(topic, 18) || '這件事';
   const pattern = [
-    { op: 'object', what: subject, text: '', say: `先把「${subject}」畫在白板中間，後面每一步都留在同一張圖上。` },
-    { op: 'label', what: '', text: '開始', say: '在旁邊寫上開始，表示我們從這裡往下算。' },
-    { op: 'circle', what: '', text: '', say: '把剛剛那個起點圈起來，這是等一下要拿來比較的地方。' },
-    { op: 'arrow', what: '', text: '變多', say: '從起點拉出箭頭，下一步會在原來的基礎上再增加。' },
+    { op: 'object', what: `${subject}的起點`, text: '', say: `${subject}先看起點。後面所有的變化，都是從這個起點慢慢累積出來的。` },
+    { op: 'label', what: '', text: '起點', say: '把這個起點記下來。等一下每一步，都拿它來比較有沒有變多。' },
+    { op: 'circle', what: '', text: '', say: '今天最重要的就是這個起點。看懂它，後面的數字才不會算錯。' },
+    { op: 'arrow', what: '', text: '變多', say: '時間拉長以後，它會在原來的基礎上再增加，不是每次都從零開始。' },
   ];
   return Array.from({ length: n }, (_, index) => {
     const row = pattern[index % pattern.length];
@@ -293,6 +317,7 @@ async function generateSketch(picture, promptOverride) {
     `只畫這一個東西：${picture}`,
     '不要畫人，不要火柴人，不要箭頭，不要方框，不要任何文字和數字。',
     '不要照片、不要黑白線稿、不要灰色紙、不要格子、不要商標。',
+    '成長或變多就畫成往上的階梯，或一根往上的線。不要畫成一圈圈的螺旋，也不要彩虹圈。',
     '只輸出圖像。',
   ].join('\n');
   const configs = [
