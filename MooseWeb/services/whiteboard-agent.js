@@ -41,6 +41,7 @@ function clean(value, max) {
 function publicError(err) {
   const message = String(err && (err.message || err) || '').replace(/\s+/g, ' ').trim();
   if (/aborted|timeout/i.test(message)) return '寫旁白逾時，請再試一次。';
+  if (/spending cap|exceeded its monthly/i.test(message)) return '這個月的生圖額度用完了。請到 AI Studio 調高每月上限，等約十分鐘再按開始畫。';
   if (/quota|429|RESOURCE_EXHAUSTED|high demand|UNAVAILABLE|503/i.test(message)) return '現在使用的人較多，請稍後再試。';
   if (/請|最多|至少|無法提供|尚未|轉檔|沒有產出|每一句|這次沒有|沒有寫滿|旁白語音|生圖/.test(message)) {
     return message.slice(0, 120);
