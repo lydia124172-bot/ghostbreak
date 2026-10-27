@@ -289,10 +289,10 @@ async function generateSketch(picture, promptOverride) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
   const prompt = promptOverride || [
-    '1:1。純白背景。專業白板插畫，黑色線條乾淨，這個物件畫滿畫面大約八成。',
+    '1:1。純白背景。彩色白板插畫，平塗、顏色清楚，這個物件畫滿畫面大約八成。',
     `只畫這一個東西：${picture}`,
     '不要畫人，不要火柴人，不要箭頭，不要方框，不要任何文字和數字。',
-    '不要照片、不要彩色塗滿、不要灰色紙、不要格子、不要商標。',
+    '不要照片、不要黑白線稿、不要灰色紙、不要格子、不要商標。',
     '只輸出圖像。',
   ].join('\n');
   const configs = [
@@ -476,9 +476,10 @@ function glyphContours(text) {
   return contours.filter((pts) => pts.length > 2);
 }
 
-function writeMarkBmp(file, w, h, paint) {
+function writeMarkBmp(file, w, h, paint, color) {
   const width = Math.max(8, w);
   const height = Math.max(8, h);
+  const ink = color || { r: 28, g: 48, b: 120 };
   const row = Math.ceil((width * 3) / 4) * 4;
   const pixels = row * height;
   const buf = Buffer.alloc(54 + pixels);
@@ -497,9 +498,9 @@ function writeMarkBmp(file, w, h, paint) {
     const py = Math.round(y);
     if (px < 0 || py < 0 || px >= width || py >= height) return;
     const off = 54 + (height - 1 - py) * row + px * 3;
-    buf[off] = 0;
-    buf[off + 1] = 0;
-    buf[off + 2] = 0;
+    buf[off] = ink.b;
+    buf[off + 1] = ink.g;
+    buf[off + 2] = ink.r;
   };
   paint(set, width, height);
   fs.writeFileSync(file, buf);
@@ -517,7 +518,7 @@ function circleInk(file, w, h) {
         set(cx + (rx - thick) * Math.cos(t), cy + (ry - thick) * Math.sin(t));
       }
     }
-  });
+  }, { r: 196, g: 48, b: 43 });
 }
 
 function penInk(file) {
@@ -529,7 +530,7 @@ function penInk(file) {
         if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= 49) set(x, y);
       }
     }
-  });
+  }, { r: 22, g: 110, b: 184 });
 }
 
 function arrowInk(file, w, h) {
@@ -541,7 +542,7 @@ function arrowInk(file, w, h) {
     for (let i = 0; i < 24; i += 1) {
       for (let k = -Math.floor(i * 0.7); k <= Math.floor(i * 0.7); k += 1) set(width - 8 - i, y + k);
     }
-  });
+  }, { r: 22, g: 110, b: 184 });
 }
 
 function labelInk(file, w, h, text) {
@@ -581,7 +582,7 @@ function labelInk(file, w, h, text) {
         for (let x = from; x <= to; x += 1) set(x, y);
       }
     }
-  });
+  }, { r: 28, g: 48, b: 120 });
 }
 
 function placeBeats(frame, beats, scale) {
