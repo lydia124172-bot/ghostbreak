@@ -104,7 +104,7 @@ function paintPlan(data) {
   state.loggedIn = Boolean(data.loggedIn);
   state.credits = Number(data.credits || 0);
   if (!data.ready) {
-    bar.textContent = '設計對話暫時無法使用，請稍後再試。';
+    bar.textContent = '設計出圖暫時無法使用，請稍後再試。';
     return;
   }
   if (state.owner) {
@@ -592,5 +592,5 @@ document.getElementById('note').addEventListener('keydown', (event) => {
 });
 
 refreshPlan().catch(() => {
-  document.getElementById('designPlan').textContent = '設計對話暫時無法使用，請稍後再試。';
+  document.getElementById('designPlan').textContent = '設計出圖暫時無法使用，請稍後再試。';
 });
