@@ -137,6 +137,9 @@ function syncMode() {
   const row = workflowRow();
   const example = document.getElementById('workflowExample');
   if (example) example.textContent = row && row.example ? `例如：${row.example}` : '';
+  const style = (state.catalog.styles || []).find((item) => item.id === state.style);
+  const styleNote = document.getElementById('styleExample');
+  if (styleNote) styleNote.textContent = style && style.note ? style.note : '';
   const note = document.getElementById('note');
   if (mode === 'text') note.placeholder = '可補充：字體維持粗體、顏色改成深紅';
   else if (row && row.example) note.placeholder = row.example;

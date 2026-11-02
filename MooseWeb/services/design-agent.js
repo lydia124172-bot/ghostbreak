@@ -13,15 +13,15 @@ const WORKFLOWS = [
 ];
 
 const STYLES = [
-  { id: 'keep', name: '維持原樣', prompt: '' },
-  { id: 'photo', name: '商業攝影', prompt: 'commercial photography, realistic, soft studio light, sharp product detail' },
-  { id: '3d', name: '3D 插畫', prompt: 'polished 3D illustration, soft clay and glossy materials, clean studio lighting' },
-  { id: 'flat', name: '扁平設計', prompt: 'flat vector graphic design, bold shapes, limited palette, poster layout' },
-  { id: 'ink', name: '水墨留白', prompt: 'East Asian ink wash with generous negative space and a refined contemporary layout' },
-  { id: 'pop', name: '波普亮色', prompt: 'pop art commercial graphic, saturated colors, bold shapes' },
-  { id: 'minimal', name: '極簡', prompt: 'minimal luxury layout, lots of white space, one focal object' },
-  { id: 'neon', name: '夜市霓虹', prompt: 'night market neon, warm Asian street atmosphere, glossy signage, cinematic' },
-  { id: 'magazine', name: '雜誌封面', prompt: 'editorial magazine cover, strong headline hierarchy, fashion photography' },
+  { id: 'keep', name: '維持原樣', note: '不另外套風格，照你寫的句子和上傳的圖。', prompt: '' },
+  { id: 'photo', name: '商業攝影', note: '像真實商品棚拍，光線柔、細節清楚。', prompt: 'commercial photography, realistic, soft studio light, sharp product detail' },
+  { id: '3d', name: '3D 插畫', note: '立體、圓潤，像軟膠或有光澤的模型。', prompt: 'polished 3D illustration, soft clay and glossy materials, clean studio lighting' },
+  { id: 'flat', name: '扁平設計', note: '平面色塊，沒有立體陰影，顏色少、形狀乾淨。', prompt: 'flat vector graphic design, bold shapes, limited palette, poster layout' },
+  { id: 'ink', name: '水墨留白', note: '水墨筆觸，畫面留很多空白。', prompt: 'East Asian ink wash with generous negative space and a refined contemporary layout' },
+  { id: 'pop', name: '波普亮色', note: '顏色很鮮，形狀很大膽。', prompt: 'pop art commercial graphic, saturated colors, bold shapes' },
+  { id: 'minimal', name: '極簡', note: '留白多，只放一個主體。', prompt: 'minimal luxury layout, lots of white space, one focal object' },
+  { id: 'neon', name: '夜市霓虹', note: '夜市燈光和招牌的感覺。', prompt: 'night market neon, warm Asian street atmosphere, glossy signage, cinematic' },
+  { id: 'magazine', name: '雜誌封面', note: '像時尚雜誌封面，標題很大。', prompt: 'editorial magazine cover, strong headline hierarchy, fashion photography' },
 ];
 
 const MOCKUPS = [
@@ -140,7 +140,7 @@ async function readText(image) {
 function publicCatalog() {
   return {
     workflows: WORKFLOWS.map(({ id, name, hint, ratio, example }) => ({ id, name, hint, ratio, example })),
-    styles: STYLES.map(({ id, name }) => ({ id, name })),
+    styles: STYLES.map(({ id, name, note }) => ({ id, name, note })),
     mockups: MOCKUPS.map(({ id, name }) => ({ id, name })),
     ratios: RATIOS.slice(),
     sizes: SIZES.slice(),
