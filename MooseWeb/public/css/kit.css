@@ -55,6 +55,11 @@ body.kit .kit-hero {
   overflow: hidden;
 }
 
+body.kit .kit-hero .kit-intro {
+  position: relative;
+  z-index: 1;
+}
+
 body.kit .kit-hero::before {
   content: "";
   position: absolute;
