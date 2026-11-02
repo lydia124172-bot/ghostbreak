@@ -11,7 +11,7 @@ function applyPublicNav() {
   const kitPaths = ['/saas', '/clip', '/story', '/talk', '/dress', '/model', '/script', '/live', '/ip', '/hot', '/prompt', '/hook', '/edit', '/design', '/move'];
   const items = [
     { href: '/', label: '首頁', on: path === '/' },
-    { href: '/saas', label: '我做的付費工具', on: kitPaths.includes(path) },
+    { href: '/saas', label: 'AI 商品行銷工具', on: kitPaths.includes(path) },
   ];
   nav.innerHTML = items.map((item) =>
     `<a href="${item.href}"${item.on ? ' class="active"' : ''}>${item.label}</a>`

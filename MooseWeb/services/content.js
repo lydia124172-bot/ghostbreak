@@ -34,7 +34,7 @@ function emptyContent() {
     email: defaults.email,
     lineUrl: defaults.lineUrl || '',
     heroTitle: '寫稿、出圖、\n短片、換裝與對嘴。',
-    heroLead: '下面的寫稿，沒買方案時每個只能用 1 次；買了方案可以一直寫，不扣點。生圖、短片、換裝、改圖、設計、對嘴才扣你帳號裡的點，從「我做的付費工具」進去。',
+    heroLead: '下面的寫稿，沒買方案時每個只能用 1 次；買了方案可以一直寫，不扣點。生圖、短片、換裝、改圖、設計、對嘴才扣你帳號裡的點，從「AI 商品行銷工具」進去。',
     workKinds: clone(defaults.workKinds || []),
     products: clone(defaults.products || []),
     works: clone(defaults.works || []),
