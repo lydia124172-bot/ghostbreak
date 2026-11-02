@@ -1075,10 +1075,23 @@ body.kit .path-grid .card-body p + p {
   margin-top: 8px;
 }
 
+body.kit .path-grid .card {
+  display: flex;
+  flex-direction: column;
+}
+
+body.kit .path-grid .card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
 body.kit .path-grid .card-cta {
   display: flex;
   width: 100%;
-  margin-top: 16px;
+  margin-top: auto;
+  border-top: 16px solid transparent;
+  background-clip: padding-box;
   box-sizing: border-box;
 }
 
