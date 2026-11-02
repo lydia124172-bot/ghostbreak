@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const accounts = require('./accounts');
+const { BANK } = require('./bank');
 
 /** 每次讀設定都重載 site.js，避免長跑進程卡在舊 require 快取（後台 content.json 仍會被程式碼預設覆蓋同名 id）。 */
 function loadSiteDefaults() {
@@ -193,7 +194,10 @@ function publicConfig() {
     leadSuite: canonicalLeadSuite(),
     faqs: data.faqs,
     tree: accounts.publicTree(),
-    pay: { ecpay: Boolean(process.env.ECPAY_MERCHANT_ID && process.env.ECPAY_HASH_KEY && process.env.ECPAY_HASH_IV) },
+    pay: {
+      paypal: Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_SECRET),
+      bank: BANK,
+    },
   };
 }
 

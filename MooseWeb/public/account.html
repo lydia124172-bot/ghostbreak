@@ -8,7 +8,7 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=look5" />
+  <link rel="stylesheet" href="/css/site.css?v=look7" />
 </head>
 <body>
   <header class="site-header">
@@ -90,9 +90,20 @@
         <span id="subText"></span>
         <button class="btn btn-ghost" type="button" id="subCancel">取消自動續約</button>
       </div>
-      <label id="autoRenewRow" class="lead hidden"><input type="checkbox" id="autoRenew" checked /> 每月自動續約（信用卡每月自動扣款，隨時可取消）</label>
+      <div id="dueBox"></div>
     </section>
     <p id="planMsg" class="combo-fit"></p>
+    <section id="payBox" class="panel hidden">
+      <h2 id="payTitle">選擇付款方式</h2>
+      <p class="lead" id="payLead"></p>
+      <div class="pay-methods" id="payMethods">
+        <button type="button" class="pay-method" data-method="paypal"><strong>PayPal</strong><span>用 PayPal 餘額或信用卡。付完立即開通。</span></button>
+        <button type="button" class="pay-method" data-method="bank"><strong>銀行轉帳</strong><span>轉到利迪亞商行。入帳確認後開通。</span></button>
+      </div>
+      <div id="bankBox" class="pay-due hidden"></div>
+      <button type="button" class="btn btn-copper hidden" id="bankNotify">我已轉帳，請幫我開通</button>
+      <button type="button" class="btn btn-ghost" id="payClose">先不付款</button>
+    </section>
     <h3>商品短片</h3>
     <section class="plan-grid" id="planGrid"></section>
     <h3>劇本廣告</h3>
@@ -114,7 +125,11 @@
     const $ = (id) => document.getElementById(id);
     let tree = { plans: [], billingNote: '' };
     let payReady = false;
+    let paypalReady = false;
+    let bankInfo = null;
     let loggedIn = false;
+    let meNow = null;
+    let pendingPlanId = '';
 
     function escapeHtml(value) {
       return String(value || '')
@@ -141,7 +156,7 @@
           if (current) label = '使用中';
           else if (pending) label = '確認中';
           else if (plan.id === 'free') label = '改為免費';
-          else label = payReady ? '線上付款' : '選擇方案';
+          else label = payReady ? '選擇付款方式' : '選擇方案';
         }
         return `
           <article class="plan-card${current ? ' current' : ''}">
@@ -175,10 +190,32 @@
       renderPlans(null);
     }
 
+    function renderDues(me) {
+      const dues = (me && me.dues) || [];
+      if (!dues.length) {
+        $('dueBox').classList.add('hidden');
+        $('dueBox').innerHTML = '';
+        return;
+      }
+      $('dueBox').classList.remove('hidden');
+      $('dueBox').innerHTML = dues.map((due) => {
+        const lines = [`待繳費：${due.planName}　NT$${Number(due.amount || 0).toLocaleString('en-US')}`];
+        if (due.vAccount) lines.push(`銀行代碼 ${due.bankCode}　帳號 ${due.vAccount}`);
+        if (due.paymentNo) lines.push(`超商代碼 ${due.paymentNo}`);
+        if (!due.vAccount && !due.paymentNo) lines.push('繳費資訊確認中。');
+        if (due.expireDate) lines.push(`請於 ${due.expireDate} 前繳費，入帳後自動開通。`);
+        return `<p class="pay-due">${lines.map((line) => escapeHtml(line)).join('<br>')}</p>`;
+      }).join('');
+    }
+
     function showMember(me) {
       loggedIn = true;
+      meNow = me;
       $('pageTitle').textContent = '選擇方案';
-      $('pageLead').classList.add('hidden');
+      $('pageLead').textContent = payReady
+        ? '可用 PayPal，或轉帳到利迪亞商行的彰化銀行帳戶。'
+        : '線上付款尚未開通。選方案後改由 LINE 確認。';
+      $('pageLead').classList.remove('hidden');
       $('guestBox').classList.add('hidden');
       $('memberBox').classList.remove('hidden');
       $('meEmail').textContent = me.email;
@@ -190,8 +227,8 @@
       $('meDetail').textContent = bits.join(' · ');
       $('meDetail').classList.toggle('hidden', !bits.length);
       $('subBox').classList.toggle('hidden', !me.subscription);
-      $('autoRenewRow').classList.toggle('hidden', !payReady || Boolean(me.subscription));
       if (me.subscription) $('subText').textContent = `自動續約中：${me.subscription.planName}，每月 NT$${Number(me.subscription.amount).toLocaleString('en-US')}。`;
+      renderDues(me);
       renderPlans(me);
     }
 
@@ -291,22 +328,53 @@
       $('regName').focus();
     }
 
+    function hideBank() {
+      $('bankBox').classList.add('hidden');
+      $('bankBox').innerHTML = '';
+      $('bankNotify').classList.add('hidden');
+    }
+
+    function openPay(planId) {
+      const plan = (tree.plans || []).find((item) => item.id === planId);
+      if (!plan) return;
+      pendingPlanId = planId;
+      hideBank();
+      $('payMethods').classList.remove('hidden');
+      $('payTitle').textContent = `付款方式 · ${plan.name}`;
+      $('payLead').textContent = `${plan.priceLabel}。PayPal 付完立即開通。銀行轉帳要等入帳確認。`;
+      $('payBox').classList.remove('hidden');
+      $('payBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function showBank(planId) {
+      const plan = (tree.plans || []).find((item) => item.id === planId);
+      const bank = bankInfo || {};
+      if (!plan || !bank.account) return;
+      $('bankBox').classList.remove('hidden');
+      $('bankNotify').classList.remove('hidden');
+      $('bankBox').innerHTML = [
+        `${plan.name}　${plan.priceLabel}`,
+        `${bank.bank}（${bank.code}）${bank.branch}`,
+        `戶名 ${bank.name}`,
+        `帳號 ${bank.account}`,
+      ].map((line) => escapeHtml(line)).join('<br>');
+      $('bankBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function startPay(planId, method) {
+      if (method === 'bank') {
+        showBank(planId);
+        return;
+      }
+      const data = await api('/api/account/pay', { plan: planId, method });
+      if (!data.url) throw new Error('無法前往 PayPal');
+      $('planMsg').textContent = '正在前往 PayPal…';
+      location.href = data.url;
+    }
+
     async function submitPlan(planId) {
       if (payReady && planId !== 'free') {
-        const data = await api('/api/account/pay', { plan: planId, auto: !$('autoRenewRow').classList.contains('hidden') && $('autoRenew').checked });
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = data.action;
-        Object.entries(data.fields || {}).forEach(([name, value]) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = name;
-          input.value = value;
-          form.appendChild(input);
-        });
-        document.body.appendChild(form);
-        $('planMsg').textContent = '正在前往付款…';
-        form.submit();
+        openPay(planId);
         return;
       }
       const data = await api('/api/account/plan', { plan: planId });
@@ -338,6 +406,43 @@
         }
       });
     }
+    $('payBox').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-method]');
+      if (!btn || !pendingPlanId) return;
+      const method = btn.getAttribute('data-method');
+      $('planMsg').textContent = '';
+      if (method === 'bank') {
+        showBank(pendingPlanId);
+        return;
+      }
+      $('payBox').querySelectorAll('[data-method]').forEach((item) => { item.disabled = true; });
+      try {
+        await startPay(pendingPlanId, method);
+      } catch (err) {
+        $('planMsg').textContent = err.message;
+        $('payBox').querySelectorAll('[data-method]').forEach((item) => { item.disabled = false; });
+      }
+    });
+    $('bankNotify').addEventListener('click', async () => {
+      if (!pendingPlanId) return;
+      $('bankNotify').disabled = true;
+      try {
+        const data = await api('/api/account/plan', { plan: pendingPlanId, via: 'bank' });
+        $('planMsg').textContent = data.message || '已記下轉帳通知。';
+        hideBank();
+        $('payBox').classList.add('hidden');
+        await refresh();
+      } catch (err) {
+        $('planMsg').textContent = err.message;
+      } finally {
+        $('bankNotify').disabled = false;
+      }
+    });
+    $('payClose').addEventListener('click', () => {
+      pendingPlanId = '';
+      hideBank();
+      $('payBox').classList.add('hidden');
+    });
     $('subCancel').addEventListener('click', async () => {
       if (!confirm('確定取消每月自動續約？本期到期前仍可使用。')) return;
       try {
@@ -356,12 +461,20 @@
       fetch('/api/account/me').then((r) => r.json()),
     ]).then(([data, me]) => {
       tree = data.tree || tree;
-      payReady = Boolean(data.pay && data.pay.ecpay);
+      payReady = Boolean(data.pay && (data.pay.paypal || data.pay.bank));
+      paypalReady = Boolean(data.pay && data.pay.paypal);
+      bankInfo = (data.pay && data.pay.bank) || null;
+      const paypalNote = document.querySelector('[data-method="paypal"] span');
+      if (paypalNote && !paypalReady) paypalNote.textContent = '尚未接上。接上之前請用銀行轉帳。';
       if (me.ok && me.email) showMember(me);
-      else showGuest();
+      else {
+        showGuest();
+        if (payReady) $('pageLead').textContent = '先選方案並註冊。可用 PayPal，或轉帳到利迪亞商行。';
+      }
       const paid = new URLSearchParams(location.search).get('paid');
       if (paid === '1') $('planMsg').textContent = '付款成功，方案已開通。';
-      if (paid === '0') $('planMsg').textContent = '付款未完成。可再試一次，或改用 LINE。';
+      if (paid === 'wait') $('planMsg').textContent = '已取得繳費資訊。請依下方帳號或代碼繳費，入帳後方案會自動開通。';
+      if (paid === '0') $('planMsg').textContent = '付款未完成。可再試一次，或改用別的付款方式。';
     }).catch(() => showGuest());
   </script>
 </body>

@@ -20,7 +20,7 @@ function save(store) {
   fs.writeFileSync(FILE, JSON.stringify(store, null, 2), 'utf8');
 }
 
-function createOrder({ accountId, email, planId, amount, planName, periodic = false }) {
+function createOrder({ accountId, email, planId, amount, planName, periodic = false, method = 'credit' }) {
   const store = load();
   const merchantTradeNo = `M${Date.now().toString(36)}${crypto.randomBytes(3).toString('hex')}`.slice(0, 20);
   const row = {
@@ -31,6 +31,7 @@ function createOrder({ accountId, email, planId, amount, planName, periodic = fa
     planId,
     planName,
     amount: Number(amount) || 0,
+    method: String(method || 'credit'),
     status: 'pending',
     tradeNo: '',
     created: Date.now(),
@@ -38,6 +39,7 @@ function createOrder({ accountId, email, planId, amount, planName, periodic = fa
     periodic: Boolean(periodic),
     renewals: [],
     cancelledAt: 0,
+    paymentInfo: null,
   };
   store.orders.push(row);
   save(store);
@@ -46,6 +48,21 @@ function createOrder({ accountId, email, planId, amount, planName, periodic = fa
 
 function findByTradeNo(merchantTradeNo) {
   return load().orders.find((row) => row.merchantTradeNo === merchantTradeNo) || null;
+}
+
+function findByExternalId(externalId) {
+  const key = String(externalId || '');
+  if (!key) return null;
+  return load().orders.find((row) => row.externalId === key) || null;
+}
+
+function setExternalId(merchantTradeNo, externalId) {
+  const store = load();
+  const row = store.orders.find((item) => item.merchantTradeNo === merchantTradeNo);
+  if (!row) return null;
+  row.externalId = String(externalId || '');
+  save(store);
+  return row;
 }
 
 function listPaid() {
@@ -83,6 +100,40 @@ function activeSubscription(accountId) {
     .sort((a, b) => b.paidAt - a.paidAt)[0] || null;
 }
 
+function stillOpen(expireDate) {
+  const raw = String(expireDate || '').trim();
+  if (!raw) return true;
+  const stamp = /\d{1,2}:\d{2}/.test(raw)
+    ? Date.parse(`${raw.replace(/\//g, '-').replace(' ', 'T')}+08:00`)
+    : Date.parse(`${raw.replace(/\//g, '-')}T23:59:59+08:00`);
+  return Number.isFinite(stamp) ? stamp > Date.now() : true;
+}
+
+function setPaymentInfo(merchantTradeNo, info) {
+  const store = load();
+  const row = store.orders.find((item) => item.merchantTradeNo === merchantTradeNo);
+  if (!row || row.status === 'paid') return row || null;
+  row.status = 'awaiting';
+  row.paymentInfo = {
+    bankCode: String(info.bankCode || ''),
+    vAccount: String(info.vAccount || ''),
+    paymentNo: String(info.paymentNo || ''),
+    expireDate: String(info.expireDate || ''),
+    paymentType: String(info.paymentType || ''),
+  };
+  if (info.tradeNo) row.tradeNo = String(info.tradeNo);
+  save(store);
+  return row;
+}
+
+function listAwaiting(accountId) {
+  return load().orders.filter((row) => (
+    row.accountId === accountId
+    && row.status === 'awaiting'
+    && stillOpen(row.paymentInfo && row.paymentInfo.expireDate)
+  ));
+}
+
 function markCancelled(merchantTradeNo) {
   const store = load();
   const row = store.orders.find((item) => item.merchantTradeNo === merchantTradeNo);
@@ -92,4 +143,4 @@ function markCancelled(merchantTradeNo) {
   return row;
 }
 
-module.exports = { createOrder, findByTradeNo, listPaid, markPaid, recordRenewal, activeSubscription, markCancelled };
+module.exports = { createOrder, findByTradeNo, findByExternalId, setExternalId, listPaid, markPaid, recordRenewal, activeSubscription, markCancelled, setPaymentInfo, listAwaiting };

@@ -29,9 +29,11 @@ const storyVideo = require('./services/story-video');
 const storyScript = require('./services/story-script');
 const dramaVideo = require('./services/drama-video');
 const dramaScript = require('./services/drama-script');
+const adFilm = require('./services/ad-film');
 const brollPlanner = require('./services/broll-planner');
 const brollJob = require('./services/broll-job');
 const stockVideo = require('./services/stock-video');
+const stockFinder = require('./services/stock-finder');
 const scriptAgent = require('./services/script-agent');
 const liveScript = require('./services/live-script');
 const personaAgent = require('./services/persona-agent');
@@ -47,7 +49,8 @@ const designAgent = require('./services/design-agent');
 const patchVideo = require('./services/patch-video');
 const modelLock = require('./services/model-lock');
 const accounts = require('./services/accounts');
-const ecpay = require('./services/ecpay');
+const paypal = require('./services/paypal');
+const { label: bankLabel } = require('./services/bank');
 const payOrders = require('./services/pay-orders');
 const lineBot = require('./services/line-bot');
 
@@ -298,6 +301,10 @@ app.get('/drama', (req, res) => {
   if (!isOwner(req)) return res.redirect(302, '/story');
   return sendPage(req, res, 'drama.html');
 });
+app.get('/adfilm', (req, res) => {
+  if (!isOwner(req)) return res.redirect(302, '/admin');
+  return sendPage(req, res, 'adfilm.html');
+});
 app.get('/narrate', (req, res) => {
   if (!isOwner(req)) return res.redirect(302, '/admin');
   return sendPage(req, res, 'narrate.html');
@@ -421,6 +428,20 @@ app.get('/api/broll/config', (req, res) => {
     pexels_api: stockVideo.providers().pexels,
     pixabay_api: stockVideo.providers().pixabay,
   });
+});
+
+app.get('/api/broll/find', async (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  const text = String(req.query.q || '').trim();
+  const kind = req.query.kind === 'image' || req.query.kind === 'video' ? req.query.kind : 'auto';
+  if (!text || text.length > 200) return res.status(400).json({ error: '請用一句話描述畫面。' });
+  try {
+    const result = await stockFinder.search({ text, kind });
+    res.json(result);
+  } catch (err) {
+    res.status(502).json({ error: err.message || '這次沒有找到。' });
+  }
 });
 
 app.post('/api/broll', express.json({ limit: '3mb' }), (req, res) => {
@@ -892,6 +913,23 @@ function sendAccount(req, res, payload, sid) {
   res.json(payload);
 }
 
+function publicDues(accountId) {
+  return payOrders.listAwaiting(accountId).map((row) => {
+    const info = row.paymentInfo || {};
+    const labels = { paypal: 'PayPal', bank: '銀行轉帳' };
+    return {
+      planName: row.planName || '',
+      amount: Number(row.amount) || 0,
+      method: row.method || '',
+      methodLabel: labels[row.method] || '',
+      bankCode: info.bankCode || '',
+      vAccount: info.vAccount || '',
+      paymentNo: info.paymentNo || '',
+      expireDate: info.expireDate || '',
+    };
+  });
+}
+
 app.get('/api/account/me', (req, res) => {
   const row = currentAccount(req);
   if (!row) return res.json({ ok: false });
@@ -899,6 +937,7 @@ app.get('/api/account/me', (req, res) => {
   res.json({
     ...accounts.publicAccount(row),
     subscription: sub ? { planName: sub.planName, amount: sub.amount, since: sub.paidAt } : null,
+    dues: publicDues(row.id),
   });
 });
 
@@ -908,7 +947,6 @@ app.post('/api/account/subscription/cancel', async (req, res) => {
   const sub = payOrders.activeSubscription(row.id);
   if (!sub) return res.status(400).json({ error: '目前沒有自動續約。' });
   try {
-    await ecpay.cancelPeriod(sub.merchantTradeNo);
     payOrders.markCancelled(sub.merchantTradeNo);
     res.json({ ok: true, message: '已取消自動續約，本期到期前仍可正常使用。' });
   } catch (err) {
@@ -988,6 +1026,7 @@ app.post('/api/account/plan', async (req, res) => {
     const result = accounts.requestPlan(row, req.body?.plan);
     if (!result.granted) {
       const planName = result.plan?.name || String(req.body?.plan || '');
+      const viaBank = req.body?.via === 'bank';
       const entry = {
         id: `P-${Date.now()}`,
         createdAt: new Date().toISOString(),
@@ -995,10 +1034,15 @@ app.post('/api/account/plan', async (req, res) => {
         phone: '',
         email: row.email,
         service: `${result.plan?.product === 'dramaclip' ? 'DramaClip' : result.plan?.product === 'storyclip' ? 'StoryClip' : 'MooseClip'} 方案 ${planName}`,
-        message: `會員 ${row.email} 申請 ${planName}（${result.plan?.priceLabel || ''}）。請確認匯款或 LINE 後，於後台「會員方案」開通。`,
+        message: viaBank
+          ? `會員 ${row.email} 通知已轉帳購買 ${planName}（${result.plan?.priceLabel || ''}）。請核對${bankLabel()}入帳後，於後台「會員方案」開通。`
+          : `會員 ${row.email} 申請 ${planName}（${result.plan?.priceLabel || ''}）。請確認匯款或 LINE 後，於後台「會員方案」開通。`,
       };
       addInquiry(entry);
       await safeSendMail(inquiryMail(entry));
+      if (viaBank) {
+        result.message = `已記下。請轉帳 ${result.plan?.priceLabel || ''} 到${bankLabel()}。入帳確認後會開通。`;
+      }
     }
     res.json({ success: true, account: result.account, message: result.message });
   } catch (err) {
@@ -1007,66 +1051,65 @@ app.post('/api/account/plan', async (req, res) => {
 });
 
 app.get('/api/pay/status', (_req, res) => {
-  res.json({ ecpay: ecpay.configured(), stage: ecpay.configured() && ecpay.isStage() });
+  res.json({ paypal: paypal.configured() });
 });
 
-app.post('/api/account/pay', express.json({ limit: '32kb' }), (req, res) => {
+app.get('/api/pay/paypal/return', async (req, res) => {
+  const token = String(req.query.token || '').trim();
+  const order = token ? payOrders.findByExternalId(token) : null;
+  if (!order) return res.redirect(302, `${BASE_URL}/account?paid=0`);
+  if (order.status === 'paid') return res.redirect(302, `${BASE_URL}/account?paid=1`);
+  try {
+    const captured = await paypal.captureOrder(token);
+    const amount = Math.round(Number(captured.amount) || 0);
+    if (!captured.ok || amount !== Number(order.amount)) {
+      return res.redirect(302, `${BASE_URL}/account?paid=0`);
+    }
+    if (captured.customId && captured.customId !== order.merchantTradeNo) {
+      return res.redirect(302, `${BASE_URL}/account?paid=0`);
+    }
+    payOrders.markPaid(order.merchantTradeNo, captured.captureId);
+    try { accounts.grantPlanById(order.accountId, order.planId); } catch { /* 訂單已記，後台可補開 */ }
+    return res.redirect(302, `${BASE_URL}/account?paid=1`);
+  } catch (err) {
+    console.error('[paypal]', err.message);
+    return res.redirect(302, `${BASE_URL}/account?paid=0`);
+  }
+});
+
+app.post('/api/account/pay', express.json({ limit: '32kb' }), async (req, res) => {
   const row = currentAccount(req);
   if (!row) return res.status(401).json({ error: '請先登入' });
-  if (!ecpay.configured()) return res.status(503).json({ error: '線上付款尚未設定。可先用 LINE 申請。' });
   const plan = accounts.publicTree().plans.find((item) => item.id === String(req.body?.plan || '').trim());
   const full = require('./data/tree').plans.find((item) => item.id === String(req.body?.plan || '').trim());
   if (!full || !plan) return res.status(400).json({ error: '沒有這個方案' });
   if (!full.price || full.id === 'free') return res.status(400).json({ error: '免費方案不必付款。' });
-  const periodic = Boolean(req.body?.auto) && /／月/.test(full.priceLabel || '');
-  if (periodic && payOrders.activeSubscription(row.id)) {
-    return res.status(400).json({ error: '你已經有自動續約，要換方案請先取消目前的自動續約。' });
-  }
-  try {
-    const order = payOrders.createOrder({
-      accountId: row.id,
-      email: row.email,
-      planId: full.id,
-      amount: full.price,
-      planName: full.name,
-      periodic,
-    });
-    const checkout = ecpay.checkoutFields({
-      merchantTradeNo: order.merchantTradeNo,
-      amount: full.price,
-      itemName: full.name,
-      returnUrl: `${BASE_URL}/api/pay/ecpay/notify`,
-      resultUrl: `${BASE_URL}/api/pay/ecpay/result`,
-      clientBackUrl: `${BASE_URL}/account`,
-      custom1: row.id,
-      custom2: full.id,
-      periodReturnUrl: periodic ? `${BASE_URL}/api/pay/ecpay/period` : '',
-    });
-    res.json({ ok: true, action: checkout.action, fields: checkout.fields });
-  } catch (err) {
-    res.status(400).json({ error: err.message || '無法建立付款' });
-  }
-});
-
-app.post('/api/pay/ecpay/notify', express.urlencoded({ extended: false }), (req, res) => {
-  const body = req.body || {};
-  if (!ecpay.configured() || !ecpay.verify(body)) {
-    return res.status(400).type('text/plain').send('0|CheckMacValueError');
-  }
-  if (String(body.RtnCode) !== '1') {
-    return res.type('text/plain').send('1|OK');
-  }
-  const order = payOrders.findByTradeNo(body.MerchantTradeNo);
-  if (!order) return res.status(404).type('text/plain').send('0|OrderNotFound');
-  if (order.status !== 'paid') {
-    const amount = Number(body.TradeAmt || body.TotalAmount || 0);
-    if (amount && amount !== Number(order.amount)) {
-      return res.status(400).type('text/plain').send('0|AmountError');
+  const method = String(req.body?.method || '').trim();
+  if (method === 'paypal') {
+    if (!paypal.configured()) return res.status(503).json({ error: 'PayPal 尚未開通。請改用銀行轉帳。' });
+    try {
+      const order = payOrders.createOrder({
+        accountId: row.id,
+        email: row.email,
+        planId: full.id,
+        amount: full.price,
+        planName: full.name,
+        method: 'paypal',
+      });
+      const checkout = await paypal.createOrder({
+        amount: full.price,
+        itemName: full.name,
+        customId: order.merchantTradeNo,
+        returnUrl: `${BASE_URL}/api/pay/paypal/return`,
+        cancelUrl: `${BASE_URL}/account?paid=0`,
+      });
+      payOrders.setExternalId(order.merchantTradeNo, checkout.id);
+      return res.json({ ok: true, url: checkout.url });
+    } catch (err) {
+      return res.status(400).json({ error: err.message || '無法建立 PayPal 付款' });
     }
-    payOrders.markPaid(order.merchantTradeNo, body.TradeNo);
-    try { accounts.grantPlanById(order.accountId, order.planId); } catch { /* 訂單已記，後台可補開 */ }
   }
-  return res.type('text/plain').send('1|OK');
+  return res.status(400).json({ error: '請用 PayPal，或改用銀行轉帳。' });
 });
 
 app.post('/api/line/webhook', (req, res) => {
@@ -1074,40 +1117,6 @@ app.post('/api/line/webhook', (req, res) => {
   if (!lineBot.verifySignature(req.rawBody, req.get('x-line-signature'))) return res.status(401).end();
   res.status(200).end();
   lineBot.handleEvents(req.body?.events, BASE_URL).catch((err) => console.error('[line-bot]', err.message));
-});
-
-app.post('/api/pay/ecpay/period', express.urlencoded({ extended: false }), (req, res) => {
-  const body = req.body || {};
-  if (!ecpay.configured() || !ecpay.verify(body)) {
-    return res.status(400).type('text/plain').send('0|CheckMacValueError');
-  }
-  const order = payOrders.findByTradeNo(body.MerchantTradeNo);
-  if (!order || !order.periodic) return res.status(404).type('text/plain').send('0|OrderNotFound');
-  if (String(body.RtnCode) !== '1') {
-    console.warn('[period] 續約扣款失敗', order.email, body.RtnMsg || '');
-    return res.type('text/plain').send('1|OK');
-  }
-  const amount = Number(body.amount || body.PeriodAmount || 0);
-  if (amount && amount !== Number(order.amount)) {
-    return res.status(400).type('text/plain').send('0|AmountError');
-  }
-  if (Number(body.TotalSuccessTimes || 0) <= 1) return res.type('text/plain').send('1|OK');
-  const key = String(body.Gwsr || body.ProcessDate || body.TotalSuccessTimes);
-  const { fresh } = payOrders.recordRenewal(order.merchantTradeNo, key);
-  if (fresh) {
-    try { accounts.grantPlanById(order.accountId, order.planId); } catch { /* 續約已記，後台可補開 */ }
-  }
-  return res.type('text/plain').send('1|OK');
-});
-
-app.post('/api/pay/ecpay/result', express.urlencoded({ extended: false }), (req, res) => {
-  const body = req.body || {};
-  const ok = ecpay.configured() && ecpay.verify(body) && String(body.RtnCode) === '1';
-  return res.redirect(302, `${BASE_URL}/account?paid=${ok ? '1' : '0'}`);
-});
-
-app.get('/api/pay/ecpay/result', (_req, res) => {
-  res.redirect(302, `${BASE_URL}/account`);
 });
 
 app.use([
@@ -2884,6 +2893,141 @@ app.get('/api/drama/video/last', (req, res) => {
   return res.status(404).json({ error: '沒有可取回的短劇。請不要重按產出。' });
 });
 
+const AD_JOB_FILE = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'ad-film-jobs.json');
+const adJobs = loadAdJobs();
+
+function loadAdJobs() {
+  try {
+    const rows = JSON.parse(fs.readFileSync(AD_JOB_FILE, 'utf8'));
+    return new Map(Object.entries(rows));
+  } catch {
+    return new Map();
+  }
+}
+
+function saveAdJobs() {
+  const dir = path.dirname(AD_JOB_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const slim = {};
+  for (const [id, job] of adJobs) slim[id] = { ...job, running: undefined };
+  fs.writeFileSync(AD_JOB_FILE, JSON.stringify(slim, null, 2), 'utf8');
+}
+
+function pruneAdJobs() {
+  const cutoff = Date.now() - 40 * 60 * 1000;
+  let changed = false;
+  for (const [id, job] of adJobs) {
+    if (job.created < cutoff) {
+      adJobs.delete(id);
+      changed = true;
+    }
+  }
+  if (changed) saveAdJobs();
+}
+
+function latestAdJob(sid) {
+  let latest = null;
+  for (const job of adJobs.values()) {
+    if (!job || job.sid !== sid) continue;
+    if (job.result && job.result.videoId && !clipStore.getMedia(job.result.videoId)) continue;
+    if (!latest || job.created > latest.created) latest = job;
+  }
+  return latest;
+}
+
+function startAdJob(job) {
+  if (!job || job.result || job.error || job.running) return;
+  job.running = true;
+  setImmediate(() => {
+    adFilm.produce({
+      instruction: job.instruction,
+      duration: job.duration,
+      onPhase: (phase) => {
+        job.phase = phase;
+        saveAdJobs();
+      },
+    }).then((fileOut) => {
+      const saved = clipStore.saveMedia(job.sid, 'video', fileOut.buffer, fileOut.mime || 'video/mp4');
+      job.result = {
+        status: 'done',
+        jobId: job.id,
+        videoId: saved.id,
+        videoUrl: `/api/clip/media/${saved.id}`,
+        duration: fileOut.duration,
+        ratio: fileOut.ratio,
+        panels: fileOut.panels,
+      };
+      job.phase = '完成';
+      job.running = false;
+      saveAdJobs();
+      console.log('[adfilm] done', job.id);
+    }).catch((err) => {
+      job.error = err.message || '廣告影片失敗';
+      job.running = false;
+      saveAdJobs();
+      console.log('[adfilm] failed', job.error);
+    });
+  });
+}
+
+function resumeAdJobs() {
+  for (const job of adJobs.values()) {
+    if (!job || job.result || job.error) continue;
+    if (Date.now() - job.created > 40 * 60 * 1000) continue;
+    console.log('[adfilm] resume', job.id, job.phase || '');
+    startAdJob(job);
+  }
+}
+
+app.post('/api/adfilm', express.json({ limit: '32kb' }), (req, res) => {
+  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
+  const instruction = String(req.body?.instruction || '').trim();
+  if (instruction.length < 4) return res.status(400).json({ error: '請先寫一句指令。' });
+  pruneAdJobs();
+  const job = {
+    id: crypto.randomUUID(),
+    sid: clipSid(req, res),
+    instruction: instruction.slice(0, 500),
+    duration: ['10', '15'].includes(String(req.body?.duration || '')) ? String(req.body.duration) : '5',
+    phase: '已送出',
+    created: Date.now(),
+    result: null,
+    error: '',
+  };
+  adJobs.set(job.id, job);
+  saveAdJobs();
+  startAdJob(job);
+  res.json({ jobId: job.id, status: 'queued' });
+});
+
+app.get('/api/adfilm/job/:jobId', (req, res) => {
+  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
+  pruneAdJobs();
+  const job = adJobs.get(req.params.jobId);
+  if (!job || job.sid !== clipSid(req, res)) {
+    return res.status(404).json({ error: '找不到這次影片。請不要重按。' });
+  }
+  if (job.result) return res.json(job.result);
+  if (job.error) return res.status(400).json({ error: job.error });
+  return res.json({ jobId: job.id, status: job.phase === '已送出' ? 'queued' : 'running', phase: job.phase });
+});
+
+app.get('/api/adfilm/last', (req, res) => {
+  if (!isOwner(req)) return res.status(404).json({ error: '找不到這個功能。' });
+  const local = latestAdJob(clipSid(req, res));
+  if (local && local.result) return res.json({ ...local.result, recovered: true });
+  if (local && !local.error && !local.result) {
+    return res.json({
+      jobId: local.id,
+      status: local.phase === '已送出' ? 'queued' : 'running',
+      phase: local.phase || '已送出',
+      recovered: true,
+    });
+  }
+  if (local && local.error) return res.status(400).json({ error: local.error });
+  return res.status(404).json({ error: '沒有可取回的影片。請不要重按。' });
+});
+
 app.post('/api/clip/upload', express.raw({ type: () => true, limit: '30mb' }), (req, res) => {
   const sid = clipSid(req, res);
   const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || []);
@@ -3069,6 +3213,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, async () => {
   await initMail();
   resumeDramaJobs();
+  resumeAdJobs();
   setInterval(() => {
     clipPub.runDue().catch((err) => console.error('[Clip] 預約發送失敗', err.message));
   }, 60000);
