@@ -1430,9 +1430,24 @@ a.item {
   }
   .line-float {
     right: 12px;
-    bottom: 12px;
-    padding: 8px 12px 8px 8px;
-    font-size: 13px;
+    bottom: 16px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
   }
-  body { padding-bottom: 76px; }
+  .line-float span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .line-float svg { width: 24px; height: 24px; }
+  body { padding-bottom: 96px; }
 }

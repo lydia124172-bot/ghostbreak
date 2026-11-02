@@ -102,6 +102,47 @@ body.kit .kit-hero h1 .hero-keep {
   white-space: nowrap;
 }
 
+body.kit .kit-intro .actions {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+body.kit .hero-try {
+  margin: 0;
+  color: #6e6256;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+body.kit .hero-samples {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.kit .hero-samples figure {
+  margin: 0;
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+body.kit .hero-samples img,
+body.kit .hero-samples video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: contain;
+  background: #efe8df;
+}
+
+body.kit .hero-samples figcaption {
+  padding: 8px 10px 10px;
+  font-size: 13px;
+  color: #6e6256;
+}
+
 body.kit .kit-hero .lead {
   max-width: none;
   margin: 0;
@@ -461,6 +502,9 @@ body.kit .kit-copy {
 
 body.kit .tool-list .meta {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   padding: 4px 10px;
   border-radius: 999px;
@@ -469,6 +513,12 @@ body.kit .tool-list .meta {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+body.kit .tool-mark {
+  padding-left: 8px;
+  border-left: 1px solid #e2d3c2;
+  font-weight: 600;
 }
 
 body.kit .tool-list > li:not(.live) .meta {
@@ -1097,27 +1147,37 @@ body.kit .page-head .lead {
   body.kit .path-grid,
   body.kit .more-grid { gap: 12px; }
   body.kit .page-head h2 { font-size: 26px; }
-  body.kit .more-grid .card {
-    display: grid;
-    grid-template-columns: minmax(148px, 46%) minmax(0, 1fr);
-    align-items: center;
-  }
-  body.kit .more-grid .card-art {
-    aspect-ratio: 16 / 9;
-    width: 100%;
-    height: auto;
-    min-height: 0;
-    object-fit: cover;
-    object-position: center;
-  }
+  body.kit .path-grid,
+  body.kit .more-grid { grid-template-columns: 1fr; }
   body.kit .more-grid .card-body { padding: 12px 12px 12px 10px; }
   body.kit .more-grid .card-body h3 { font-size: 17px; margin-bottom: 4px; }
   body.kit .more-grid .card-body p { font-size: 13px; line-height: 1.5; margin: 0; }
   body.kit .tool-list > li {
-    display: grid;
-    grid-template-columns: 108px minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
   }
-  body.kit .kit-shot { aspect-ratio: auto; min-height: 148px; height: 100%; }
+  body.kit .kit-shot {
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+  }
+  body.kit .kit-shot img {
+    object-fit: contain;
+    object-position: center;
+  }
+  body.kit .more-grid .card {
+    display: flex;
+    flex-direction: column;
+  }
+  body.kit .more-grid .card-art,
+  body.kit .path-grid .card-art {
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+  }
   body.kit .kit-copy { padding: 12px; }
   body.kit .tool-list { grid-template-columns: 1fr; gap: 12px; }
   body.kit .tool-list h3 { font-size: 17px; margin: 8px 0 6px; }
@@ -1216,6 +1276,7 @@ body.kit .ad-note { color: #6e6256; font-size: 13px; margin: 8px 0 0; }
   body.kit .ad-offer,
   body.kit .ad-points,
   body.kit .ad-samples,
-  body.kit .ad-plans { grid-template-columns: 1fr; }
+  body.kit .ad-plans,
+  body.kit .hero-samples { grid-template-columns: 1fr; }
   body.kit .ad-price strong { font-size: 36px; }
 }

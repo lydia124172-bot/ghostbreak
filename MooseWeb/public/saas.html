@@ -8,8 +8,8 @@
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=look5" />
-  <link rel="stylesheet" href="/css/kit.css?v=12" />
+  <link rel="stylesheet" href="/css/site.css?v=look6" />
+  <link rel="stylesheet" href="/css/kit.css?v=18" />
 </head>
 <body class="kit">
   <header class="site-header">
@@ -98,11 +98,14 @@
         const label = live ? '已上線' : soon ? p.status : p.status;
         const href = live || soon ? (p.href || '/saas') : (p.href || '/hire');
         const btn = live ? '開始使用' : soon ? '查看說明' : '了解委託';
+        const trial = ['ugc-script', 'live-script', 'persona-ip', 'hot-ask', 'prompt-maker', 'hook-caption'].includes(p.id);
+        const seconds = p.id === 'storyclip';
+        const mark = trial ? '試用 1 次' : seconds ? '另扣秒數' : '扣點';
         return `
           <li class="${live ? 'live' : ''}">
             ${shotFor(p.id)}
             <div class="kit-copy">
-              <p class="meta">${i + 1}　${label}</p>
+              <p class="meta">${i + 1}　${label}<span class="tool-mark">${mark}</span></p>
               <h3>${escapeHtml(p.name)}</h3>
               <p>${escapeHtml(p.summary || '')}</p>
               <a class="btn ${live ? 'btn-copper' : 'btn-cream'}" href="${escapeHtml(href)}">${btn}</a>
