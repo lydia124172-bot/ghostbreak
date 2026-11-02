@@ -1067,6 +1067,21 @@ body.kit .card-body {
   padding: 14px 16px 18px;
 }
 
+body.kit .path-grid .card-body h3 {
+  margin: 4px 0 10px;
+}
+
+body.kit .path-grid .card-body p + p {
+  margin-top: 8px;
+}
+
+body.kit .path-grid .card-cta {
+  display: flex;
+  width: 100%;
+  margin-top: 16px;
+  box-sizing: border-box;
+}
+
 body.kit .more-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
