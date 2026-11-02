@@ -1,7 +1,7 @@
 const dressAgent = require('./dress-agent');
 
 const WORKFLOWS = [
-  { id: 'free', name: '自由對話', hint: '照你寫的做', ratio: '1:1', example: '木桌上放一瓶琥珀色精油，旁邊一枝乾燥尤加利，午後窗光，不要加任何文字。', prompt: 'Follow the guest request as one finished commercial graphic.' },
+  { id: 'free', name: '自己設計圖片', hint: '照你寫的句子做圖', ratio: '1:1', example: '木桌上放一瓶琥珀色精油，旁邊一枝乾燥尤加利，午後窗光，不要加任何文字。', prompt: 'Follow the guest request as one finished commercial graphic.' },
   { id: 'ad', name: '電商廣告', hint: '賣點與價格', ratio: '4:5', example: '精油廣告，主標題「睡前一滴」，價格 NT$680，按鈕「立即選購」。', prompt: 'A vertical e-commerce ad. Product is the hero. Include one benefit, the price only if the guest wrote one, and one call-to-action. Leave breathing room.' },
   { id: 'banner', name: '網站橫幅', hint: '寬幅主視覺', ratio: '16:9', example: '網站橫幅，左邊大標題「一滴就好睡」，右邊是精油瓶，背景留白。', prompt: 'A wide website hero banner. Headline on one side, product or scene on the other, readable at a glance on a desktop.' },
   { id: 'social', name: '社群貼文', hint: 'IG 與臉書', ratio: '1:1', example: '正方形貼文，精油瓶放中間，上面寫「今晚早點睡」。', prompt: 'A square social post for Instagram and Facebook. Strong first glance, short headline, subject clearly visible.' },
