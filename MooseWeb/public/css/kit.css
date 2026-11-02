@@ -89,6 +89,17 @@ body.kit .kit-hero h1 {
   font-size: clamp(40px, 5vw, 64px);
   line-height: 1.08;
   margin: 0;
+  line-break: strict;
+  word-break: keep-all;
+}
+
+body.kit .kit-hero h1 .hero-line {
+  display: block;
+}
+
+body.kit .kit-hero h1 .hero-keep {
+  display: inline-block;
+  white-space: nowrap;
 }
 
 body.kit .kit-hero .lead {
@@ -1118,4 +1129,93 @@ body.kit .page-head .lead {
   body.kit .kit-ai { width: 132px; padding: 12px; }
   body.kit .kit-ai-ring { width: 58px; height: 58px; }
   body.kit .kit-ai-ring span { width: 44px; height: 44px; font-size: 13px; }
+}
+
+body.kit .ad-offer {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-top: 8px;
+}
+
+body.kit .ad-price {
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 22px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+body.kit .ad-price strong {
+  font-size: 42px;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+body.kit .ad-points {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}
+
+body.kit .ad-points article,
+body.kit .ad-plans article {
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 18px;
+  padding: 16px;
+}
+
+body.kit .ad-points h2,
+body.kit .ad-samples h2,
+body.kit .ad-plans h2 {
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+
+body.kit .ad-samples {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.kit .ad-samples a {
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+body.kit .ad-samples img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+body.kit .ad-samples div { padding: 12px 14px 16px; }
+body.kit .ad-samples h2 { font-size: 16px; }
+body.kit .ad-samples p,
+body.kit .ad-points p,
+body.kit .ad-plans p { margin: 0; color: #4a4036; font-size: 14px; }
+
+body.kit .ad-plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.kit .ad-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+body.kit .ad-note { color: #6e6256; font-size: 13px; margin: 8px 0 0; }
+
+@media (max-width: 800px) {
+  body.kit .ad-offer,
+  body.kit .ad-points,
+  body.kit .ad-samples,
+  body.kit .ad-plans { grid-template-columns: 1fr; }
+  body.kit .ad-price strong { font-size: 36px; }
 }
