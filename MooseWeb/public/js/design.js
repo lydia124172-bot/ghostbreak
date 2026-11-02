@@ -134,11 +134,13 @@ function syncMode() {
   document.getElementById('textBox').classList.toggle('hidden', mode !== 'text');
   document.getElementById('mockupBox').classList.toggle('hidden', mode !== 'mockup');
   document.getElementById('styleBox').classList.toggle('hidden', mode === 'text');
+  const row = workflowRow();
+  const example = document.getElementById('workflowExample');
+  if (example) example.textContent = row && row.example ? `例如：${row.example}` : '';
   const note = document.getElementById('note');
   if (mode === 'text') note.placeholder = '可補充：字體維持粗體、顏色改成深紅';
-  else if (mode === 'inpaint') note.placeholder = '例如：把 logo 放進塗掉的位置，其他不要動';
-  else if (mode === 'mockup') note.placeholder = '可補充：模特兒站在白牆前，光線柔一點';
-  else note.placeholder = '例如：夏季亞麻襯衫廣告，主標題寫「透氣不黏」，價格 NT$1,280，按鈕寫「立即選購」';
+  else if (row && row.example) note.placeholder = row.example;
+  else note.placeholder = '寫這張圖要長什麼樣';
   applyLockedRatio();
   syncInpaint();
   syncStage();

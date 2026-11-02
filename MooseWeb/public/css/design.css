@@ -1,6 +1,7 @@
 .design-tools { display: grid; gap: 14px; margin-bottom: 18px; }
 .design-label { margin: 0 0 8px; font-size: 13px; color: var(--mist); }
 .design-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.design-example { margin: 8px 0 0; color: var(--mist); font-size: 14px; line-height: 1.6; }
 .design-chip {
   border: 1px solid var(--line);
   background: #fff;

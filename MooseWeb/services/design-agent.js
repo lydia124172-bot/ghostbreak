@@ -1,15 +1,15 @@
 const dressAgent = require('./dress-agent');
 
 const WORKFLOWS = [
-  { id: 'free', name: '自由對話', hint: '照你寫的做', ratio: '1:1', prompt: 'Follow the guest request as one finished commercial graphic.' },
-  { id: 'ad', name: '電商廣告', hint: '賣點與價格', ratio: '4:5', prompt: 'A vertical e-commerce ad. Product is the hero. Include one benefit, the price only if the guest wrote one, and one call-to-action. Leave breathing room.' },
-  { id: 'banner', name: '網站橫幅', hint: '寬幅主視覺', ratio: '16:9', prompt: 'A wide website hero banner. Headline on one side, product or scene on the other, readable at a glance on a desktop.' },
-  { id: 'social', name: '社群貼文', hint: 'IG 與臉書', ratio: '1:1', prompt: 'A square social post for Instagram and Facebook. Strong first glance, short headline, subject clearly visible.' },
-  { id: 'poster', name: '活動海報', hint: '時間地點標題', ratio: '3:4', prompt: 'An event poster. Hierarchy is title, date, place, then one visual. Type must stay legible.' },
-  { id: 'product', name: '商品主圖', hint: '乾淨棚拍', ratio: '1:1', prompt: 'A clean marketplace main image. Product centered, soft studio light, uncluttered background. No extra slogans unless the guest asked for text.' },
-  { id: 'text', name: '精準改字', hint: '只換圖裡的字', ratio: '', prompt: '' },
-  { id: 'inpaint', name: '局部重繪', hint: '塗掉的地方才改', ratio: '', prompt: '' },
-  { id: 'mockup', name: '場景套用', hint: '衣服、手機、包裝', ratio: '4:5', prompt: '' },
+  { id: 'free', name: '自由對話', hint: '照你寫的做', ratio: '1:1', example: '木桌上放一瓶琥珀色精油，旁邊一枝乾燥尤加利，午後窗光，不要加任何文字。', prompt: 'Follow the guest request as one finished commercial graphic.' },
+  { id: 'ad', name: '電商廣告', hint: '賣點與價格', ratio: '4:5', example: '精油廣告，主標題「睡前一滴」，價格 NT$680，按鈕「立即選購」。', prompt: 'A vertical e-commerce ad. Product is the hero. Include one benefit, the price only if the guest wrote one, and one call-to-action. Leave breathing room.' },
+  { id: 'banner', name: '網站橫幅', hint: '寬幅主視覺', ratio: '16:9', example: '網站橫幅，左邊大標題「一滴就好睡」，右邊是精油瓶，背景留白。', prompt: 'A wide website hero banner. Headline on one side, product or scene on the other, readable at a glance on a desktop.' },
+  { id: 'social', name: '社群貼文', hint: 'IG 與臉書', ratio: '1:1', example: '正方形貼文，精油瓶放中間，上面寫「今晚早點睡」。', prompt: 'A square social post for Instagram and Facebook. Strong first glance, short headline, subject clearly visible.' },
+  { id: 'poster', name: '活動海報', hint: '時間地點標題', ratio: '3:4', example: '市集海報，標題「週末手作市集」，時間「11/8 14:00」，地點「華山」。', prompt: 'An event poster. Hierarchy is title, date, place, then one visual. Type must stay legible.' },
+  { id: 'product', name: '商品主圖', hint: '乾淨棚拍', ratio: '1:1', example: '一瓶精油放在淺色背景正中，棚拍，不要加文字。', prompt: 'A clean marketplace main image. Product centered, soft studio light, uncluttered background. No extra slogans unless the guest asked for text.' },
+  { id: 'text', name: '精準改字', hint: '只換圖裡的字', ratio: '', example: '先上傳圖。點讀出的字，把「立即購買」換成「本週免運」。', prompt: '' },
+  { id: 'inpaint', name: '局部重繪', hint: '塗掉的地方才改', ratio: '', example: '先上傳圖，塗掉要改的位置，再寫：把這塊換成木桌。', prompt: '' },
+  { id: 'mockup', name: '場景套用', hint: '衣服、手機、包裝', ratio: '4:5', example: '先上傳圖，選 T-shirt，再寫：模特兒站在白牆前。', prompt: '' },
 ];
 
 const STYLES = [
@@ -139,7 +139,7 @@ async function readText(image) {
 
 function publicCatalog() {
   return {
-    workflows: WORKFLOWS.map(({ id, name, hint, ratio }) => ({ id, name, hint, ratio })),
+    workflows: WORKFLOWS.map(({ id, name, hint, ratio, example }) => ({ id, name, hint, ratio, example })),
     styles: STYLES.map(({ id, name }) => ({ id, name })),
     mockups: MOCKUPS.map(({ id, name }) => ({ id, name })),
     ratios: RATIOS.slice(),
