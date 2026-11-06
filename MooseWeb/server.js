@@ -394,7 +394,7 @@ app.get('/broll', (req, res) => {
   return sendPage(req, res, 'broll.html');
 });
 
-const BROLL_OPEN = process.env.BROLL_OPEN === '1';
+const BROLL_OPEN = process.env.BROLL_OPEN !== '0';
 const BROLL_DIR = path.join(__dirname, 'data', 'broll');
 const brollRunning = new Set();
 

@@ -1451,3 +1451,69 @@ a.item {
   .line-float svg { width: 24px; height: 24px; }
   body { padding-bottom: 96px; }
 }
+
+.broll-scenes {
+  display: grid;
+  gap: 14px;
+}
+.broll-scene {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: #fff;
+}
+.broll-scene-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+.broll-label {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #7a756c;
+}
+.broll-body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+.broll-scene .scene-query {
+  width: 100%;
+  min-width: 0;
+  font-size: 16px;
+}
+.broll-scene-actions {
+  margin-top: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.broll-scene-actions .btn {
+  min-height: 40px;
+}
+.broll-asset {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  word-break: break-word;
+}
+.broll-alt { margin: 8px 0 0; }
+#finder .admin-actions,
+#results .admin-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#findResults {
+  overflow-x: hidden;
+}
+@media (max-width: 800px) {
+  #previewVideo { max-width: 100%; border-radius: 10px; }
+  .broll-scene { padding: 14px; }
+  .broll-scene-actions .btn {
+    flex: 1 1 calc(50% - 8px);
+    text-align: center;
+  }
+}

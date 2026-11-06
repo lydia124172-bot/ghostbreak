@@ -23,6 +23,8 @@ services:
         value: https://moose.bafuholdings.com
       - key: DATA_DIR
         value: /var/data
+      - key: BROLL_OPEN
+        value: "1"
       - key: INQUIRE_EMAIL
         value: lydia3530@gmail.com
       - key: RESEND_FROM
@@ -30,4 +32,8 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: ADMIN_PASSWORD
+        sync: false
+      - key: PIXABAY_API_KEY
+        sync: false
+      - key: PEXELS_API_KEY
         sync: false

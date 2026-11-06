@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=look5" />
+  <link rel="stylesheet" href="/css/site.css?v=broll1" />
 </head>
 <body>
   <header class="site-header">
@@ -29,6 +29,21 @@
       <p class="lead">貼上<strong>改寫旁白稿</strong>後，每鏡會標「畫面上要出現什麼」+ <strong>純英文搜尋詞</strong>（不可中英混寫）。庫存站<strong>沒有卡通 IP</strong>（派大星、漫威等），請用「真人沮喪／開心」等通用畫面代替，以表上 <strong>畫面說明</strong> 為準挑片。錄音可自由改口。</p>
       <p class="lead">合成固定走有個性的女主播：咬字清楚，帶一點俏皮，像在播荒謬新聞。配樂分四段（低音懸疑、約 96 BPM 電子拍、空靈反思、結尾拉高）。每隔十多秒會插入故障字、黑白閃切或錯誤窗。幾乎不動的照片會推近並橫移。不用抒情輕音樂。</p>
       <p class="lead" id="apiHint"></p>
+    </section>
+
+    <section class="panel" id="finder">
+      <h2 style="font-size:1.15rem;margin:0 0 8px;">用一句話找可商用圖片或影片</h2>
+      <p class="lead">Pexels 和 Pixabay 會一起找。兩邊都是可商用授權。長片畫面以橫向為主。</p>
+      <label class="field" for="findText">畫面描述</label>
+      <textarea id="findText" class="form-input" rows="3" maxlength="200" placeholder="例如：咖啡廳裡兩個人開會"></textarea>
+      <div class="admin-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;">
+        <button type="button" class="btn btn-cream find-kind" data-kind="auto">圖片和影片</button>
+        <button type="button" class="btn btn-cream find-kind" data-kind="image">只要圖片</button>
+        <button type="button" class="btn btn-cream find-kind" data-kind="video">只要影片</button>
+        <button type="button" class="btn btn-copper" id="findBtn">開始找</button>
+      </div>
+      <p id="findMsg" class="lead"></p>
+      <div id="findResults"></div>
     </section>
 
     <form id="form" class="panel">
@@ -125,8 +140,7 @@
       mdLink.href = '/api/broll/' + job.id + '/shotlist';
       updateZipLink(job.id, job);
       updatePreview(job.id, job);
-      let html = '<table class="admin-grid" style="width:100%;font-size:14px;"><thead><tr>'
-        + '<th>#</th><th>秒</th><th>口播重點</th><th>畫面／主體</th><th>搜尋關鍵字</th><th>素材</th></tr></thead><tbody>';
+      let html = '<div class="broll-scenes">';
       for (const s of scenes) {
         const q = (s.search_query || '').replace(/"/g, '&quot;');
         const visual = (s.visual || '') + (s.subject_en ? ' · ' + s.subject_en : '');
@@ -134,42 +148,117 @@
         if (s.local_file && job.id) {
           asset = '<a href="/api/broll/' + job.id + '/file/' + encodeURIComponent(s.local_file) + '">'
             + s.local_file + '</a>';
-          if (s.matched_query) asset += '<br><span class="lead">命中：' + s.matched_query + '</span>';
+          if (s.matched_query) asset += '<span class="lead">命中：' + s.matched_query + '</span>';
         } else if (s.fetch_note) {
           asset = '<span class="lead">' + s.fetch_note + '</span>';
         }
-        if (s.query_warning) asset += '<br><span class="lead">' + s.query_warning + '</span>';
-        html += '<tr data-scene-index="' + s.index + '"><td>' + s.index + '</td><td>' + s.duration_sec + '</td><td>'
-          + (s.narration || '').replace(/</g, '&lt;') + '</td><td>'
-          + visual.replace(/</g, '&lt;') + '</td><td>'
-          + '<input class="form-input scene-query" type="text" value="' + q + '" style="min-width:12rem;font-size:13px;" />'
-          + '<div class="admin-actions" style="margin-top:6px;flex-wrap:wrap;gap:6px;">'
-          + '<button type="button" class="btn btn-cream btn-sm scene-preview">Pexels 預覽</button>'
+        if (s.query_warning) asset += '<span class="lead">' + s.query_warning + '</span>';
+        html += '<article class="broll-scene" data-scene-index="' + s.index + '">'
+          + '<header class="broll-scene-head"><span>第 ' + s.index + ' 鏡</span><span>' + s.duration_sec + ' 秒</span></header>'
+          + '<p class="broll-label">口播重點</p>'
+          + '<p class="broll-body">' + (s.narration || '').replace(/</g, '&lt;') + '</p>'
+          + '<p class="broll-label">畫面／主體</p>'
+          + '<p class="broll-body">' + visual.replace(/</g, '&lt;') + '</p>'
+          + '<label class="broll-label" for="scene-q-' + s.index + '">搜尋關鍵字</label>'
+          + '<input id="scene-q-' + s.index + '" class="form-input scene-query" type="text" value="' + q + '" inputmode="search" autocomplete="off" />'
+          + '<div class="admin-actions broll-scene-actions">'
+          + (cfgPexelsKey ? '<button type="button" class="btn btn-cream btn-sm scene-preview" data-site="pexels">Pexels</button>' : '')
+          + (cfgPixabay ? '<button type="button" class="btn btn-cream btn-sm scene-preview" data-site="pixabay">Pixabay</button>' : '')
+          + (!cfgPexelsKey && !cfgPixabay ? '<button type="button" class="btn btn-cream btn-sm scene-preview" data-site="pexels">Pexels 預覽</button>' : '')
           + '<button type="button" class="btn btn-copper btn-sm scene-ressearch">重新搜尋</button>'
           + '</div>'
-          + (s.search_query_alt ? '<p class="lead" style="margin:6px 0 0;">原備搜：' + s.search_query_alt + '</p>' : '')
-          + '</td><td class="scene-asset">' + asset + '</td></tr>';
+          + (s.search_query_alt ? '<p class="lead broll-alt">原備搜：' + String(s.search_query_alt).replace(/</g, '&lt;') + '</p>' : '')
+          + '<p class="broll-label">素材</p>'
+          + '<div class="scene-asset broll-asset">' + asset + '</div>'
+          + '</article>';
       }
-      html += '</tbody></table>';
+      html += '</div>';
       sceneTable.innerHTML = html;
     }
 
-    function stockPreviewUrl(query) {
+    function stockPreviewUrl(query, site) {
       const q = encodeURIComponent(query.trim());
-      if (cfgPixabay && !cfgPexelsKey) return 'https://pixabay.com/videos/search/' + q + '/';
+      if (site === 'pixabay') return 'https://pixabay.com/videos/search/' + q + '/';
       return 'https://www.pexels.com/search/videos/' + q + '/';
     }
 
+    let findKind = 'auto';
+    const findText = document.getElementById('findText');
+    const findBtn = document.getElementById('findBtn');
+    const findMsg = document.getElementById('findMsg');
+    const findResults = document.getElementById('findResults');
+    document.querySelectorAll('.find-kind').forEach((button) => {
+      button.addEventListener('click', () => {
+        findKind = button.getAttribute('data-kind') || 'auto';
+        document.querySelectorAll('.find-kind').forEach((item) => {
+          item.classList.toggle('btn-copper', item === button);
+          item.classList.toggle('btn-cream', item !== button);
+        });
+      });
+    });
+
+    function attr(value) {
+      return String(value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    function findCard(item) {
+      const media = item.kind === 'video'
+        ? '<video src="' + attr(item.fileUrl) + '" ' + (item.thumb ? 'poster="' + attr(item.thumb) + '" ' : '') + 'controls playsinline preload="metadata" style="width:100%;height:180px;object-fit:contain;background:#111;"></video>'
+        : '<img src="' + attr(item.thumb || item.fileUrl) + '" alt="" style="width:100%;height:180px;object-fit:cover;">';
+      return '<article style="border:1px solid rgba(0,0,0,.08);border-radius:12px;overflow:hidden;background:#fff;">'
+        + media
+        + '<div style="padding:10px 12px;">'
+        + '<p class="lead" style="margin:0;">' + item.source + ' · ' + item.license + '</p>'
+        + '<p style="margin:6px 0 0;font-size:14px;">' + String(item.title || '').replace(/</g, '&lt;') + '</p>'
+        + '<div class="admin-actions" style="margin-top:8px;gap:6px;">'
+        + '<a class="btn btn-copper btn-sm" href="' + attr(item.pageUrl) + '" target="_blank" rel="noopener">來源頁</a>'
+        + '<a class="btn btn-cream btn-sm" href="' + attr(item.fileUrl) + '" target="_blank" rel="noopener">開啟檔案</a>'
+        + '</div></div></article>';
+    }
+
+    function findGrid(title, items) {
+      if (!items.length) return '';
+      return '<h3 style="font-size:1rem;margin:16px 0 8px;">' + title + '</h3>'
+        + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">'
+        + items.map(findCard).join('') + '</div>';
+    }
+
+    findBtn.addEventListener('click', async () => {
+      const text = findText.value.trim();
+      if (!text) {
+        findMsg.textContent = '請先描述畫面。';
+        return;
+      }
+      findBtn.disabled = true;
+      findMsg.textContent = '正在同時找 Pexels 和 Pixabay…';
+      findResults.innerHTML = '';
+      const response = await fetch('/api/broll/find?q=' + encodeURIComponent(text) + '&kind=' + encodeURIComponent(findKind));
+      const data = await response.json().catch(() => ({}));
+      findBtn.disabled = false;
+      if (!response.ok) {
+        findMsg.textContent = data.error || '這次沒有找到。';
+        return;
+      }
+      findMsg.textContent = data.note || '';
+      if (data.warnings && data.warnings.length) findMsg.textContent += ' ' + data.warnings.join(' ');
+      if (!(data.images || []).length && !(data.videos || []).length) {
+        findResults.innerHTML = '<p class="lead">沒有對上的可商用素材。換個說法再試。</p>';
+        return;
+      }
+      findResults.innerHTML = findGrid('圖片', data.images || []) + findGrid('影片', data.videos || []);
+    });
+
     sceneTable.addEventListener('click', async (e) => {
       if (!jobId) return;
-      const row = e.target.closest('tr[data-scene-index]');
-      if (!row) return;
-      const sceneIndex = row.getAttribute('data-scene-index');
-      const input = row.querySelector('.scene-query');
+      const card = e.target.closest('[data-scene-index]');
+      if (!card) return;
+      const sceneIndex = card.getAttribute('data-scene-index');
+      const input = card.querySelector('.scene-query');
       const query = (input && input.value || '').trim();
       if (e.target.closest('.scene-preview')) {
         if (!query) return;
-        window.open(stockPreviewUrl(query), '_blank', 'noopener');
+        const site = e.target.closest('.scene-preview').getAttribute('data-site') || 'pexels';
+        window.open(stockPreviewUrl(query, site), '_blank', 'noopener');
         return;
       }
       if (!e.target.closest('.scene-ressearch')) return;
