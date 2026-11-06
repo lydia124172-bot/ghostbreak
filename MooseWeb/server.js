@@ -102,6 +102,7 @@ const pages = {
   '/patch': 'patch.html',
   '/model': 'model.html',
   '/account': 'account.html',
+  '/start': 'start.html',
   '/privacy': 'privacy.html',
   '/terms': 'terms.html',
   '/admin': 'admin.html',
@@ -418,6 +419,36 @@ function brollClipFile(id, name) {
 function brollApiOff(req, res) {
   return res.status(404).json({ error: '找不到這個功能。' });
 }
+
+app.get('/api/broll/jobs', (req, res) => {
+  if (!BROLL_OPEN) return brollApiOff(req, res);
+  if (!isOwner(req)) return res.status(401).json({ error: '請先登入後台' });
+  if (!fs.existsSync(BROLL_DIR)) return res.json({ jobs: [] });
+  const jobs = fs.readdirSync(BROLL_DIR)
+    .filter((id) => /^[a-f0-9]{16}$/.test(id))
+    .map((id) => {
+      const status = brollStatus(id);
+      if (!status) return null;
+      const clipsDir = path.join(BROLL_DIR, id, 'clips');
+      const clips = fs.existsSync(clipsDir)
+        ? fs.readdirSync(clipsDir).filter((name) => /^scene-\d{2}\.mp4$/.test(name))
+        : [];
+      const stamp = fs.statSync(path.join(BROLL_DIR, id, 'status.json')).mtimeMs;
+      return {
+        id,
+        status: status.status,
+        message: status.message || '',
+        progress: status.progress || 0,
+        clips,
+        preview_ready: Boolean(status.preview_ready),
+        updated: stamp,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.updated - a.updated)
+    .slice(0, 12);
+  res.json({ jobs });
+});
 
 app.get('/api/broll/config', (req, res) => {
   if (!BROLL_OPEN) return brollApiOff(req, res);
