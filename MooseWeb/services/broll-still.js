@@ -34,6 +34,7 @@ async function generateImage(scene) {
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
     {
       method: 'POST',
+      signal: AbortSignal.timeout(45000),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: promptFor(scene) }] }],

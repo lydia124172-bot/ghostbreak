@@ -1,7 +1,11 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { Readable } = require('stream');
+const { pipeline } = require('stream/promises');
 const { runFfmpeg } = require('./clip-export');
+
+const MAX_BYTES = 40 * 1024 * 1024;
 
 function configured() {
   return Boolean(String(process.env.PIXABAY_API_KEY || '').trim());
@@ -13,24 +17,12 @@ function searchPageUrl(query) {
 
 function pickVideoUrl(videos) {
   if (!videos || typeof videos !== 'object') return null;
-  const order = ['large', 'medium', 'small', 'tiny'];
-  const candidates = [];
-  for (const key of order) {
-    const row = videos[key];
-    if (row?.url && (row.width || 0) >= (row.height || 0)) {
-      candidates.push(row);
-    }
-  }
-  if (!candidates.length) {
-    for (const key of order) {
-      const row = videos[key];
-      if (row?.url) candidates.push(row);
-    }
-  }
-  if (!candidates.length) return null;
-  candidates.sort((a, b) => (b.height || 0) - (a.height || 0));
-  const hd = candidates.find((f) => (f.height || 0) <= 1080) || candidates[0];
-  return hd?.url || null;
+  const order = ['small', 'tiny', 'medium', 'large'];
+  const rows = order.map((key) => videos[key]).filter((row) => row?.url);
+  const landscape = rows.filter((row) => (row.width || 0) >= (row.height || 0));
+  const pool = landscape.length ? landscape : rows;
+  const compact = pool.find((row) => (row.height || 0) > 0 && (row.height || 0) <= 720);
+  return (compact || pool[0])?.url || null;
 }
 
 function clipSize(hit) {
@@ -105,7 +97,7 @@ async function searchVideos(query, perPage = 20, options = {}) {
   url.searchParams.set('safesearch', 'true');
   url.searchParams.set('order', 'popular');
   if (options.editorsChoice) url.searchParams.set('editors_choice', 'true');
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Pixabay ${res.status}`);
   return Array.isArray(data.hits) ? data.hits : [];
@@ -131,6 +123,7 @@ async function frameAccepts(filePath, scene) {
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
         {
           method: 'POST',
+          signal: AbortSignal.timeout(20000),
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{
@@ -146,25 +139,34 @@ async function frameAccepts(filePath, scene) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) continue;
       const text = (data.candidates?.[0]?.content?.parts || []).map((part) => part.text || '').join(' ').trim();
-      if (/^yes\b/i.test(text)) return true;
       if (/^no\b/i.test(text)) return false;
+      if (/^yes\b/i.test(text)) return true;
     }
-    return false;
+    return true;
   } catch {
-    return false;
+    return true;
   } finally {
     try { fs.unlinkSync(frame); } catch { /* 略過 */ }
   }
 }
 
 async function downloadFile(fileUrl, destPath) {
-  const res = await fetch(fileUrl);
+  const res = await fetch(fileUrl, { signal: AbortSignal.timeout(45000) });
   if (!res.ok) throw new Error(`下載失敗 ${res.status}`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length < 50000) throw new Error('檔案太小，可能不是有效影片');
-  if (buf.length > 120 * 1024 * 1024) throw new Error('影片超過 120MB，請換一支或手動下載');
+  const advertised = Number(res.headers.get('content-length') || 0);
+  if (advertised > MAX_BYTES) throw new Error('影片太大，改抓較小的一支');
   fs.mkdirSync(path.dirname(destPath), { recursive: true });
-  fs.writeFileSync(destPath, buf);
+  try {
+    await pipeline(Readable.fromWeb(res.body), fs.createWriteStream(destPath));
+  } catch (err) {
+    try { fs.unlinkSync(destPath); } catch { /* 略過 */ }
+    throw err;
+  }
+  const size = fs.statSync(destPath).size;
+  if (size < 50000 || size > MAX_BYTES) {
+    try { fs.unlinkSync(destPath); } catch { /* 略過 */ }
+    throw new Error(size > MAX_BYTES ? '影片太大，改抓較小的一支' : '檔案太小，可能不是有效影片');
+  }
   return destPath;
 }
 
@@ -188,7 +190,7 @@ async function fetchSceneVideo(scene, clipsDir, fileName, options = {}) {
       .map((hit) => ({ hit, score: scoreHit(hit, query) }))
       .filter((row) => row.score >= 40)
       .sort((a, b) => b.score - a.score);
-    const candidates = ranked.slice(0, 3);
+    const candidates = ranked.slice(0, 1);
     for (const row of candidates) {
       const hit = row.hit;
       const fileUrl = pickVideoUrl(hit.videos);
