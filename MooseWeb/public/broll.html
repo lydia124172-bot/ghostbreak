@@ -87,12 +87,24 @@
     const previewVideo = document.getElementById('previewVideo');
     const previewDl = document.getElementById('previewDl');
     const renderBtn = document.getElementById('renderBtn');
+    const TOKEN_KEY = 'moose_admin_token';
+    function ownerToken() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
+    function withToken(url) {
+      const token = ownerToken();
+      if (!token) return url;
+      return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'token=' + encodeURIComponent(token);
+    }
+    function ownerFetch(url, opts) {
+      const options = opts || {};
+      const headers = Object.assign({}, options.headers || {}, { Authorization: 'Bearer ' + ownerToken() });
+      return fetch(url, Object.assign({}, options, { headers: headers, credentials: 'same-origin' }));
+    }
     let jobId = null;
     let cfgStock = false;
     let cfgPixabay = false;
     let cfgPexelsKey = false;
 
-    fetch('/api/broll/config')
+    ownerFetch('/api/broll/config')
       .then((r) => r.json())
       .then((cfg) => {
         cfgStock = Boolean(cfg.stock_api);
@@ -112,7 +124,7 @@
     function updatePreview(id, job) {
       if (job.preview_ready && id) {
         previewBox.classList.remove('hidden');
-        const url = '/api/broll/' + id + '/file/broll-preview.mp4?v=' + Date.now();
+        const url = withToken('/api/broll/' + id + '/file/broll-preview.mp4?v=' + Date.now());
         previewVideo.muted = false;
         previewVideo.volume = 1;
         previewVideo.src = url;
@@ -125,7 +137,7 @@
     function updateZipLink(id, job) {
       const n = (job.scenes || []).filter((s) => s.local_file).length;
       if (n > 0 && id) {
-        zipLink.href = '/api/broll/' + id + '/clips.zip';
+        zipLink.href = withToken('/api/broll/' + id + '/clips.zip');
         zipLink.classList.remove('hidden');
         zipLink.textContent = '打包下載 clips.zip（' + n + ' 支）';
       } else {
@@ -137,7 +149,7 @@
       const scenes = job.scenes || [];
       if (!scenes.length) return;
       results.classList.remove('hidden');
-      mdLink.href = '/api/broll/' + job.id + '/shotlist';
+      mdLink.href = withToken('/api/broll/' + job.id + '/shotlist');
       updateZipLink(job.id, job);
       updatePreview(job.id, job);
       let html = '<div class="broll-scenes">';
@@ -146,7 +158,7 @@
         const visual = (s.visual || '') + (s.subject_en ? ' · ' + s.subject_en : '');
         let asset = '—';
         if (s.local_file && job.id) {
-          asset = '<a href="/api/broll/' + job.id + '/file/' + encodeURIComponent(s.local_file) + '">'
+          asset = '<a href="' + withToken('/api/broll/' + job.id + '/file/' + encodeURIComponent(s.local_file)) + '">'
             + s.local_file + '</a>';
           if (s.matched_query) asset += '<span class="lead">命中：' + s.matched_query + '</span>';
         } else if (s.fetch_note) {
@@ -232,7 +244,7 @@
       findBtn.disabled = true;
       findMsg.textContent = '正在同時找 Pexels 和 Pixabay…';
       findResults.innerHTML = '';
-      const response = await fetch('/api/broll/find?q=' + encodeURIComponent(text) + '&kind=' + encodeURIComponent(findKind));
+      const response = await ownerFetch('/api/broll/find?q=' + encodeURIComponent(text) + '&kind=' + encodeURIComponent(findKind));
       const data = await response.json().catch(() => ({}));
       findBtn.disabled = false;
       if (!response.ok) {
@@ -269,7 +281,7 @@
       const btn = e.target.closest('.scene-ressearch');
       btn.disabled = true;
       msg.textContent = '第 ' + sceneIndex + ' 鏡：重新搜尋…';
-      const response = await fetch('/api/broll/' + jobId + '/scene/' + sceneIndex + '/ressearch', {
+      const response = await ownerFetch('/api/broll/' + jobId + '/scene/' + sceneIndex + '/ressearch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
@@ -290,7 +302,7 @@
       fetchAllBtn.disabled = true;
       renderBtn.disabled = true;
       const timer = setInterval(async () => {
-        const response = await fetch('/api/broll/' + id);
+        const response = await ownerFetch('/api/broll/' + id);
         const job = await response.json();
         msg.textContent = (job.message || '處理中') + '　' + (job.progress || 0) + '%';
         if (job.status === 'rendering' || (job.scenes && job.scenes.length)) {
@@ -319,7 +331,7 @@
       if (!jobId) return;
       renderBtn.disabled = true;
       msg.textContent = '開始合成預覽片…';
-      const response = await fetch('/api/broll/' + jobId + '/render', { method: 'POST' });
+      const response = await ownerFetch('/api/broll/' + jobId + '/render', { method: 'POST' });
       const data = await response.json();
       if (!response.ok) {
         renderBtn.disabled = false;
@@ -340,7 +352,7 @@
       }
       fetchAllBtn.disabled = true;
       msg.textContent = '開始批量下載…';
-      const response = await fetch('/api/broll/' + jobId + '/download-all', { method: 'POST' });
+      const response = await ownerFetch('/api/broll/' + jobId + '/download-all', { method: 'POST' });
       const data = await response.json();
       if (!response.ok) {
         fetchAllBtn.disabled = false;
@@ -360,7 +372,7 @@
       submit.disabled = true;
       results.classList.add('hidden');
       msg.textContent = '送出中…';
-      const response = await fetch('/api/broll', {
+      const response = await ownerFetch('/api/broll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ script: text }),
@@ -378,7 +390,7 @@
     const existing = new URLSearchParams(location.search).get('job');
     if (existing) {
       jobId = existing;
-      fetch('/api/broll/' + existing)
+      ownerFetch('/api/broll/' + existing)
         .then((r) => r.json())
         .then((job) => {
           if (job.status === 'done') renderScenes({ ...job, id: existing });
