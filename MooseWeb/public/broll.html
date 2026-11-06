@@ -322,7 +322,12 @@
           submit.disabled = false;
           fetchAllBtn.disabled = !cfgStock;
           renderBtn.disabled = false;
-          msg.textContent = job.error || job.message || '失敗';
+          if (response.status === 404) {
+            history.replaceState(null, '', '/broll');
+            msg.textContent = '剛才那次分鏡已不在。請再按一次「分析、下載並合成預覽片」。';
+          } else {
+            msg.textContent = job.error || job.message || '失敗';
+          }
         }
       }, 1200);
     }

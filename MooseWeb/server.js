@@ -395,7 +395,7 @@ app.get('/broll', (req, res) => {
 });
 
 const BROLL_OPEN = process.env.BROLL_OPEN !== '0';
-const BROLL_DIR = path.join(__dirname, 'data', 'broll');
+const BROLL_DIR = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'broll');
 const brollRunning = new Set();
 
 function brollStatus(id) {
