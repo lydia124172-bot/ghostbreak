@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>麋鹿網 — AI 商品行銷工具</title>
-  <meta name="description" content="一張商品照片，做出完整的 AI 商品廣告。從文案、商品圖片，到短影片、換裝與數字人，一個地方完成。" />
+  <meta name="description" content="一張商品照片，做出完整的 AI 商品廣告。從商品文案、商品圖片，到短影片、換裝與對嘴，一個地方完成。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -33,7 +33,7 @@
         <div class="kit-intro">
           <p class="kicker">麋鹿網｜AI 商品行銷工具</p>
           <h1 id="heroTitle">一張商品照片，做出完整的 AI 商品廣告。</h1>
-          <p class="hero-sub">從文案、商品圖片，到短影片、換裝與數字人，一個地方完成。</p>
+          <p class="hero-sub">從商品文案、商品圖片，到短影片、換裝與對嘴，一個地方完成。</p>
           <div class="actions">
             <a class="btn btn-copper" href="/account">立即開始製作</a>
             <a class="btn btn-ghost" href="#results">看看實際成果</a>
@@ -267,13 +267,13 @@
         <p class="lead">買了之後，文案可以一直寫。點數用在圖片、短片、換裝與對嘴。</p>
       </section>
       <div class="home-point-uses">
-        <p>可以依需求混合使用</p>
+        <p>點數可以做什麼？</p>
         <ul>
-          <li>AI 圖片、換裝、改圖、設計：1 點／次</li>
-          <li>5 秒影片：3 點／次</li>
-          <li>10 秒影片：6 點／次</li>
-          <li>15 秒影片：9 點／次</li>
-          <li>數字人：1 點／秒</li>
+          <li>圖片／換裝／改圖／設計出圖：1 點</li>
+          <li>5 秒影片：3 點</li>
+          <li>10 秒影片：6 點</li>
+          <li>15 秒影片：9 點</li>
+          <li>數字人對嘴：1 秒 1 點</li>
         </ul>
       </div>
       <section class="home-plans" id="planGrid" aria-live="polite">
@@ -368,18 +368,10 @@
       function yieldHtml(credits) {
         var n = Number(credits);
         if (!Number.isFinite(n) || n <= 0) return '';
-        function item(cost, name, unit) {
-          var times = Math.floor(n / cost);
-          var word = n % cost === 0 ? '可做 ' : '約可做 ';
-          return '<li>單獨做' + name + '，' + word + times + ' ' + unit + '</li>';
-        }
-        return '<p class="home-point-head">' + n + ' 點／30 日</p><ul class="home-yield">'
-          + item(1, 'AI 圖片', '次')
-          + item(3, '5 秒影片', '次')
-          + item(6, '10 秒影片', '次')
-          + item(9, '15 秒影片', '次')
-          + item(1, '數字人', '秒')
-          + '</ul>';
+        var times = Math.floor(n / 3);
+        var word = n % 3 === 0 ? '可製作 ' : '約可製作 ';
+        return '<p class="home-point-head">點數可以做什麼？</p>'
+          + '<p>例如單獨製作 5 秒影片，' + word + times + ' 次；也可以混合使用圖片、影片與對嘴。</p>';
       }
 
       function planCard(plan, recommended) {
