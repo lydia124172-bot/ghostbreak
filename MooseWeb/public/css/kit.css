@@ -1444,3 +1444,326 @@ body.kit .ad-note { color: #6e6256; font-size: 13px; margin: 8px 0 0; }
   }
   body.kit .ad-price strong { font-size: 36px; }
 }
+
+body.kit .home-hero {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
+  gap: 36px;
+  align-items: center;
+  padding: 18px 0 8px;
+}
+
+body.kit .home-hero .kit-intro {
+  grid-area: auto;
+  min-width: 0;
+}
+
+body.kit .home-hero h1 {
+  font-size: clamp(34px, 4.4vw, 52px);
+  line-height: 1.16;
+  max-width: 14em;
+  word-break: normal;
+  line-break: auto;
+}
+
+body.kit .home-hero .hero-sub {
+  max-width: 36em;
+  font-size: 18px;
+}
+
+body.kit .home-hero .actions {
+  margin-top: 22px;
+}
+
+body.kit .home-hero .btn-ghost {
+  background: #fffdf8;
+  border: 1px solid #c4b09a;
+  color: #3a2e24;
+}
+
+body.kit .home-hero-stage {
+  margin: 0;
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(70, 50, 30, 0.08);
+}
+
+body.kit .home-hero-stage video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 9 / 16;
+  max-height: min(72vh, 640px);
+  object-fit: contain;
+  background: #efe8df;
+}
+
+body.kit .home-hero-stage figcaption {
+  padding: 12px 16px 14px;
+  color: #6e6256;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+body.kit .page-head {
+  padding: 64px 0 18px;
+}
+
+body.kit .page-head h2,
+body.kit .home-tools > h2,
+body.kit .home-close h2 {
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.25;
+  margin: 0 0 8px;
+}
+
+body.kit .home-demos,
+body.kit .home-intent,
+body.kit .home-tool-grid,
+body.kit .home-steps,
+body.kit .home-plans,
+body.kit .home-why {
+  min-width: 0;
+}
+
+body.kit .home-demos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+body.kit .home-demo {
+  display: flex;
+  flex-direction: column;
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 18px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+body.kit .home-demo img,
+body.kit .home-demo video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 520px;
+  object-fit: contain;
+  background: #efe8df;
+}
+
+body.kit .home-demo video {
+  aspect-ratio: 9 / 16;
+}
+
+body.kit .home-demo-copy {
+  padding: 14px 16px 16px;
+}
+
+body.kit .home-demo h3,
+body.kit .home-tool h3,
+body.kit .home-intent h3,
+body.kit .home-steps h3 {
+  margin: 4px 0 6px;
+  font-size: 20px;
+}
+
+body.kit .home-demo p,
+body.kit .home-tool p,
+body.kit .home-intent p,
+body.kit .home-steps p,
+body.kit .home-why {
+  margin: 0;
+  color: #6a5e52;
+  line-height: 1.6;
+}
+
+body.kit .home-cost {
+  margin-top: 8px;
+  color: #8a5a38;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+body.kit .home-intent {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.kit .home-intent-card,
+body.kit .home-tool {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 18px;
+  padding: 16px;
+  color: inherit;
+}
+
+body.kit .home-intent-card:hover,
+body.kit .home-tool:hover {
+  border-color: #c4a484;
+}
+
+body.kit .home-tools {
+  margin-top: 28px;
+  scroll-margin-top: 16px;
+}
+
+body.kit .home-tools > p {
+  margin: 0 0 12px;
+  color: #6e6256;
+}
+
+body.kit .home-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.kit .home-tool {
+  padding: 0;
+  overflow: hidden;
+}
+
+body.kit .home-tool img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: #efe8df;
+}
+
+body.kit .home-tool h3,
+body.kit .home-tool p,
+body.kit .home-tool .meta {
+  margin-left: 14px;
+  margin-right: 14px;
+}
+
+body.kit .home-tool h3 { margin-top: 12px; }
+body.kit .home-tool p:last-child { margin-bottom: 14px; }
+
+body.kit .home-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+body.kit .home-steps li {
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 18px;
+  padding: 16px;
+}
+
+body.kit .home-steps span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #6f4b32;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+body.kit .home-subhead {
+  margin: 22px 0 10px;
+  font-size: 20px;
+}
+
+body.kit .home-plans article .home-next {
+  margin-top: 12px;
+}
+
+body.kit .home-why {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+}
+
+body.kit .home-why li {
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 18px;
+  padding: 16px 16px 16px 42px;
+  position: relative;
+}
+
+body.kit .home-why li::before {
+  content: "✓";
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  color: #6f4b32;
+  font-weight: 700;
+}
+
+body.kit a:focus-visible,
+body.kit button:focus-visible,
+body.kit summary:focus-visible {
+  outline: 2px solid #6f4b32;
+  outline-offset: 3px;
+}
+
+body.kit #results,
+body.kit #intent,
+body.kit #can,
+body.kit #steps,
+body.kit #free,
+body.kit #plans,
+body.kit #why,
+body.kit #faq,
+body.kit #start {
+  scroll-margin-top: 18px;
+}
+
+@media (max-width: 980px) {
+  body.kit .home-intent { grid-template-columns: 1fr 1fr; }
+  body.kit .home-steps { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 800px) {
+  body.kit .home-hero {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  body.kit .home-hero h1 { font-size: 32px; max-width: none; }
+  body.kit .home-hero .actions { display: grid; }
+  body.kit .home-hero .btn,
+  body.kit .home-next,
+  body.kit .home-close .btn,
+  body.kit .home-plans .btn {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  body.kit .home-hero-stage video,
+  body.kit .home-demo img,
+  body.kit .home-demo video {
+    max-height: 72vh;
+  }
+  body.kit .home-demos,
+  body.kit .home-intent,
+  body.kit .home-tool-grid,
+  body.kit .home-plans,
+  body.kit .home-why {
+    grid-template-columns: 1fr;
+  }
+  body.kit .page-head { padding: 40px 0 14px; }
+  body.kit .home-demo:first-child { width: 100%; }
+}
