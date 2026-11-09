@@ -1519,6 +1519,7 @@ body.kit .home-close h2 {
   font-size: clamp(26px, 3vw, 36px);
   line-height: 1.25;
   margin: 0 0 8px;
+  color: #8a5a38;
 }
 
 body.kit .home-demos,
