@@ -1547,6 +1547,15 @@ body.kit .home-demo {
   min-width: 0;
 }
 
+body.kit .home-demo-source {
+  grid-column: 1 / -1;
+}
+
+body.kit .home-demo-source img {
+  max-height: 640px;
+  object-fit: contain;
+}
+
 body.kit .home-demo img,
 body.kit .home-demo video {
   display: block;
