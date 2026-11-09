@@ -3897,8 +3897,9 @@ body.home #results .home-shot video {
   max-width: none;
   height: auto;
   max-height: none;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
+  aspect-ratio: 9 / 16;
+  object-fit: contain;
+  object-position: center top;
   border-radius: 12px;
   background: #111318;
   box-shadow: none;
