@@ -1869,4 +1869,66 @@ body.kit #start {
   body.kit .home-offer .btn { width: 100%; box-sizing: border-box; }
   body.kit .page-head { padding: 40px 0 14px; }
   body.kit .home-demo:first-child { width: 100%; }
+  body.kit .header-start { display: none; }
+}
+
+body.kit .header-start {
+  margin-left: 12px;
+  padding: 8px 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+body.kit .home-trust,
+body.kit .home-bridge {
+  margin: 14px 0 0;
+  color: #6a5e52;
+  line-height: 1.6;
+}
+
+body.kit .home-job {
+  margin-top: 8px;
+  color: #3a2e24;
+}
+
+body.kit .home-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 0;
+}
+
+body.kit .home-chips a {
+  border: 1px solid #eadfd0;
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: #3a2e24;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+body.kit .home-plan-status {
+  grid-column: 1 / -1;
+}
+
+body.kit .is-skel span {
+  display: block;
+  height: 14px;
+  margin: 12px 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f3ebe3 25%, #fffdf8 50%, #f3ebe3 75%);
+  background-size: 200% 100%;
+  animation: home-skel 1.2s ease-in-out infinite;
+}
+
+body.kit .is-skel span:first-child { width: 42%; height: 18px; }
+body.kit .is-skel span:nth-child(2) { width: 70%; }
+
+@media (prefers-reduced-motion: reduce) {
+  body.kit .is-skel span { animation: none; }
+}
+
+@keyframes home-skel {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }
