@@ -10,9 +10,9 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/site.css?v=look6" />
-  <link rel="stylesheet" href="/css/kit.css?v=29" />
+  <link rel="stylesheet" href="/css/kit.css?v=31" />
 </head>
-<body class="kit">
+<body class="kit home">
   <header class="site-header">
     <div class="wrap header-row">
       <a class="brand" href="/">
@@ -40,7 +40,11 @@
             <a class="btn btn-copper" href="/account">立即開始製作</a>
             <a class="btn btn-ghost" href="#results">看看實際成果</a>
           </div>
-          <p class="home-trust">免費試用 AI 文案｜成功生成才扣點｜無自動續訂</p>
+          <ul class="home-trust">
+            <li>免費試用 AI 文案</li>
+            <li>成功生成才扣點</li>
+            <li>無自動續訂</li>
+          </ul>
         </div>
         <figure class="home-hero-stage">
           <video
@@ -61,44 +65,42 @@
       </div>
     </section>
 
-    <div class="wrap">
-      <section class="page-head" id="results">
+    <section class="home-band" id="results">
+      <div class="wrap">
+      <section class="page-head">
         <p class="kicker">實際成果</p>
         <h2>一張商品照，直接變成廣告。</h2>
         <p class="lead">看看麋鹿網實際做出的商品廣告與 AI 素材。</p>
       </section>
-      <div class="home-demos">
-        <article class="home-demo home-demo-source">
-          <img src="/images/kit/ad-still.jpg" alt="做成廣告前的商品照片" width="540" height="960" />
-          <div class="home-demo-copy">
-            <p class="meta">原圖</p>
-            <h3>從一張商品照開始</h3>
-          </div>
+      <div class="home-showcase">
+        <article class="home-case">
+          <figure class="home-shot">
+            <img src="/images/kit/ad-still.jpg" alt="做成廣告前的商品照片" width="540" height="960" />
+            <figcaption>原圖</figcaption>
+          </figure>
+          <p class="home-arrow" aria-hidden="true">→</p>
+          <figure class="home-shot">
+            <video src="/videos/ad-10.mp4" poster="/images/kit/ad-still.jpg" autoplay muted loop playsinline controls preload="metadata" width="540" height="960" aria-label="旁白式商品廣告，約 10 秒"></video>
+            <figcaption>商品廣告</figcaption>
+          </figure>
         </article>
-        <article class="home-demo">
-          <video src="/videos/ad-10.mp4" poster="/images/kit/ad-still.jpg" autoplay muted loop playsinline controls preload="metadata" width="540" height="960" aria-label="旁白式商品廣告，約 10 秒"></video>
-          <div class="home-demo-copy">
-            <p class="meta">商品廣告</p>
-            <h3>旁白式，約 10 秒</h3>
-          </div>
-        </article>
-        <article class="home-demo">
-          <video src="/videos/ad-talk.mp4" poster="/images/kit/ad-talk.jpg" autoplay muted loop playsinline controls preload="metadata" width="540" height="960" aria-label="對話式商品廣告，約 15 秒"></video>
-          <div class="home-demo-copy">
-            <p class="meta">商品廣告</p>
-            <h3>對話式，約 15 秒</h3>
-          </div>
-        </article>
-        <article class="home-demo">
-          <video src="/story-demo/demo.mp4" poster="/story-demo/poster.jpg" muted loop playsinline controls preload="none" width="540" height="960" aria-label="劇本廣告示範片"></video>
-          <div class="home-demo-copy">
-            <p class="meta">商品廣告</p>
-            <h3>示範片</h3>
-          </div>
-        </article>
+        <div class="home-case-more">
+          <figure class="home-shot">
+            <video src="/videos/ad-talk.mp4" poster="/images/kit/ad-talk.jpg" autoplay muted loop playsinline controls preload="metadata" width="540" height="960" aria-label="對話式商品廣告，約 15 秒"></video>
+            <figcaption>對話式商品廣告</figcaption>
+          </figure>
+          <figure class="home-shot">
+            <video src="/story-demo/demo.mp4" poster="/story-demo/poster.jpg" muted loop playsinline controls preload="none" width="540" height="960" aria-label="劇本廣告示範片"></video>
+            <figcaption>示範片</figcaption>
+          </figure>
+        </div>
       </div>
+      </div>
+    </section>
 
-      <section class="page-head" id="intent">
+    <section class="home-band home-band-alt" id="intent">
+      <div class="wrap">
+      <section class="page-head">
         <p class="kicker">從目的開始</p>
         <h2>你今天想做什麼？</h2>
       </section>
@@ -124,41 +126,49 @@
           <p class="home-job">把文案、圖片和影片收成一份廣告素材。</p>
         </a>
       </div>
+      </div>
+    </section>
 
-      <section class="page-head" id="steps">
+    <section class="home-band" id="steps">
+      <div class="wrap">
+      <section class="page-head">
         <p class="kicker">怎麼開始</p>
         <h2>從一張商品照片開始。</h2>
       </section>
       <ol class="home-steps">
         <li>
-          <span>1</span>
-          <h3>上傳商品</h3>
+          <span>01</span>
+          <h3>商品照</h3>
           <p>先放上一張商品照片。</p>
         </li>
         <li>
-          <span>2</span>
-          <h3>生成文案</h3>
+          <span>02</span>
+          <h3>AI 文案</h3>
           <p>寫口播、直播稿或廣告要講的話。</p>
         </li>
         <li>
-          <span>3</span>
-          <h3>製作圖片</h3>
+          <span>03</span>
+          <h3>商品圖片</h3>
           <p>換裝、改圖，或做成廣告圖。</p>
         </li>
         <li>
-          <span>4</span>
-          <h3>生成短影片</h3>
+          <span>04</span>
+          <h3>商品影片</h3>
           <p>做成商品短片、讓圖動起來或對嘴。</p>
         </li>
         <li>
-          <span>5</span>
-          <h3>拿去發布</h3>
+          <span>05</span>
+          <h3>發布</h3>
           <p>下載後自己發到社群。</p>
         </li>
       </ol>
       <p class="home-bridge">不用重新拍攝整套素材，也不用在不同 AI 工具之間來回切換。</p>
+      </div>
+    </section>
 
-      <section class="page-head" id="can">
+    <section class="home-band home-band-alt" id="can">
+      <div class="wrap">
+      <section class="page-head">
         <p class="kicker">功能</p>
         <h2>MooseWeb 可以幫你完成什麼</h2>
       </section>
@@ -169,13 +179,13 @@
           <p class="home-chips"><a href="/script">真人口播腳本</a><a href="/live">直播稿</a><a href="/hook">爆文鉤子</a></p>
           <a href="/saas">查看完整工具清單</a>
         </article>
-        <article class="home-offer" id="tools-image">
+        <article class="home-offer home-offer-lg" id="tools-image">
           <h3>商品圖片</h3>
           <p>把商品照片變成可以直接使用的廣告素材。</p>
           <p class="home-chips"><a href="/dress">換裝</a><a href="/edit">改圖</a><a href="/design">設計出圖</a></p>
           <a href="/saas">查看完整工具清單</a>
         </article>
-        <article class="home-offer" id="tools-video">
+        <article class="home-offer home-offer-lg" id="tools-video">
           <h3>商品影片</h3>
           <p>一張商品圖做成 5 到 15 秒短片。</p>
           <p class="home-chips"><a href="/clip">商品短片</a><a href="/move">讓圖動起來</a></p>
@@ -188,8 +198,12 @@
           <a href="/saas">查看完整工具清單</a>
         </article>
       </div>
+      </div>
+    </section>
 
-      <section class="page-head" id="why">
+    <section class="home-band" id="why">
+      <div class="wrap">
+      <section class="page-head">
         <p class="kicker">購買理由</p>
         <h2>為什麼選 MooseWeb</h2>
       </section>
@@ -211,55 +225,32 @@
           <p>生成失敗不扣點。</p>
         </li>
       </ul>
-      <p class="home-bridge">你不是在買一堆 AI 工具，而是在買一套可以直接產出內容的工作流程。</p>
+      <p class="home-quote">你不是在買一堆 AI 工具，而是在買一套可以直接產出內容的工作流程。</p>
+      </div>
+    </section>
 
-      <section class="page-head" id="free">
+    <section class="home-band home-band-free" id="free">
+      <div class="wrap home-free">
         <p class="kicker">免費體驗</p>
         <h2>先免費試，再決定要不要買。</h2>
-        <p class="lead">不用先付款，先做出第一個結果。下面 6 個 AI 文案工具，沒買方案時各能試 1 次。圖片、短片、換裝、改圖、設計、對嘴不在免費試用裡。</p>
-      </section>
-      <section class="home-tool-grid">
-        <a class="home-tool" href="/script">
-          <img src="/images/kit/home-script.jpg?v=5" alt="" width="640" height="400" />
-          <p class="meta">試用 1 次</p>
-          <h3>真人口播腳本</h3>
-          <p>約 30 秒口播稿。對嘴出片另外計算。</p>
-        </a>
-        <a class="home-tool" href="/live">
-          <img src="/images/kit/home-live.jpg?v=5" alt="" width="640" height="400" />
-          <p class="meta">試用 1 次</p>
-          <h3>直播稿</h3>
-          <p>一次寫十二則可開播的講稿。</p>
-        </a>
-        <a class="home-tool" href="/ip">
-          <img src="/images/kit/home-ip.jpg?v=5" alt="" width="640" height="400" />
-          <p class="meta">試用 1 次</p>
-          <h3>個人 IP</h3>
-          <p>四週每日攻略，並看各平台怎麼拍。</p>
-        </a>
-        <a class="home-tool" href="/hot">
-          <img src="/images/kit/home-hot.jpg?v=5" alt="" width="640" height="400" />
-          <p class="meta">試用 1 次</p>
-          <h3>熱問短片</h3>
-          <p>依行業整理可拍的題，可下載 PDF。</p>
-        </a>
-        <a class="home-tool" href="/prompt">
-          <img src="/images/kit/home-prompt.jpg?v=5" alt="" width="640" height="400" />
-          <p class="meta">試用 1 次</p>
-          <h3>提示詞產生器</h3>
-          <p>一句中文，寫成圖片、影片、文案提示詞。</p>
-        </a>
-        <a class="home-tool" href="/hook">
-          <img src="/images/kit/home-hook.jpg?v=5" alt="" width="640" height="400" />
-          <p class="meta">試用 1 次</p>
-          <h3>爆文鉤子</h3>
-          <p>依平台寫鉤子、標籤和留言句。</p>
-        </a>
-      </section>
-      <p class="home-note">買了方案之後，這六項可以一直寫，不扣點。識圖寫文案和劇本寫稿也各可試 1 次。</p>
-      <a class="btn btn-copper home-next" href="/account">免費開始</a>
+        <p class="lead">不用先付款，先做出第一個結果。</p>
+        <p>6 個 AI 文案工具，每項免費試 1 次。圖片、短片、換裝、改圖、設計、對嘴不在免費試用裡。</p>
+        <p class="home-chips">
+          <a href="/script">真人口播腳本</a>
+          <a href="/live">直播稿</a>
+          <a href="/ip">個人 IP</a>
+          <a href="/hot">熱問短片</a>
+          <a href="/prompt">提示詞產生器</a>
+          <a href="/hook">爆文鉤子</a>
+        </p>
+        <p class="home-note">買了方案之後，這六項可以一直寫，不扣點。識圖寫文案和劇本寫稿也各可試 1 次。</p>
+        <a class="btn btn-copper home-next" href="/account">免費開始</a>
+      </div>
+    </section>
 
-      <section class="page-head" id="plans">
+    <section class="home-band home-band-tight" id="plans">
+      <div class="wrap">
+      <section class="page-head">
         <p class="kicker">方案</p>
         <h2>價格與點數</h2>
         <p class="lead">金額和點數跟帳號頁同一份資料。買了之後，文案可以一直寫。</p>
@@ -304,8 +295,12 @@
       <section class="home-plans home-plans-story" id="storyPlanGrid" aria-live="polite"></section>
       <p class="home-note" id="planFine">使用期限 30 日，無自動續訂。</p>
       <a class="btn btn-copper home-next" href="/account">選擇方案</a>
+      </div>
+    </section>
 
-      <section class="page-head" id="faq">
+    <section class="home-band home-band-tight" id="faq">
+      <div class="wrap">
+      <section class="page-head">
         <p class="kicker">常見問題</p>
         <h2>付款前可以先看這幾題</h2>
       </section>
@@ -339,15 +334,19 @@
           <p>PayPal 付完就開通。銀行轉帳要等入帳核對後才開通。</p>
         </details>
       </div>
+      </div>
+    </section>
 
-      <section class="home-close" id="start">
+    <section class="home-close" id="start">
+      <div class="wrap">
         <h2>現在就開始製作你的第一個 AI 商品內容。</h2>
         <p>先免費試用，再決定是否升級。</p>
         <div class="actions">
           <a class="btn btn-copper" href="/account">立即開始製作</a>
         </div>
-      </section>
-    </div>
+        <p class="home-close-note">免費試用 AI 文案，不需先付款。</p>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
