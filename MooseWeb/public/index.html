@@ -274,13 +274,13 @@
           <li>數字人對嘴：1 秒 1 點</li>
         </ul>
       </div>
-      <section class="home-plans" id="planGrid" aria-live="polite">
+      <section class="home-plans" id="planGrid">
         <article>
           <h3>入門</h3>
           <p class="home-price">NT$499</p>
           <p>20 點／30 日</p>
-          <p>例如單獨用於 5 秒影片：約 6 次</p>
-          <p>也可以混合使用圖片、影片與對嘴。</p>
+          <p>例如：</p>
+          <p>5 秒影片約 6 次<br>或圖片約 20 次</p>
           <a class="btn btn-copper home-next" href="/account">選擇方案</a>
         </article>
         <article class="is-rec">
@@ -288,19 +288,18 @@
           <h3>進階</h3>
           <p class="home-price">NT$990</p>
           <p>50 點／30 日</p>
-          <p>例如單獨用於 5 秒影片：約 16 次</p>
-          <p>也可以混合使用圖片、影片與對嘴。</p>
+          <p>5 秒影片約 16 次<br>或圖片約 50 次</p>
           <a class="btn btn-copper home-next" href="/account">選擇方案</a>
         </article>
         <article>
           <h3>專業</h3>
           <p class="home-price">NT$1,980</p>
           <p>120 點／30 日</p>
-          <p>例如單獨用於 5 秒影片：約 40 次</p>
-          <p>也可以混合使用圖片、影片與對嘴。</p>
+          <p>5 秒影片約 40 次<br>或圖片約 120 次</p>
           <a class="btn btn-copper home-next" href="/account">選擇方案</a>
         </article>
       </section>
+      <p class="home-note">以上為單獨使用該功能的示例，點數也可以混合使用。</p>
       <h3 class="home-subhead">劇本廣告另計秒數</h3>
       <section class="home-plans home-plans-story" id="storyPlanGrid" aria-live="polite"></section>
       <p class="home-note" id="planFine">使用期限 30 日，無自動續訂。</p>
@@ -383,12 +382,12 @@
         return Number.isFinite(n) ? 'NT$' + n.toLocaleString('en-US') : '';
       }
 
-      function yieldHtml(credits) {
+      function yieldHtml(credits, withExample) {
         var n = Number(credits);
         if (!Number.isFinite(n) || n <= 0) return '';
         var times = Math.floor(n / 3);
-        return '<p>例如單獨用於 5 秒影片：約 ' + times + ' 次</p>'
-          + '<p>也可以混合使用圖片、影片與對嘴。</p>';
+        return (withExample ? '<p>例如：</p>' : '')
+          + '<p>5 秒影片約 ' + times + ' 次<br>或圖片約 ' + n + ' 次</p>';
       }
 
       function planCard(plan, recommended) {
@@ -398,7 +397,7 @@
           + '<h3>' + escapeHtml(plan.name) + '</h3>'
           + '<p class="home-price">' + escapeHtml(priceShort(plan)) + '</p>'
           + '<p>' + Number(plan.credits) + ' 點／30 日</p>'
-          + yieldHtml(plan.credits)
+          + yieldHtml(plan.credits, plan.id === 'starter')
           + '<a class="btn btn-copper home-next" href="/account">選擇方案</a>'
           + '</article>';
       }
