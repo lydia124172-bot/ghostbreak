@@ -4560,3 +4560,251 @@ body.home .home-close { padding-block: 72px; }
   body.home #results h2,
   body.home #free h2 { font-size: 32px; }
 }
+
+/* Target screenshot. Compact long sales page. These sizes win. */
+body.home .wrap,
+body.home .kit-hero > .wrap,
+body.home #results .wrap,
+body.home #results .home-result-layout { width: min(1200px, calc(100% - 48px)); }
+body.home .site-header { box-shadow: none; border-bottom: 1px solid #E6E8EB; background: #fff; }
+body.home .header-row { height: 60px; }
+body.home .brand { font-size: 14px; gap: 8px; }
+body.home .brand img { width: 26px; height: 26px; }
+body.home .brand small { font-size: 10px; }
+body.home .nav,
+body.home .nav a { font-size: 13px; }
+body.home .header-start {
+  height: 30px;
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+body.home .kit-hero { min-height: 0; padding: 18px 0 16px; background: #fff; }
+body.home .home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 0;
+}
+body.home .home-hero .kit-intro { flex: 1 1 420px; max-width: 460px; }
+body.home .home-hero .kicker {
+  display: inline-block;
+  margin: 0 0 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #FFF4EF;
+  color: #FF5A36;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+body.home .home-hero h1 {
+  max-width: none;
+  margin: 0;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+body.home .home-hero .hero-sub {
+  max-width: none;
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+body.home .home-hero-buy { margin-top: 14px; gap: 6px; }
+body.home .home-hero .btn,
+body.home .home-stage-cta .btn,
+body.home #free .btn,
+body.home #planGrid article .btn,
+body.home .home-close .btn {
+  min-height: 36px;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+body.home .home-reassure,
+body.home .home-hero-buy .home-trust li { font-size: 11px; }
+body.home .home-hero-proof,
+body.home #results .home-stage-grid {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+  width: auto;
+  min-height: 0;
+}
+body.home .home-hero-proof .home-shot,
+body.home .home-hero-proof .home-hero-stage,
+body.home #results .home-shot {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+}
+body.home .home-hero-proof .home-tag,
+body.home #results .home-tag {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5F6368;
+}
+body.home .home-hero-stage .home-tag,
+body.home #results .home-shot-lg .home-tag { color: #FF5A36; }
+body.home .home-tag span {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #111318;
+}
+body.home .home-hero-proof img,
+body.home #results .home-shot img {
+  display: block;
+  width: 168px;
+  height: 210px;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center 12%;
+  border-radius: 10px;
+}
+body.home .home-hero-proof video,
+body.home #results .home-shot video {
+  display: block;
+  width: 236px;
+  height: 295px;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center 16%;
+  border-radius: 10px;
+  background: #111;
+}
+body.home .home-hero-proof figcaption,
+body.home #results figcaption {
+  margin: 0;
+  padding: 4px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+}
+body.home .home-hero-proof .home-arrow,
+body.home #results .home-arrow {
+  align-self: center;
+  margin: 0;
+  font-size: 24px;
+  color: #FF5A36;
+  transform: none;
+}
+body.home #pain {
+  background: #F3F4F4;
+  padding: 26px 0;
+}
+body.home .home-pain-top {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.3fr);
+  gap: 24px;
+  align-items: center;
+}
+body.home #pain h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #111318;
+}
+body.home #pain .home-chain { margin: 0; max-width: none; }
+body.home #pain .home-chain li { font-size: 12px; font-weight: 600; padding: 2px 0; color: #111318; }
+body.home #pain .home-pain-end {
+  margin: 8px 0 0;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: left;
+  color: #FF5A36;
+}
+body.home #results { padding: 22px 0; }
+body.home .home-result-layout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+body.home .home-result-copy { flex: 0 1 280px; }
+body.home #results h2 { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.15; }
+body.home .home-stage-cta { margin: 14px 0 0; }
+body.home #solve { padding: 14px 0; background: #F3F4F4; }
+body.home #solve .wrap { display: flex; align-items: center; gap: 20px; }
+body.home #solve .page-head { flex: 0 0 180px; margin: 0; padding: 0; }
+body.home #solve h2 { margin: 0; font-size: 20px; font-weight: 800; line-height: 1.2; }
+body.home #solve .home-flow { margin: 0; flex: 1; }
+body.home #solve .home-flow li { font-size: 13px; font-weight: 700; }
+body.home #buy { padding: 28px 0; }
+body.home #buy h2 { font-size: 32px; line-height: 1.1; }
+body.home #buy .lead { font-size: 26px; margin-top: 4px; }
+body.home #buy .home-gain li { font-size: 14px; }
+body.home #buy .home-pain-end { font-size: 16px; margin-top: 12px; }
+body.home .home-split { padding: 22px 0; gap: 28px; }
+body.home #can h2,
+body.home #why h2 { font-size: 18px; }
+body.home #can .home-offer h3,
+body.home .home-versus h3 { font-size: 15px; }
+body.home #can .home-offer p,
+body.home .home-versus li,
+body.home .home-quote { font-size: 13px; }
+body.home #free { padding: 8px 0 16px; }
+body.home #free .home-free { padding: 18px 22px; }
+body.home #free h2 { font-size: 24px; }
+body.home #free .lead,
+body.home #free p { font-size: 13px; }
+body.home #plans { padding: 20px 0 28px; }
+body.home #plans h2 { font-size: 24px; }
+body.home #planGrid article { padding: 16px 14px; }
+body.home #planGrid h3 { font-size: 16px; }
+body.home #planGrid .home-price,
+body.home #planGrid p.home-price { font-size: 32px; }
+body.home #planGrid article.is-rec { transform: scale(1.04); }
+body.home #planGrid article.is-rec .home-price,
+body.home #planGrid article.is-rec p.home-price { font-size: 40px; }
+body.home #planGrid article p { font-size: 13px; }
+body.home #faq { padding: 20px 0; }
+body.home #faq h2 { font-size: 22px; }
+body.home #faq summary { font-size: 15px; }
+body.home #faq .home-faq p { font-size: 14px; }
+body.home .home-close { padding: 48px 0; }
+body.home .home-close h2 { font-size: 32px; }
+body.home .home-close p { font-size: 14px; }
+@media (max-width: 800px) {
+  body.home .home-hero,
+  body.home .home-result-layout,
+  body.home .home-pain-top,
+  body.home #solve .wrap { display: block; }
+  body.home .home-hero h1 { font-size: 30px; }
+  body.home .home-hero-proof,
+  body.home #results .home-stage-grid {
+    justify-content: flex-start;
+    margin-top: 16px;
+  }
+  body.home .home-hero .btn,
+  body.home .home-stage-cta .btn,
+  body.home #free .btn,
+  body.home #planGrid article .btn,
+  body.home .home-close .btn { width: auto; }
+  body.home .home-hero-proof .home-arrow,
+  body.home #results .home-arrow { transform: none; }
+}
