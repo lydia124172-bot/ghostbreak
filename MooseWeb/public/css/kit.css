@@ -2103,23 +2103,81 @@ body.home .home-steps li:not(:last-child)::after {
   transform: rotate(45deg);
 }
 
-body.home .home-offers {
-  grid-template-columns: 1fr 1.15fr;
-  grid-template-areas:
-    "copy video"
-    "image video"
-    "ad ad";
+body.home #can .page-head { padding: 0 0 48px; }
+body.home #can .kicker { display: block; margin: 0 0 14px; }
+body.home #can .page-head h2 { margin: 0; }
+body.home #can .home-offers {
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: none;
+  grid-auto-rows: 1fr;
+  gap: 20px;
+  align-items: stretch;
 }
-body.home #tools-copy { grid-area: copy; }
-body.home #tools-image { grid-area: image; }
-body.home #tools-video { grid-area: video; }
-body.home #tools-ad { grid-area: ad; }
-body.home .home-offer > a:last-child {
-  margin-top: auto;
-  color: #6f4b32;
+body.home #can .home-offer {
+  height: 100%;
+  gap: 12px;
+  padding: 28px 26px 24px;
+  background: #fff;
+  border: 1px solid #eeeae4;
+  border-radius: 22px;
+  box-shadow: 0 8px 22px rgba(70, 50, 30, 0.045);
+}
+body.home #can .home-offer-out {
+  background: #faf7f4;
+  border-color: #eadfd0;
+}
+body.home #can .home-offer h3 {
+  font-size: 24px;
   font-weight: 700;
+  letter-spacing: -0.02em;
 }
-body.home .home-offer > a:last-child::after { content: " →"; }
+body.home #can .home-offer p { color: #7a6e62; font-weight: 400; }
+body.home #can .home-chips { margin-top: auto; padding-top: 8px; }
+body.home #can .home-chips a {
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 500;
+}
+body.home #can .home-offer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(70, 50, 30, 0.08);
+}
+body.home #can .home-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  margin: 40px 0 0;
+  padding: 0;
+  list-style: none;
+}
+body.home #can .home-line li {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 8px 0 8px 16px;
+  color: #2c261f;
+  font-size: 15px;
+  font-weight: 600;
+}
+body.home #can .home-line li:first-child { padding-left: 0; }
+body.home #can .home-line li:not(:last-child)::after {
+  content: "→";
+  margin-left: 16px;
+  color: #c4a484;
+  font-weight: 500;
+}
+body.home #can .home-can-more {
+  margin: 28px 0 0;
+  text-align: center;
+}
+body.home #can .home-can-more a {
+  color: #6f4b32;
+  font-weight: 600;
+}
+body.home #can .home-can-more a::after { content: " →"; }
 
 body.home .home-why li { padding-top: 18px; }
 body.home .home-why li::before {
@@ -2259,12 +2317,26 @@ body.home .home-foot-brand p {
   body.home .home-case,
   body.home .home-case-more,
   body.home .home-offers,
+  body.home #can .home-offers,
   body.home .home-intent { grid-template-columns: 1fr; }
   body.home .home-offers { grid-template-areas: none; }
   body.home #tools-copy,
   body.home #tools-image,
   body.home #tools-video,
   body.home #tools-ad { grid-area: auto; }
+  body.home #can .home-offers { gap: 16px; }
+  body.home #can .home-line {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 28px;
+  }
+  body.home #can .home-line li,
+  body.home #can .home-line li:first-child { padding: 6px 0; }
+  body.home #can .home-line li:not(:last-child)::after {
+    content: "↓";
+    margin: 0 0 0 10px;
+  }
+  body.home #can .home-can-more { text-align: left; }
   body.home .home-arrow { transform: rotate(90deg); }
   body.home .home-plans .is-rec { transform: none; }
   body.home .home-close { padding: 64px 0; }
