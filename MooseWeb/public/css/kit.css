@@ -3126,3 +3126,181 @@ body.home .home-close h2 { font-size: clamp(56px, 6.2vw, 88px); }
   body.home #buy h2,
   body.home .home-close h2 { font-size: clamp(40px, 11vw, 52px); }
 }
+
+:root {
+  --sales-bg: #FFFFFF;
+  --sales-bg-soft: #F6F7F5;
+  --sales-text: #111318;
+  --sales-text-muted: #5F6368;
+  --sales-dark: #111827;
+  --sales-dark-2: #18212F;
+  --sales-accent: #FF5A36;
+  --sales-accent-hover: #E94A2B;
+  --sales-accent-soft: #FFF4EF;
+  --sales-border: #E6E8EB;
+  --sales-success: #176B4D;
+}
+
+body.home {
+  background: var(--sales-bg);
+  color: var(--sales-text);
+}
+body.home .site-header {
+  background: #fff;
+  border-bottom-color: var(--sales-border);
+}
+body.home .brand,
+body.home .brand small { color: var(--sales-text); }
+body.home .nav a { color: var(--sales-text-muted); }
+body.home .nav a:hover,
+body.home .nav a.active { color: var(--sales-text); }
+body.home .header-logout {
+  border-color: var(--sales-border);
+  background: #fff;
+  color: var(--sales-text);
+}
+body.home .btn-copper,
+body.home .header-start {
+  background: var(--sales-accent);
+  color: #fff;
+  border: 0;
+  box-shadow: none;
+}
+body.home .btn-copper:hover,
+body.home .header-start:hover { background: var(--sales-accent-hover); color: #fff; }
+body.home .kit-hero,
+body.home #results,
+body.home #can,
+body.home #plans { background: var(--sales-bg); }
+body.home .kicker { color: var(--sales-text-muted); }
+body.home .home-hero h1,
+body.home .page-head h2,
+body.home h2,
+body.home h3 { color: var(--sales-text); }
+body.home .hero-sub,
+body.home .lead,
+body.home p { color: var(--sales-text); }
+body.home .home-reassure,
+body.home .home-note,
+body.home .home-commercial { color: var(--sales-text-muted); }
+body.home .home-hero-stage,
+body.home .home-stage .home-shot {
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.12);
+}
+body.home .home-hero-buy {
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--sales-accent-soft);
+}
+body.home .home-trust li {
+  color: var(--sales-text);
+  background: transparent;
+  border-color: transparent;
+}
+body.home .home-trust li::before { color: var(--sales-accent); }
+body.home #pain,
+body.home #buy,
+body.home .home-close {
+  background: var(--sales-dark);
+  color: #fff;
+}
+body.home #pain h2,
+body.home #pain .home-pain-end,
+body.home #buy h2,
+body.home #buy .home-gain li,
+body.home .home-close h2 { color: #fff; }
+body.home #pain .home-chain li { color: rgba(255, 255, 255, 0.82); }
+body.home #pain .home-chain li:not(:last-child)::after { color: rgba(255, 255, 255, 0.35); }
+body.home #buy .lead { color: #fff; }
+body.home #buy .sales-hot {
+  color: var(--sales-accent);
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+body.home #buy .home-pain-end,
+body.home .home-close p { color: rgba(255, 255, 255, 0.75); }
+body.home .home-tag { color: var(--sales-text-muted); }
+body.home .home-shot-lg .home-tag { color: var(--sales-accent); }
+body.home #solve,
+body.home #why,
+body.home #faq { background: var(--sales-bg-soft); }
+body.home #solve .home-flow li::before { color: var(--sales-accent); }
+body.home #solve .home-flow li:not(:last-child)::after { color: var(--sales-border); }
+body.home #can .home-offer {
+  background: #fff;
+  border: 1px solid var(--sales-border);
+  border-radius: 16px;
+  padding: 16px;
+}
+body.home #can .home-chips a { color: var(--sales-text); border-color: var(--sales-border); }
+body.home .home-versus article:first-child { background: #f3f4f2; color: var(--sales-text-muted); }
+body.home .home-versus .is-yes {
+  background: #fff;
+  border: 2px solid var(--sales-accent);
+  box-shadow: none;
+}
+body.home #free { background: var(--sales-bg); }
+body.home #free .home-free {
+  background: var(--sales-accent-soft);
+  border: 1px solid rgba(255, 90, 54, 0.35);
+  color: var(--sales-text);
+}
+body.home #free h2,
+body.home #free .lead,
+body.home #free p,
+body.home #free .home-note,
+body.home #free .kicker { color: var(--sales-text); }
+body.home #free .home-note,
+body.home #free .kicker { color: var(--sales-text-muted); }
+body.home #free .btn { background: var(--sales-accent); color: #fff; }
+body.home #free .btn:hover { background: var(--sales-accent-hover); color: #fff; }
+body.home #solve .home-flow li::before {
+  display: inline;
+  content: counter(flow);
+  margin-right: 6px;
+  color: var(--sales-accent);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+body.home .home-faq summary::after {
+  border-right-color: var(--sales-text-muted);
+  border-bottom-color: var(--sales-text-muted);
+}
+body.home #free .home-chips a {
+  color: var(--sales-text);
+  border-color: var(--sales-border);
+  background: #fff;
+}
+body.home #free .home-trust li { color: var(--sales-text); }
+body.home #plans .home-plans article {
+  background: #fff;
+  border: 1px solid var(--sales-border);
+}
+body.home #planGrid article.is-rec {
+  background: var(--sales-accent-soft);
+  border: 2px solid var(--sales-accent);
+}
+body.home #planGrid .meta {
+  background: var(--sales-accent);
+  color: #fff;
+}
+body.home #planGrid article:not(.is-rec) .btn,
+body.home #planGrid article:not(.is-rec) .btn:hover,
+body.home #storyPlanGrid .btn,
+body.home #storyPlanGrid .btn:hover {
+  background: transparent;
+  color: var(--sales-text);
+  border: 1px solid var(--sales-border);
+}
+body.home #planGrid .is-rec .btn,
+body.home #planGrid .is-rec .btn:hover { color: #fff; border: 0; }
+body.home #planGrid .is-rec .btn:hover { background: var(--sales-accent-hover); }
+body.home .home-pay-trust li { color: var(--sales-text-muted); }
+body.home .home-pay-trust li::before { color: var(--sales-success); }
+body.home #faq .home-faq details {
+  background: #fff;
+  border: 1px solid var(--sales-border);
+}
+body.home #faq .home-faq details[open] { background: var(--sales-accent-soft); }
+body.home .home-close .btn,
+body.home .home-close .btn:hover { color: #fff; }
