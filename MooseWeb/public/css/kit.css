@@ -1568,6 +1568,15 @@ body.kit .home-demo video {
 
 body.kit .home-demo video {
   aspect-ratio: 9 / 16;
+  max-height: min(78vh, 760px);
+}
+
+body.kit .home-demo-copy h3 {
+  font-size: 18px;
+}
+
+body.kit .home-demo-copy p {
+  font-size: 14px;
 }
 
 body.kit .home-demo-copy {
@@ -1715,6 +1724,55 @@ body.kit .home-why li {
   position: relative;
 }
 
+body.kit .home-why h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+body.kit .home-offers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.kit .home-offer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+body.kit .home-offer h3 {
+  margin: 0;
+  font-size: 22px;
+}
+
+body.kit .home-offer p {
+  margin: 0;
+  color: #6a5e52;
+  line-height: 1.6;
+}
+
+body.kit .home-offer .btn {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+body.kit .home-plans .is-rec {
+  border-width: 2px;
+  border-color: #6f4b32;
+  box-shadow: 0 14px 30px rgba(111, 75, 50, 0.12);
+}
+
+body.kit .home-plans .is-rec .btn-copper {
+  padding: 14px 22px;
+  font-size: 16px;
+}
+
 body.kit .home-why li::before {
   content: "✓";
   position: absolute;
@@ -1770,10 +1828,12 @@ body.kit #start {
   body.kit .home-demos,
   body.kit .home-intent,
   body.kit .home-tool-grid,
+  body.kit .home-offers,
   body.kit .home-plans,
   body.kit .home-why {
     grid-template-columns: 1fr;
   }
+  body.kit .home-offer .btn { width: 100%; box-sizing: border-box; }
   body.kit .page-head { padding: 40px 0 14px; }
   body.kit .home-demo:first-child { width: 100%; }
 }
