@@ -4473,3 +4473,90 @@ body.home .home-close-note { font-size: 15px; }
   body.home #planGrid article .btn,
   body.home .home-close .btn { width: 100%; min-height: 56px; font-size: 17px; }
 }
+
+/* Match the reference: short proof frames, tight bands, tools beside comparison. */
+body.home .kit-hero { min-height: 0; padding: 16px 0 20px; }
+body.home .home-hero { min-height: 0; align-items: center; gap: 32px; }
+body.home .home-hero h1 { font-size: 58px; }
+body.home .home-hero-buy { margin-top: 20px; }
+body.home .home-hero-proof,
+body.home #results .home-stage-grid {
+  grid-template-columns: minmax(0, 0.38fr) auto minmax(0, 0.62fr);
+  gap: 12px;
+  align-items: end;
+}
+body.home .home-hero-proof .home-shot,
+body.home .home-hero-proof .home-hero-stage,
+body.home #results .home-shot { padding: 8px; border-radius: 14px; }
+body.home .home-hero-proof img,
+body.home #results .home-shot:not(.home-shot-lg) img {
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center 16%;
+  max-height: 340px;
+}
+body.home .home-hero-proof video,
+body.home #results .home-shot-lg video {
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: center 30%;
+  max-height: 280px;
+}
+body.home #pain { padding-block: 28px 22px; }
+body.home #pain h2 { font-size: 34px; }
+body.home #pain .home-pain-end { font-size: 26px; }
+body.home #pain .home-chain { margin-top: 14px; }
+body.home #pain .home-chain li { font-size: 16px; }
+body.home #results { padding-block: 36px; }
+body.home #results h2 { font-size: 42px; }
+body.home .home-stage-cta { margin-top: 18px; }
+body.home #solve { padding-block: 22px; }
+body.home #solve .wrap {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+body.home #solve .page-head { margin: 0; padding: 0; flex: 0 0 240px; }
+body.home #solve h2 { font-size: 32px; margin: 0; }
+body.home #solve .home-flow { margin: 0; flex: 1; }
+body.home #buy { padding-block: 48px; }
+body.home #buy h2 { font-size: 48px; }
+body.home #buy .lead { font-size: 40px; }
+body.home #buy .home-pain-end { font-size: 22px; }
+body.home .home-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 36px;
+  width: min(1180px, calc(100% - 64px));
+  margin: 0 auto;
+  padding: 36px 0 28px;
+  background: #fff;
+}
+body.home .home-split #can,
+body.home .home-split #why { background: transparent; padding: 0; }
+body.home .home-split .wrap { width: 100%; }
+body.home #can h2,
+body.home #why h2 { font-size: 28px; }
+body.home #can .page-head,
+body.home #why .page-head { padding-bottom: 14px; }
+body.home #can .home-offers { grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+body.home #why { background: transparent; }
+body.home .home-quote { font-size: 18px; margin-top: 14px; }
+body.home #free { padding-block: 8px 20px; }
+body.home #free .home-free { padding: 28px 36px; }
+body.home #free h2 { font-size: 40px; }
+body.home #plans { padding-block: 36px 48px; }
+body.home #plans h2 { font-size: 36px; }
+body.home #planGrid article { padding: 20px 18px; }
+body.home .home-close { padding-block: 72px; }
+@media (max-width: 800px) {
+  body.home .home-split { grid-template-columns: 1fr; width: calc(100% - 40px); padding: 28px 0; }
+  body.home #solve .wrap { display: block; }
+  body.home #solve .page-head { margin-bottom: 12px; }
+  body.home .home-hero-proof video,
+  body.home #results .home-shot-lg video { max-height: none; aspect-ratio: 16 / 10; }
+  body.home .home-hero h1 { font-size: 40px; }
+  body.home #pain h2,
+  body.home #results h2,
+  body.home #free h2 { font-size: 32px; }
+}
