@@ -274,11 +274,32 @@
           <li>數字人對嘴：1 秒 1 點</li>
         </ul>
       </div>
-      <section class="home-plans" id="planGrid" aria-live="polite" aria-busy="true">
-        <article class="is-skel" aria-hidden="true"><span></span><span></span><span></span></article>
-        <article class="is-skel" aria-hidden="true"><span></span><span></span><span></span></article>
-        <article class="is-skel" aria-hidden="true"><span></span><span></span><span></span></article>
-        <p class="home-note home-plan-status">正在載入方案…</p>
+      <section class="home-plans" id="planGrid" aria-live="polite">
+        <article>
+          <h3>入門</h3>
+          <p class="home-price">NT$499</p>
+          <p>20 點／30 日</p>
+          <p>例如單獨用於 5 秒影片：約 6 次</p>
+          <p>也可以混合使用圖片、影片與對嘴。</p>
+          <a class="btn btn-copper home-next" href="/account">選擇方案</a>
+        </article>
+        <article class="is-rec">
+          <p class="meta">推薦</p>
+          <h3>進階</h3>
+          <p class="home-price">NT$990</p>
+          <p>50 點／30 日</p>
+          <p>例如單獨用於 5 秒影片：約 16 次</p>
+          <p>也可以混合使用圖片、影片與對嘴。</p>
+          <a class="btn btn-copper home-next" href="/account">選擇方案</a>
+        </article>
+        <article>
+          <h3>專業</h3>
+          <p class="home-price">NT$1,980</p>
+          <p>120 點／30 日</p>
+          <p>例如單獨用於 5 秒影片：約 40 次</p>
+          <p>也可以混合使用圖片、影片與對嘴。</p>
+          <a class="btn btn-copper home-next" href="/account">選擇方案</a>
+        </article>
       </section>
       <h3 class="home-subhead">劇本廣告另計秒數</h3>
       <section class="home-plans home-plans-story" id="storyPlanGrid" aria-live="polite"></section>
@@ -312,7 +333,7 @@
         </details>
         <details>
           <summary>可以商業使用嗎？</summary>
-          <p>可以。使用者可將透過 MooseWeb 產生的內容用於自己的商業用途，但仍須遵守本<a href="/terms#commercial">服務條款</a>、第三方 AI 模型／素材授權條件及相關法律規定。</p>
+          <p>可以。使用者可將透過麋鹿網產生的內容用於自己的商業用途，但仍須遵守本<a href="/terms#commercial">服務條款</a>、第三方 AI 模型／素材授權條件及相關法律規定。</p>
         </details>
         <details>
           <summary>付款後什麼時候可以使用？</summary>
@@ -355,12 +376,19 @@
           .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
 
+      function priceShort(plan) {
+        var label = String(plan.priceLabel || '').split('／')[0];
+        if (label) return label;
+        var n = Number(plan.price);
+        return Number.isFinite(n) ? 'NT$' + n.toLocaleString('en-US') : '';
+      }
+
       function yieldHtml(credits) {
         var n = Number(credits);
         if (!Number.isFinite(n) || n <= 0) return '';
         var times = Math.floor(n / 3);
-        return '<p class="home-point-head">點數可以怎麼用？</p>'
-          + '<p>例如單獨製作 5 秒影片，約 ' + times + ' 次；或製作 ' + n + ' 次 1 點圖片。</p>';
+        return '<p>例如單獨用於 5 秒影片：約 ' + times + ' 次</p>'
+          + '<p>也可以混合使用圖片、影片與對嘴。</p>';
       }
 
       function planCard(plan, recommended) {
@@ -368,9 +396,8 @@
           + '<article' + (recommended ? ' class="is-rec"' : '') + '>'
           + (recommended ? '<p class="meta">推薦</p>' : '')
           + '<h3>' + escapeHtml(plan.name) + '</h3>'
-          + '<p class="home-price">' + escapeHtml(plan.priceLabel) + '</p>'
-          + '<p>' + escapeHtml(plan.quota || ((plan.credits || 0) + ' 點')) + '</p>'
-          + (plan.scope ? '<p>' + escapeHtml(plan.scope) + '</p>' : '')
+          + '<p class="home-price">' + escapeHtml(priceShort(plan)) + '</p>'
+          + '<p>' + Number(plan.credits) + ' 點／30 日</p>'
           + yieldHtml(plan.credits)
           + '<a class="btn btn-copper home-next" href="/account">選擇方案</a>'
           + '</article>';
@@ -387,7 +414,6 @@
         var story = plans.filter(function (plan) { return plan.product === 'storyclip'; });
         if (!clip.length) throw new Error('no plans');
         grid.innerHTML = clip.map(function (plan) { return planCard(plan, plan.id === 'plus'); }).join('');
-        grid.removeAttribute('aria-busy');
         storyGrid.innerHTML = story.map(function (plan) {
           return ''
             + '<article>'
@@ -398,10 +424,7 @@
             + '<a class="btn btn-copper home-next" href="/account">選擇方案</a>'
             + '</article>';
         }).join('');
-      }).catch(function () {
-        grid.removeAttribute('aria-busy');
-        grid.innerHTML = '<p class="home-note">方案暫時讀不到。請到<a href="/account">帳號頁</a>看目前價格。</p>';
-      });
+      }).catch(function () {});
     })();
   </script>
 </body>
