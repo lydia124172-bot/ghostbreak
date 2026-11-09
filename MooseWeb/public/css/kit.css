@@ -2788,3 +2788,233 @@ body.home .home-close .btn {
   body.home #free .btn,
   body.home .home-close .btn { width: 100%; box-sizing: border-box; }
 }
+
+/* Sales page scale. Later rules win. */
+body.home .wrap {
+  width: min(1200px, calc(100% - 64px));
+}
+body.home .header-row { height: 72px; }
+body.home .brand img { width: 44px; height: 44px; }
+body.home .header-start {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+body.home .page-head h2 {
+  font-size: clamp(32px, 3.4vw, 48px);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+body.home .kit-hero {
+  min-height: calc(100svh - 72px);
+  padding: 20px 0;
+  align-items: center;
+}
+body.home .kit-hero > .wrap {
+  width: min(1280px, calc(100% - 64px));
+}
+body.home .home-hero { gap: 20px 64px; padding: 0; }
+body.home .home-hero h1 {
+  max-width: 620px;
+  font-size: clamp(52px, 5vw, 76px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+body.home .home-hero .hero-sub {
+  max-width: 560px;
+  font-size: 18px;
+  line-height: 1.8;
+}
+body.home .home-hero .btn {
+  min-height: 56px;
+  padding: 0 28px;
+  font-size: 17px;
+  border-radius: 12px;
+}
+body.home .home-hero-proof { min-height: 520px; }
+body.home .home-hero-proof img,
+body.home .home-hero-proof video,
+body.home .home-hero-stage video {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: min(560px, calc(100svh - 280px));
+  object-fit: contain;
+}
+body.home #pain { padding-block: 110px; }
+body.home #pain .wrap { width: min(1000px, calc(100% - 64px)); }
+body.home #pain h2 { font-size: clamp(40px, 4vw, 60px); line-height: 1.08; }
+body.home #pain .home-chain li { font-size: 15px; font-weight: 500; }
+body.home #pain .home-pain-end {
+  max-width: 14em;
+  margin-top: 28px;
+  font-size: clamp(32px, 3.2vw, 44px);
+  line-height: 1.15;
+}
+body.home #results { padding-block: 80px; }
+body.home #results h2 { font-size: clamp(44px, 4.6vw, 64px); line-height: 1.08; }
+body.home .home-stage-grid {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 28px;
+  align-items: end;
+}
+body.home .home-stage .home-shot img,
+body.home .home-stage .home-shot video {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 560px;
+  object-fit: contain;
+}
+body.home #solve { padding-block: 88px; }
+body.home #solve .wrap { width: min(1100px, calc(100% - 64px)); }
+body.home #solve h2 { font-size: clamp(36px, 3.6vw, 52px); }
+body.home #solve .home-flow { gap: 20px 24px; }
+body.home #solve .home-flow li {
+  min-height: 140px;
+  font-size: 22px;
+  line-height: 1.35;
+}
+body.home #buy { padding-block: 96px; }
+body.home #buy .wrap { width: min(900px, calc(100% - 64px)); }
+body.home #buy h2 {
+  font-size: clamp(44px, 5vw, 72px);
+  line-height: 1.05;
+}
+body.home #buy .lead { font-size: clamp(22px, 2.4vw, 32px); }
+body.home #buy .home-gain {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 32px;
+  max-width: 720px;
+}
+body.home #buy .home-gain li { font-size: 20px; padding: 8px 0; }
+body.home #can { padding-block: 72px; }
+body.home #can .wrap { width: min(1100px, calc(100% - 64px)); }
+body.home #can h2 { font-size: clamp(32px, 3vw, 42px); }
+body.home #can .home-offer { min-height: 0; }
+body.home #why { padding-block: 72px; }
+body.home .home-versus { gap: 32px; align-items: stretch; }
+body.home .home-versus article { min-height: 420px; max-height: none; }
+body.home .home-versus .is-yes { transform: scale(1.02); }
+body.home .home-quote { font-size: clamp(28px, 3vw, 40px); }
+body.home #free {
+  background: #fff;
+  padding-block: 48px;
+}
+body.home #free .home-free {
+  width: min(1100px, calc(100% - 64px));
+  min-height: 420px;
+  margin-inline: auto;
+  padding: 64px;
+  border-radius: 28px;
+  background: #6f4b32;
+  box-sizing: border-box;
+}
+body.home #free h2 { font-size: clamp(42px, 4vw, 64px); line-height: 1.08; }
+body.home #free .btn { min-height: 56px; font-size: 17px; border-radius: 12px; }
+body.home #plans { padding-block: 96px; }
+body.home #plans .home-plans {
+  width: min(1100px, 100%);
+  margin-inline: auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding-block: 12px;
+}
+body.home #planGrid article { min-height: 480px; }
+body.home #plans .home-plans-story article { min-height: 0; }
+body.home #plans .home-plans p { font-size: 17px; }
+body.home #planGrid p.home-price { font-size: 48px; font-weight: 800; line-height: 1; }
+body.home #planGrid .is-rec { transform: scale(1.04); }
+body.home #planGrid .is-rec .home-price { font-size: 56px; }
+body.home #faq { padding-block: 64px; }
+body.home #faq .wrap { width: min(900px, calc(100% - 64px)); }
+body.home #faq h2 { font-size: 36px; }
+body.home #faq .home-faq summary,
+body.home .home-faq summary { padding-block: 22px; font-size: 17px; }
+body.home .home-close {
+  min-height: 560px;
+  padding-block: 72px;
+  display: grid;
+  place-items: center;
+}
+body.home .home-close .wrap { width: min(900px, calc(100% - 64px)); }
+body.home .home-close h2 {
+  font-size: clamp(48px, 6vw, 84px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+body.home .home-close .btn {
+  min-height: 58px;
+  padding-inline: 28px;
+  font-size: 17px;
+  border-radius: 12px;
+}
+@media (max-width: 1024px) {
+  body.home .home-hero { gap: 24px 36px; }
+  body.home .home-hero h1 { font-size: clamp(44px, 4.6vw, 60px); }
+  body.home .home-hero-proof { min-height: 0; }
+}
+@media (max-width: 800px) {
+  body.home .wrap,
+  body.home .kit-hero > .wrap,
+  body.home #pain .wrap,
+  body.home #solve .wrap,
+  body.home #buy .wrap,
+  body.home #can .wrap,
+  body.home #free .home-free,
+  body.home #faq .wrap,
+  body.home .home-close .wrap {
+    width: min(1200px, calc(100% - 40px));
+  }
+  body.home .home-band,
+  body.home #pain,
+  body.home #results,
+  body.home #solve,
+  body.home #buy,
+  body.home #can,
+  body.home #why,
+  body.home #plans,
+  body.home #faq { padding-block: 64px; }
+  body.home #results,
+  body.home #buy,
+  body.home .home-close { padding-block: 80px; }
+  body.home .kit-hero {
+    min-height: 0;
+    padding: 56px 0 72px;
+    align-items: stretch;
+  }
+  body.home .home-hero h1 {
+    font-size: clamp(40px, 11vw, 52px);
+    letter-spacing: -0.03em;
+  }
+  body.home .home-hero-proof { min-height: 0; margin-top: 40px; }
+  body.home .home-hero-proof img,
+  body.home .home-hero-proof video,
+  body.home .home-hero-stage video,
+  body.home .home-stage .home-shot img,
+  body.home .home-stage .home-shot video {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 420px;
+  }
+  body.home #buy .home-gain,
+  body.home #solve .home-flow,
+  body.home .home-stage-grid,
+  body.home #can .home-offers,
+  body.home #plans .home-plans { grid-template-columns: 1fr; }
+  body.home #plans .home-plans article,
+  body.home .home-versus article { min-height: 0; }
+  body.home #plans .is-rec,
+  body.home .home-versus .is-yes { transform: none; }
+  body.home #free { padding-block: 64px; }
+  body.home #free .home-free { min-height: 0; padding: 36px 24px; }
+  body.home .home-close { min-height: 0; }
+  body.home .home-close h2 { font-size: clamp(40px, 11vw, 52px); }
+  body.home .home-hero .btn,
+  body.home .home-stage-cta .btn,
+  body.home #free .btn,
+  body.home .home-close .btn { width: 100%; box-sizing: border-box; }
+}
