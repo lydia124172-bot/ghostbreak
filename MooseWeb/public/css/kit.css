@@ -3018,3 +3018,111 @@ body.home .home-close .btn {
   body.home #free .btn,
   body.home .home-close .btn { width: 100%; box-sizing: border-box; }
 }
+
+/* Weight pass: big, small, biggest, then quiet proof. */
+body.home .home-hero h1 { font-size: clamp(64px, 5.2vw, 76px); }
+body.home .home-hero-proof {
+  grid-template-columns: minmax(0, 0.38fr) 16px minmax(0, 1fr);
+}
+body.home .home-hero-proof img,
+body.home .home-hero-proof video,
+body.home .home-hero-stage video {
+  max-height: min(620px, calc(100svh - 300px));
+}
+body.home #pain { padding-block: 52px; }
+body.home #pain h2 { font-size: clamp(28px, 2.8vw, 40px); }
+body.home #pain .page-head { padding-bottom: 12px; }
+body.home #pain .home-chain li { font-size: 14px; }
+body.home #pain .home-pain-end {
+  margin-top: 16px;
+  font-size: clamp(22px, 2.2vw, 30px);
+}
+body.home #results { padding-block: 96px; }
+body.home #results h2 { font-size: clamp(52px, 5vw, 72px); }
+body.home .home-stage-grid { grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr); }
+body.home .home-stage .home-shot img,
+body.home .home-stage .home-shot video { max-height: 480px; }
+body.home .home-stage .home-shot-lg video { max-height: min(760px, 82vh); }
+body.home #solve { padding-block: 48px; }
+body.home #solve h2 { font-size: clamp(28px, 2.6vw, 36px); }
+body.home #solve .home-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 0;
+}
+body.home #solve .home-flow li {
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 600;
+}
+body.home #solve .home-flow li::before { display: none; }
+body.home #solve .home-flow li:not(:last-child)::after {
+  content: "→";
+  margin-left: 12px;
+  color: #c4a484;
+  font-weight: 500;
+}
+body.home #buy { padding-block: 88px; }
+body.home #buy h2 { font-size: clamp(56px, 6vw, 80px); }
+body.home #buy .lead { font-size: clamp(28px, 3vw, 40px); }
+body.home #buy .home-gain li { font-size: 16px; font-weight: 500; padding: 4px 0; }
+body.home #buy .home-pain-end { font-size: 18px; max-width: none; }
+body.home #can { padding-block: 36px; }
+body.home #can h2 { font-size: clamp(24px, 2.2vw, 32px); }
+body.home #can .page-head { padding-bottom: 8px; }
+body.home #can .home-offers { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 20px; }
+body.home #can .home-offer { padding: 8px 0; }
+body.home #can .home-offer h3 { font-size: 16px; }
+body.home #can .home-offer p { font-size: 14px; margin: 4px 0; }
+body.home #why { padding-block: 56px; }
+body.home #why h2 { font-size: clamp(28px, 2.8vw, 40px); }
+body.home .home-versus article { min-height: 0; padding: 28px 24px; }
+body.home #free { padding-block: 40px; }
+body.home #free .home-free { min-height: 0; padding: 40px 48px; }
+body.home #free h2 { font-size: clamp(36px, 3.4vw, 48px); }
+body.home #plans { padding-block: 72px; }
+body.home #planGrid { align-items: center; }
+body.home #planGrid article { min-height: 0; }
+body.home #planGrid article:not(.is-rec) { transform: scale(0.96); }
+body.home #planGrid p.home-price { font-size: 40px; }
+body.home #planGrid .is-rec {
+  transform: scale(1.06);
+  z-index: 1;
+  box-shadow: 0 28px 56px rgba(111, 75, 50, 0.18);
+}
+body.home #planGrid .is-rec .home-price { font-size: 64px; }
+body.home #faq { padding-block: 40px; }
+body.home #faq h2 { font-size: 28px; }
+body.home #faq .home-faq summary,
+body.home .home-faq summary { padding-block: 14px; font-size: 16px; }
+body.home .home-close { min-height: 640px; padding-block: 96px; }
+body.home .home-close h2 { font-size: clamp(56px, 6.2vw, 88px); }
+@media (max-width: 1024px) {
+  body.home .home-hero h1 { font-size: clamp(52px, 5.4vw, 64px); }
+  body.home #can .home-offers { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 800px) {
+  body.home #pain { padding-block: 40px; }
+  body.home #results { padding-block: 56px; }
+  body.home #solve,
+  body.home #can,
+  body.home #why,
+  body.home #faq,
+  body.home #free { padding-block: 40px; }
+  body.home #buy { padding-block: 64px; }
+  body.home .home-close { min-height: 0; padding-block: 80px; }
+  body.home .home-hero h1 { font-size: clamp(42px, 11vw, 52px); }
+  body.home .home-hero-stage video { max-height: 420px; }
+  body.home .home-stage .home-shot-lg video { max-height: 520px; }
+  body.home #solve .home-flow { display: flex; }
+  body.home .home-stage-grid,
+  body.home #can .home-offers,
+  body.home #buy .home-gain,
+  body.home #plans .home-plans { grid-template-columns: 1fr; }
+  body.home #planGrid article:not(.is-rec),
+  body.home #planGrid .is-rec { transform: none; }
+  body.home #buy h2,
+  body.home .home-close h2 { font-size: clamp(40px, 11vw, 52px); }
+}
