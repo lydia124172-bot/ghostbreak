@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>麋鹿網 — AI 商品行銷工具</title>
-  <meta name="description" content="一張商品照片，也能做出完整的行銷內容。麋鹿網提供 AI 文案、商品圖片、短片、換裝與對嘴。指定文字工具可各試用 1 次。" />
+  <meta name="description" content="一張商品照片，做出完整的 AI 商品廣告。從文案、商品圖片，到短影片、換裝與數字人，一個地方完成。" />
   <link rel="icon" href="/images/logo.png" type="image/png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/site.css?v=look6" />
-  <link rel="stylesheet" href="/css/kit.css?v=27" />
+  <link rel="stylesheet" href="/css/kit.css?v=28" />
 </head>
 <body class="kit">
   <header class="site-header">
@@ -49,10 +49,12 @@
             loop
             playsinline
             controls
-          >
-            <a href="/videos/ad-10.mp4">觀看劇本廣告示範影片</a>
-          </video>
-          <figcaption>劇本廣告・旁白式，約 10 秒。由商品圖做成的示範。</figcaption>
+            preload="auto"
+            width="540"
+            height="960"
+            aria-label="劇本廣告旁白式成果，約 10 秒"
+          ></video>
+          <figcaption>旁白式成果，約 10 秒</figcaption>
         </figure>
       </div>
     </section>
@@ -61,7 +63,7 @@
       <section class="page-head" id="results">
         <p class="kicker">實際成果</p>
         <h2>一張商品照，直接變成廣告。</h2>
-        <p class="lead">不用重新拍攝素材，從一張圖片開始製作。</p>
+        <p class="lead">看看麋鹿網實際做出的商品廣告與 AI 素材。</p>
       </section>
       <div class="home-demos">
         <article class="home-demo home-demo-source">
@@ -72,9 +74,7 @@
           </div>
         </article>
         <article class="home-demo">
-          <video src="/videos/ad-10.mp4" poster="/images/kit/ad-still.jpg" autoplay muted loop playsinline controls>
-            <a href="/videos/ad-10.mp4">觀看旁白式廣告範例</a>
-          </video>
+          <video src="/videos/ad-10.mp4" poster="/images/kit/ad-still.jpg" autoplay muted loop playsinline controls preload="auto" aria-label="旁白式廣告，約 10 秒"></video>
           <div class="home-demo-copy">
             <p class="meta">旁白式</p>
             <h3>約 10 秒</h3>
@@ -82,9 +82,7 @@
           </div>
         </article>
         <article class="home-demo">
-          <video src="/videos/ad-talk.mp4" poster="/images/kit/ad-talk.jpg" autoplay muted loop playsinline controls>
-            <a href="/videos/ad-talk.mp4">觀看對話式廣告範例</a>
-          </video>
+          <video src="/videos/ad-talk.mp4" poster="/images/kit/ad-talk.jpg" autoplay muted loop playsinline controls preload="auto" aria-label="對話式廣告，約 15 秒"></video>
           <div class="home-demo-copy">
             <p class="meta">對話式</p>
             <h3>約 15 秒</h3>
@@ -92,9 +90,7 @@
           </div>
         </article>
         <article class="home-demo">
-          <video src="/story-demo/demo.mp4" poster="/story-demo/poster.jpg" autoplay muted loop playsinline controls>
-            <a href="/story-demo/demo.mp4">觀看劇本廣告示範</a>
-          </video>
+          <video src="/story-demo/demo.mp4" poster="/story-demo/poster.jpg" autoplay muted loop playsinline controls preload="auto" aria-label="劇本廣告示範片"></video>
           <div class="home-demo-copy">
             <p class="meta">劇本廣告示範</p>
             <h3>示範片</h3>
@@ -270,6 +266,16 @@
         <h2>選一個點數方案</h2>
         <p class="lead">買了之後，文案可以一直寫。點數用在圖片、短片、換裝與對嘴。</p>
       </section>
+      <div class="home-point-uses">
+        <p>可以依需求混合使用</p>
+        <ul>
+          <li>AI 圖片、換裝、改圖、設計：1 點／次</li>
+          <li>5 秒影片：3 點／次</li>
+          <li>10 秒影片：6 點／次</li>
+          <li>15 秒影片：9 點／次</li>
+          <li>數字人：1 點／秒</li>
+        </ul>
+      </div>
       <section class="home-plans" id="planGrid" aria-live="polite">
         <p class="home-note">正在讀取方案…</p>
       </section>
@@ -359,16 +365,21 @@
           .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
 
-      function canDo(credits) {
+      function yieldHtml(credits) {
         var n = Number(credits);
-        if (!Number.isFinite(n) || n <= 0) return '可自由用於圖片、影片、換裝與對嘴。';
-        var line = '這些點數可以用來做什麼？可自由用於圖片、影片、換裝與對嘴。';
-        line += '生圖、換裝、改圖、設計各成功 1 點，單用可做 ' + n + ' 次。';
-        line += '對嘴每秒 1 點，單用可做 ' + n + ' 秒。';
-        if (n % 3 === 0) line += '只做 5 秒商品短片（3 點）可做 ' + (n / 3) + ' 支。';
-        if (n % 6 === 0) line += '只做 10 秒商品短片（6 點）可做 ' + (n / 6) + ' 支。';
-        if (n % 9 === 0) line += '只做 15 秒商品短片（9 點）可做 ' + (n / 9) + ' 支。';
-        return line;
+        if (!Number.isFinite(n) || n <= 0) return '';
+        function item(cost, name, unit) {
+          var times = Math.floor(n / cost);
+          var word = n % cost === 0 ? '可做 ' : '約可做 ';
+          return '<li>單獨做' + name + '，' + word + times + ' ' + unit + '</li>';
+        }
+        return '<p class="home-point-head">' + n + ' 點／30 日</p><ul class="home-yield">'
+          + item(1, 'AI 圖片', '次')
+          + item(3, '5 秒影片', '次')
+          + item(6, '10 秒影片', '次')
+          + item(9, '15 秒影片', '次')
+          + item(1, '數字人', '秒')
+          + '</ul>';
       }
 
       function planCard(plan, recommended) {
@@ -380,7 +391,7 @@
           + '<p class="home-price">' + escapeHtml(plan.priceLabel) + '</p>'
           + '<p>' + escapeHtml(plan.quota || ((plan.credits || 0) + ' 點')) + '</p>'
           + (who ? '<p>' + escapeHtml(who) + '</p>' : '')
-          + '<p>' + escapeHtml(canDo(plan.credits)) + '</p>'
+          + yieldHtml(plan.credits)
           + '<a class="btn btn-copper home-next" href="/account">' + (recommended ? '選擇進階方案' : '前往選方案') + '</a>'
           + '</article>';
       }

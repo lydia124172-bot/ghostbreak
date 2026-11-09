@@ -1496,6 +1496,7 @@ body.kit .home-hero-stage video {
   display: block;
   width: 100%;
   height: auto;
+  min-height: 320px;
   aspect-ratio: 9 / 16;
   max-height: min(72vh, 640px);
   object-fit: contain;
@@ -1706,6 +1707,38 @@ body.kit .home-subhead {
 
 body.kit .home-plans article .home-next {
   margin-top: 12px;
+}
+
+body.kit .home-point-uses,
+body.kit .home-yield {
+  margin: 0;
+}
+
+body.kit .home-point-uses {
+  background: #fffdf8;
+  border: 1px solid #eadfd0;
+  border-radius: 18px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+body.kit .home-point-uses p,
+body.kit .home-point-head {
+  margin: 0 0 8px;
+  color: #2c261f;
+  font-weight: 700;
+}
+
+body.kit .home-point-uses ul,
+body.kit .home-yield {
+  margin: 0;
+  padding-left: 1.2em;
+  color: #4a4036;
+  line-height: 1.7;
+}
+
+body.kit .home-yield {
+  margin-top: 8px;
 }
 
 body.kit .home-why {
