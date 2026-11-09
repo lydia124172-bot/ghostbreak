@@ -10,7 +10,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/site.css?v=look6" />
-  <link rel="stylesheet" href="/css/kit.css?v=57" />
+  <link rel="stylesheet" href="/css/kit.css?v=60" />
 </head>
 <body class="kit home">
   <header class="site-header">
@@ -36,14 +36,27 @@
           <p class="kicker">AI 商品行銷工具</p>
           <h1 id="heroTitle">你有商品，<br>剩下的內容交給 MooseWeb。</h1>
           <p class="hero-sub">一張商品照片，<br>開始做文案、商品圖、短影片與廣告。</p>
+          <div class="home-hero-buy">
+            <div class="actions">
+              <a class="btn btn-copper" href="/account">立即開始製作</a>
+            </div>
+            <p class="home-reassure">免費試用 AI 文案，不需先付款</p>
+            <ul class="home-trust">
+              <li>成功生成才扣點</li>
+              <li>無自動續訂</li>
+              <li>30 日方案</li>
+            </ul>
+          </div>
         </div>
         <div class="home-hero-proof">
           <figure class="home-shot">
+            <p class="home-tag">Before</p>
             <img src="/images/kit/ad-still.jpg" alt="做成廣告前的商品照片" width="540" height="960" />
             <figcaption>商品照片</figcaption>
           </figure>
           <p class="home-arrow" aria-hidden="true">→</p>
           <figure class="home-hero-stage">
+            <p class="home-tag">After</p>
             <video
               src="/videos/ad-10.mp4"
               poster="/images/kit/ad-still.jpg"
@@ -60,25 +73,15 @@
             <figcaption>商品廣告</figcaption>
           </figure>
         </div>
-        <div class="home-hero-buy">
-          <div class="actions">
-            <a class="btn btn-copper" href="/account">立即開始製作</a>
-          </div>
-          <p class="home-reassure">免費試用 AI 文案，不需先付款</p>
-          <ul class="home-trust">
-            <li>成功生成才扣點</li>
-            <li>無自動續訂</li>
-            <li>30 日方案</li>
-          </ul>
-        </div>
       </div>
     </section>
 
     <section class="home-band home-band-dark" id="pain">
       <div class="wrap">
-        <section class="page-head">
+        <div class="home-pain-top">
           <h2>只是想賣一個商品，<br>為什麼要開 8 個 AI 工具？</h2>
-        </section>
+          <p class="home-pain-end">你不是缺 AI。<br>你缺的是一套可以直接完成的流程。</p>
+        </div>
         <ol class="home-chain">
           <li>找 AI</li>
           <li>找 Prompt</li>
@@ -89,15 +92,15 @@
           <li>做對嘴</li>
           <li>再剪一次</li>
         </ol>
-        <p class="home-pain-end">你不是缺 AI。<br>你缺的是一套可以直接完成的流程。</p>
       </div>
     </section>
 
     <section class="home-band home-stage" id="results">
-      <div class="wrap">
-        <section class="page-head">
+      <div class="wrap home-result-layout">
+        <div class="home-result-copy">
           <h2>一張商品照片，<br>可以變成什麼？</h2>
-        </section>
+          <p class="home-stage-cta"><a class="btn btn-copper" href="/account">立即開始製作</a></p>
+        </div>
         <div class="home-stage-grid">
           <figure class="home-shot">
             <p class="home-tag">Before</p>
@@ -111,14 +114,13 @@
             <figcaption>商品廣告</figcaption>
           </figure>
         </div>
-        <p class="home-stage-cta"><a class="btn btn-copper" href="/account">我也想做一個</a></p>
       </div>
     </section>
 
     <section class="home-band" id="solve">
       <div class="wrap">
         <section class="page-head">
-          <h2>所以，我們把它放在一起。</h2>
+          <h2>所以，<br>我們把它放在一起。</h2>
         </section>
         <ol class="home-flow">
           <li>商品照片</li>
@@ -132,18 +134,20 @@
     </section>
 
     <section class="home-band home-band-alt" id="buy">
-      <div class="wrap">
-        <section class="page-head">
+      <div class="wrap home-value-layout">
+        <div>
           <h2>你買的不是 AI。</h2>
           <p class="lead">你買的是<span class="sales-hot">省下來的時間</span>。</p>
-        </section>
-        <ul class="home-gain">
-          <li>不用研究 Prompt</li>
-          <li>不用找一堆工具</li>
-          <li>不用自己串流程</li>
-          <li>不用從零開始</li>
-        </ul>
-        <p class="home-pain-end">把時間留給真正重要的事：賣你的商品。</p>
+        </div>
+        <div>
+          <ul class="home-gain">
+            <li>不用研究 Prompt</li>
+            <li>不用找一堆工具</li>
+            <li>不用自己串流程</li>
+            <li>不用從零開始</li>
+          </ul>
+          <p class="home-pain-end">把時間留給真正重要的事：<br>賣你的商品。</p>
+        </div>
       </div>
     </section>
 
@@ -213,25 +217,28 @@
 
     <section class="home-band home-band-free" id="free">
       <div class="wrap home-free">
-        <p class="kicker">免費體驗</p>
-        <h2>先免費做一次。<br>覺得有用，再付錢。</h2>
-        <p class="lead">不用先付款。</p>
-        <p>6 個 AI 文案工具，每項免費試 1 次。圖片、短片、換裝、改圖、設計、對嘴不在免費試用裡。</p>
-        <p class="home-chips">
-          <a href="/script">真人口播腳本</a>
-          <a href="/live">直播稿</a>
-          <a href="/ip">個人 IP</a>
-          <a href="/hot">熱問短片</a>
-          <a href="/prompt">提示詞產生器</a>
-          <a href="/hook">爆文鉤子</a>
-        </p>
-        <p class="home-note">買了方案之後，這六項可以一直寫，不扣點。識圖寫文案和劇本寫稿也各可試 1 次。</p>
-        <a class="btn btn-copper home-next" href="/account">免費開始</a>
-        <ul class="home-trust">
-          <li>不需先付款</li>
-          <li>無自動續訂</li>
-          <li>不適合就不用買</li>
-        </ul>
+        <div>
+          <h2>先免費做一次。<br>覺得有用，再付錢。</h2>
+          <p class="lead">不用先付款。</p>
+          <p>6 個 AI 文案工具，每項免費試 1 次。圖片、短片、換裝、改圖、設計、對嘴不在免費試用裡。</p>
+          <p class="home-chips">
+            <a href="/script">真人口播腳本</a>
+            <a href="/live">直播稿</a>
+            <a href="/ip">個人 IP</a>
+            <a href="/hot">熱問短片</a>
+            <a href="/prompt">提示詞產生器</a>
+            <a href="/hook">爆文鉤子</a>
+          </p>
+          <p class="home-note">買了方案之後，這六項可以一直寫，不扣點。識圖寫文案和劇本寫稿也各可試 1 次。</p>
+        </div>
+        <div class="home-free-buy">
+          <a class="btn btn-copper home-next" href="/account">免費開始</a>
+          <ul class="home-trust">
+            <li>不需先付款</li>
+            <li>無自動續訂</li>
+            <li>不適合就不用買</li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -248,7 +255,7 @@
           <p>20 點／30 日</p>
           <p>例如：</p>
           <p>5 秒影片約 6 次<br>或圖片約 20 次</p>
-          <a class="btn btn-copper home-next" href="/account">選擇方案</a>
+          <a class="btn btn-copper home-next" href="/account">立即開始</a>
         </article>
         <article class="is-rec">
           <p class="meta">推薦</p>
@@ -264,7 +271,7 @@
           <p class="home-price">NT$1,980</p>
           <p>120 點／30 日</p>
           <p>5 秒影片約 40 次<br>或圖片約 120 次</p>
-          <a class="btn btn-copper home-next" href="/account">選擇方案</a>
+          <a class="btn btn-copper home-next" href="/account">立即開始</a>
         </article>
       </section>
       <ul class="home-trust home-pay-trust">
@@ -294,7 +301,7 @@
       <div class="wrap">
       <section class="page-head">
         <p class="kicker">常見問題</p>
-        <h2>付款前，你可能會想知道</h2>
+        <h2>付款前，<br>你可能會想知道。</h2>
       </section>
       <div class="home-faq">
         <details>
@@ -397,7 +404,7 @@
           + '<p class="home-price">' + escapeHtml(priceShort(plan)) + '</p>'
           + '<p>' + Number(plan.credits) + ' 點／30 日</p>'
           + yieldHtml(plan.credits, plan.id === 'starter')
-          + '<a class="btn btn-copper home-next" href="/account">' + (recommended ? '立即開始' : '選擇方案') + '</a>'
+          + '<a class="btn btn-copper home-next" href="/account">立即開始</a>'
           + '</article>';
       }
 
