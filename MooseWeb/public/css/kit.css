@@ -3689,3 +3689,164 @@ body.home .home-stage-cta .btn { min-height: 62px; padding: 0 40px; font-size: 1
   body.home #free .btn,
   body.home .home-close .btn { width: 100%; }
 }
+
+/* Homepage type scale. Six sizes, applied from header to footer. */
+body.home {
+  --type-hero: 72px;
+  --type-sales: 56px;
+  --type-section: 48px;
+  --type-punch: 36px;
+  --type-statement: 28px;
+  --type-card: 24px;
+  --type-step: 20px;
+  --type-body: 18px;
+  --type-read: 16px;
+  --type-meta: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  font-size: var(--type-body);
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+body.home .nav,
+body.home .header-start,
+body.home .kicker,
+body.home .home-tag,
+body.home .site-footer,
+body.home .site-footer a,
+body.home .footer-links a { font-size: var(--type-meta); }
+body.home .home-hero h1 {
+  max-width: 20em;
+  font-size: var(--type-hero);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+body.home .home-hero .hero-sub {
+  max-width: 600px;
+  font-size: var(--type-step);
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0;
+}
+body.home .btn,
+body.home .header-start { letter-spacing: 0; }
+body.home .home-hero .btn,
+body.home .home-stage-cta .btn,
+body.home #free .btn,
+body.home #planGrid .is-rec .btn,
+body.home .home-close .btn {
+  min-height: 58px;
+  font-size: var(--type-body);
+  font-weight: 800;
+}
+body.home .home-reassure,
+body.home .home-hero-buy .home-trust li { font-size: 15px; font-weight: 500; }
+body.home h2,
+body.home .page-head h2 {
+  font-size: var(--type-section);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+body.home #results h2,
+body.home #free h2,
+body.home #buy h2,
+body.home #buy .lead,
+body.home .home-close h2 {
+  font-size: var(--type-sales);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+body.home #buy h2,
+body.home .home-close h2 { font-size: 60px; }
+body.home #pain h2,
+body.home #why h2 { font-size: var(--type-section); }
+body.home #pain .home-chain li,
+body.home #solve .home-flow li,
+body.home .home-versus li,
+body.home #buy .home-gain li,
+body.home #can .home-chips a,
+body.home #free .home-chips a { font-size: var(--type-step); font-weight: 600; line-height: 1.5; }
+body.home #solve .home-flow li::before,
+body.home #planGrid .meta,
+body.home .home-plans .meta { font-size: var(--type-meta); letter-spacing: 0; }
+body.home #pain .home-pain-end { font-size: var(--type-punch); font-weight: 800; line-height: 1.15; }
+body.home #buy .home-pain-end,
+body.home .home-quote { font-size: var(--type-statement); font-weight: 700; line-height: 1.35; }
+body.home h3,
+body.home #can .home-offer h3,
+body.home #planGrid h3,
+body.home .home-versus h3,
+body.home .home-subhead { font-size: var(--type-card); font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+body.home p,
+body.home li,
+body.home #can .home-offer p,
+body.home #free p,
+body.home #free .lead,
+body.home .home-faq p,
+body.home #planGrid p,
+body.home #storyPlanGrid p { font-size: var(--type-body); line-height: 1.6; }
+body.home .home-hero .hero-sub { font-size: var(--type-step); }
+body.home figcaption { font-size: var(--type-read); font-weight: 600; }
+body.home #planGrid .home-price,
+body.home #planGrid p.home-price { font-size: 56px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+body.home #planGrid .home-fit,
+body.home .home-point-uses li,
+body.home #plans .home-note { font-size: var(--type-read); }
+body.home .home-point-uses > p { font-size: var(--type-card); font-weight: 700; }
+body.home .home-commercial,
+body.home .home-faq summary { font-size: var(--type-step); }
+body.home .home-faq summary { font-weight: 700; }
+body.home .home-commercial { font-size: var(--type-meta); }
+body.home .home-hero .hero-sub { font-size: var(--type-step); line-height: 1.55; }
+body.home #buy .lead { font-size: var(--type-sales); font-weight: 800; line-height: 1.08; }
+body.home #free .lead { font-size: var(--type-step); font-weight: 600; }
+body.home #pain .home-chain li,
+body.home #solve .home-flow li,
+body.home .home-versus li,
+body.home #buy .home-gain li { font-size: var(--type-step); font-weight: 600; }
+body.home #pain .home-pain-end { font-size: var(--type-punch); font-weight: 800; }
+body.home #buy .home-pain-end,
+body.home .home-quote { font-size: var(--type-statement); font-weight: 700; }
+body.home #planGrid .home-price,
+body.home #planGrid p.home-price { font-size: 56px; line-height: 1; }
+body.home .home-close p { font-size: var(--type-step); }
+body.home .home-close-note { font-size: 15px; font-weight: 500; }
+body.home .site-footer p,
+body.home .site-footer strong { font-size: var(--type-meta); font-weight: 500; }
+body.home #solve h2,
+body.home #can h2,
+body.home #plans h2,
+body.home #faq h2 { font-size: var(--type-section); font-weight: 800; }
+body.home .home-shot figcaption,
+body.home .home-hero-stage figcaption { font-size: var(--type-read); font-weight: 600; }
+body.home #faq .home-faq summary,
+body.home #faq summary { font-size: var(--type-step); font-weight: 700; }
+body.home #planGrid .btn,
+body.home #storyPlanGrid .btn { font-size: var(--type-body); }
+body.home #free .home-trust li,
+body.home .home-pay-trust li { font-size: 15px; }
+@media (max-width: 800px) {
+  body.home {
+    --type-hero: 42px;
+    --type-sales: 36px;
+    --type-section: 32px;
+    --type-punch: 30px;
+    --type-statement: 22px;
+    --type-card: 22px;
+    --type-step: 18px;
+    --type-body: 17px;
+    --type-read: 16px;
+    --type-meta: 14px;
+  }
+  body.home #buy h2,
+  body.home .home-close h2 { font-size: 40px; }
+  body.home #planGrid .home-price,
+  body.home #planGrid p.home-price { font-size: 40px; }
+  body.home .home-hero .btn,
+  body.home .home-stage-cta .btn,
+  body.home #free .btn,
+  body.home #planGrid .is-rec .btn,
+  body.home .home-close .btn { min-height: 56px; font-size: 17px; }
+}
