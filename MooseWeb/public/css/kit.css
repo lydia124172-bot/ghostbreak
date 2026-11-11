@@ -4808,3 +4808,16 @@ body.home .home-close p { font-size: 14px; }
   body.home .home-hero-proof .home-arrow,
   body.home #results .home-arrow { transform: none; }
 }
+
+body.home #can .page-head h2 { color: #FF5A36; }
+body.home #pain .home-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 0;
+}
+body.home #pain .home-chain li:nth-child(n) {
+  transform: none;
+  align-self: center;
+}
+body.home #pain .home-pain-end { margin-top: 12px; }
