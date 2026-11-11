@@ -4809,7 +4809,11 @@ body.home .home-close p { font-size: 14px; }
   body.home #results .home-arrow { transform: none; }
 }
 
-body.home #can .page-head h2 { color: #FF5A36; }
+body.home #can .page-head h2 { color: #111318; }
+body.home #can #tools-copy h3 { color: #FF5A36; }
+body.home #can #tools-image h3 { color: #176B4D; }
+body.home #can #tools-video h3 { color: #1D4ED8; }
+body.home #can #tools-ad h3 { color: #7C3AED; }
 body.home #pain .home-chain {
   display: flex;
   flex-wrap: wrap;
